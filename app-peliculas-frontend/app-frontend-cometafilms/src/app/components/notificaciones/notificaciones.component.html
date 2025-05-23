@@ -1,0 +1,69 @@
+<div class="container">
+    <div class="notificaciones-container">
+        <div class="tabs-header">
+            <button class="tab-btn" [class.active]="activeTab === 'solicitudes'" (click)="cambiarTab('solicitudes')">
+                <i class="bi bi-person-plus"></i> Solicitudes de seguimiento
+                @if (followRequests.length > 0) {
+                <span class="badge">{{ followRequests.length }}</span>
+                }
+            </button>
+            <button class="tab-btn" [class.active]="activeTab === 'notificaciones'"
+                (click)="cambiarTab('notificaciones')">
+                <i class="bi bi-bell"></i> Notificaciones
+            </button>
+        </div>
+
+        <div class="tab-content">
+            @if (activeTab === 'solicitudes') {
+            <div class="solicitudes-content">
+                <h3>Solicitudes de seguimiento</h3>
+
+                @if (cargando) {
+                <div class="loading-container">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+                }
+
+                @if (!cargando && followRequests.length === 0) {
+                <div class="empty-state">
+                    <i class="bi bi-person-plus-fill"></i>
+                    <p>No tienes solicitudes de seguimiento pendientes</p>
+                </div>
+                }
+
+                @if (!cargando && followRequests.length > 0) {
+                <ul class="solicitudes-list">
+                    @for (solicitud of followRequests; track solicitud._id) {
+                    <li class="solicitud-item">
+                        <div class="user-info" [routerLink]="['/usuarios', solicitud.requester._id]">
+                            <img [src]="getAvatarPath(solicitud.requester.avatar)" [alt]="solicitud.requester.username"
+                                class="user-avatar">
+                            <span class="username">{{ solicitud.requester.username }}</span>
+                            <span class="timestamp">{{ solicitud.createdAt | date:'medium' }}</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-aceptar" (click)="aceptarSolicitud(solicitud._id)">Aceptar</button>
+                            <button class="btn-rechazar" (click)="rechazarSolicitud(solicitud._id)">Rechazar</button>
+                        </div>
+                    </li>
+                    }
+                </ul>
+                }
+            </div>
+            }
+
+            @if (activeTab === 'notificaciones') {
+            <div class="notificaciones-content">
+                <h3>Notificaciones</h3>
+                <div class="empty-state">
+                    <i class="bi bi-bell-slash"></i>
+                    <p>No tienes notificaciones actualmente</p>
+                    <p class="sub-text">Aquí aparecerán tus notificaciones del sistema</p>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>

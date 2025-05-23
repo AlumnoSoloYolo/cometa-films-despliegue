@@ -1,0 +1,182 @@
+<div class="premium-container">
+    <div class="premium-header">
+        <h1>CometaCine Premium</h1>
+        <p class="subtitle">Mejora tu experiencia cinematográfica</p>
+    </div>
+
+    @if (isLoading) {
+    <div class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+    } @else if (error) {
+    <div class="error-message">
+        {{ error }}
+        <button class="btn btn-refresh" (click)="loadPremiumStatus()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (premiumStatus?.isPremium) {
+    <div class="premium-status-active">
+        <div class="premium-badge">
+            <i class="bi bi-star-fill"></i>
+            <span>Premium Activo</span>
+        </div>
+
+        <div class="subscription-info">
+            <p>Tu suscripción Premium está activa</p>
+            <p class="expiry-date">Expira el: {{ premiumStatus.premiumExpiry | date:'longDate' }}</p>
+            <p class="days-left">{{ premiumStatus.remainingDays }} días restantes</p>
+            @if (premiumStatus.isCanceled) {
+                <div class="cancellation-notice">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Has cancelado tu suscripción. Seguirás disfrutando de Premium hasta la fecha de expiración.</span>
+                </div>
+                }
+        </div>
+
+        <div class="premium-benefits">
+            <h3>Beneficios Premium que estás disfrutando:</h3>
+            <ul class="benefits-list">
+                <li><i class="bi bi-check-circle-fill"></i> Listas de películas ilimitadas</li>
+                <li><i class="bi bi-check-circle-fill"></i> Recomendaciones personalizadas avanzadas</li>
+                <li><i class="bi bi-check-circle-fill"></i> Estadísticas detalladas sobre tus preferencias</li>
+            </ul>
+        </div>
+
+        <div class="subscription-history">
+            <h3 class="history-title">
+                <i class="bi bi-clock-history"></i>
+                Historial de Suscripciones
+            </h3>
+            @if (subscriptionHistory && subscriptionHistory.length > 0) {
+            <div class="history-timeline">
+                @for (entry of subscriptionHistory; track entry.date) {
+                <div class="history-item">
+                    <div class="history-icon">
+                        <i class="bi" [ngClass]="{
+                            'bi-plus-circle-fill': entry.action === 'subscribed', 
+                            'bi-arrow-repeat': entry.action === 'renewed',
+                            'bi-x-circle-fill': entry.action === 'canceled',
+                            'bi-dash-circle-fill': entry.action === 'expired'
+                        }"></i>
+                    </div>
+                    <div class="history-content">
+                        <div class="history-date">{{ entry.date | date:'medium' }}</div>
+                        <div class="history-action">
+                            @if (entry.action === 'subscribed') {
+                            <span>Suscripción activada</span>
+                            } @else if (entry.action === 'renewed') {
+                            <span>Suscripción renovada</span>
+                            } @else if (entry.action === 'canceled') {
+                            <span>Cancelación solicitada</span>
+                            } @else if (entry.action === 'expired') {
+                            <span>Suscripción expirada</span>
+                            }
+                        </div>
+                        @if (entry.details) {
+                        <div class="history-details">{{ entry.details }}</div>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+            } @else {
+            <p class="no-history">No hay registros de suscripción disponibles.</p>
+            }
+        </div>
+
+        @if (!premiumStatus.isCanceled) {
+            <div class="subscription-actions">
+                <button class="btn btn-cancel-subscription" (click)="cancelSubscription()">
+                    Cancelar suscripción
+                </button>
+            </div>
+            }
+    </div>
+    } @else {
+    <div class="plans-comparison">
+        <div class="plan-card free">
+            <div class="plan-header">
+                <h3>Plan Gratuito</h3>
+                <div class="price">0€</div>
+                <div class="price-period">para siempre</div>
+            </div>
+
+            <div class="plan-features">
+                <ul>
+                    <li class="feature-included">Seguimiento de películas vistas</li>
+                    <li class="feature-included">Máximo 5 listas de películas</li>
+                    <li class="feature-included">Funciones sociales básicas</li>
+                    <li class="feature-excluded">Recomendaciones personalizadas</li>
+                    <li class="feature-excluded">Listas ilimitadas</li>
+                    <li class="feature-excluded">Estadísticas de perfil avanzadas</li>
+                </ul>
+            </div>
+
+            <div class="plan-footer">
+                <button class="btn btn-current" disabled>Plan Actual</button>
+            </div>
+        </div>
+
+        <div class="plan-card premium">
+            <div class="ribbon">Recomendado</div>
+            <div class="plan-header">
+                <h3>Plan Premium</h3>
+                <div class="price">5,99€</div>
+                <div class="price-period">por mes</div>
+            </div>
+
+            <div class="plan-features">
+                <ul>
+                    <li class="feature-included">Seguimiento de películas vistas</li>
+                    <li class="feature-included">Listas de películas <strong>ilimitadas</strong></li>
+                    <li class="feature-included">Funciones sociales completas</li>
+                    <li class="feature-included"><strong>Recomendaciones personalizadas</strong> basadas en tus gustos
+                    </li>
+                    <li class="feature-included">Estadísticas detalladas de tu perfil cinematográfico</li>
+                    <li class="feature-included">Soporte prioritario</li>
+                </ul>
+            </div>
+
+            <div class="plan-footer">
+                <button class="btn btn-subscribe" (click)="startSubscription()" [disabled]="processingPayment">
+                    @if (processingPayment) {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Procesando...
+                    } @else {
+                    Suscribirse ahora
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="premium-info">
+        <div class="info-item">
+            <i class="bi bi-credit-card"></i>
+            <div>
+                <h4>Pago seguro con PayPal</h4>
+                <p>Tu información bancaria siempre estará segura</p>
+            </div>
+        </div>
+
+        <div class="info-item">
+            <i class="bi bi-calendar-check"></i>
+            <div>
+                <h4>Cancela cuando quieras</h4>
+                <p>Sin compromisos a largo plazo. Cancela en cualquier momento.</p>
+            </div>
+        </div>
+
+        <div class="info-item">
+            <i class="bi bi-shield-check"></i>
+            <div>
+                <h4>Garantía de satisfacción</h4>
+                <p>Si no estás satisfecho, contacta con nuestro soporte</p>
+            </div>
+        </div>
+    </div>
+    }
+</div>

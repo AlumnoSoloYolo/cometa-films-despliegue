@@ -1,0 +1,504 @@
+<div class="profile-container">
+    @if (userProfile) {
+    <div class="profile-header">
+        <div class="d-flex justify-content-between align-items-center p-3">
+            <div class="avatar-section">
+                <img [src]="getAvatarPath()" alt="Avatar" class="profile-avatar">
+                <div class="username-container">
+                    <h2>{{ userProfile.username }}</h2>
+                    <!-- @if (userProfile.isPremium) {
+                    <span class="premium-badge">
+                        <i class="bi bi-star-fill"></i>
+                        Premium
+                    </span>
+                    } -->
+                </div>
+            </div>
+
+
+
+            @if (!isOwnProfile) {
+            <button class="btn-follow" [ngClass]="{
+                  'following': followStatus === 'following',
+                  'requested': followStatus === 'requested'
+                }" (click)="toggleFollow()" (mouseenter)="isHovering = true" (mouseleave)="isHovering = false">
+                <i class="bi" [ngClass]="
+                    followStatus === 'following' ? 'bi-person-dash-fill' : 
+                    (followStatus === 'requested' ? 'bi-x-circle' : 'bi-person-plus-fill')
+                  "></i>
+                @if (followStatus === 'following') {
+                <span>{{ isHovering ? 'Dejar de seguir' : 'Siguiendo' }}</span>
+                } @else if (followStatus === 'requested') {
+                <span>{{ isHovering ? 'Cancelar solicitud' : 'Solicitado' }}</span>
+                } @else {
+                <span>Seguir</span>
+                }
+            </button>
+            }
+        </div>
+    </div>
+
+
+
+    <!-- Modal de seguidores -->
+    @if (mostrarModalSeguidores) {
+    <div class="modal-overlay" (click)="cerrarModales()"></div>
+    <div class="modal-container">
+        <div class="cyber-form">
+            <div class="modal-header">
+                <h3>Seguidores</h3>
+                <button class="close-btn" (click)="cerrarModales()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <div class="search-box">
+                <input type="text" class="form-control search-input" placeholder="Buscar por nombre..."
+                    (input)="filtrarUsuarios($event)">
+            </div>
+
+            @if (usuariosFiltrados.length === 0) {
+            <div class="empty-users">
+                <p>No hay seguidores que coincidan con tu búsqueda</p>
+            </div>
+            } @else {
+            <div class="users-list">
+                @for (usuario of usuariosFiltrados; track usuario._id) {
+                <div class="user-item">
+                    <div class="user-info" [routerLink]="['/usuarios', usuario._id]">
+                        <img [src]="getAvatar(usuario.avatar)" [alt]="usuario.username" class="user-avatar">
+                        <span class="username">{{ usuario.username }}</span>
+                    </div>
+                    @if (isOwnProfile) {
+                    <button class="btn-action" (click)="eliminarSeguidor(usuario._id)">
+                        Eliminar
+                    </button>
+                    }
+                </div>
+                }
+            </div>
+            }
+        </div>
+    </div>
+    }
+
+    <!-- Modal de seguidos -->
+    @if (mostrarModalSeguidos) {
+    <div class="modal-overlay" (click)="cerrarModales()"></div>
+    <div class="modal-container">
+        <div class="cyber-form">
+            <div class="modal-header">
+                <h3>Usuarios que sigues</h3>
+                <button class="close-btn" (click)="cerrarModales()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <div class="search-box">
+                <input type="text" class="form-control search-input" placeholder="Buscar por nombre..."
+                    (input)="filtrarUsuarios($event)">
+            </div>
+
+            @if (usuariosFiltrados.length === 0) {
+            <div class="empty-users">
+                <p>No hay usuarios que coincidan con tu búsqueda</p>
+            </div>
+            } @else {
+            <div class="users-list">
+                @for (usuario of usuariosFiltrados; track usuario._id) {
+                <div class="user-item">
+                    <div class="user-info" [routerLink]="['/usuarios', usuario._id]">
+                        <img [src]="getAvatar(usuario.avatar)" [alt]="usuario.username" class="user-avatar">
+                        <span class="username">{{ usuario.username }}</span>
+                    </div>
+                    <button class="btn-action" (click)="dejarDeSeguir(usuario._id)">
+                        Dejar de seguir
+                    </button>
+                </div>
+                }
+            </div>
+            }
+        </div>
+    </div>
+    }
+
+    <div class="detail-section">
+        <div class="bio-container">
+            <h3>Información Personal</h3>
+            <p class="biografia">{{ userProfile.biografia || 'Sin biografía' }}</p>
+            <p class="member-since"><strong>Miembro desde:</strong> {{ userProfile.createdAt | date:'mediumDate' }}</p>
+        </div>
+
+        <div class="user-stats">
+            <div class="stat-item" (click)="abrirModalSeguidores()">
+                <span class="stat-count">{{ seguidoresCount }}</span>
+                <span class="stat-label">seguidores</span>
+            </div>
+            <div class="stat-item" (click)="abrirModalSeguidos()">
+                <span class="stat-count">{{ seguidosCount }}</span>
+                <span class="stat-label">seguidos</span>
+            </div>
+        </div>
+
+        @if (isOwnProfile) {
+        <div class="settings-container">
+            <div class="dropdown">
+                <button class="btn-settings" type="button" id="settingsDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    <i class="bi bi-gear"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
+                    <li><a class="dropdown-item" href="#" (click)="$event.preventDefault(); editarPerfil()">
+                            <i class="bi bi-pencil me-2"></i>Editar perfil
+                        </a></li>
+                    <li><a class="dropdown-item text-danger" href="#"
+                            (click)="$event.preventDefault(); eliminarCuenta()">
+                            <i class="bi bi-trash me-2"></i>Eliminar cuenta
+                        </a></li>
+                </ul>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Modal para editar perfil -->
+    @if (mostrarFormularioEdicion) {
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <form [formGroup]="configForm" (ngSubmit)="guardarCambiosPerfil()" class="cyber-form">
+            <h3 class="form-title">Editar perfil</h3>
+
+            <div class="form-group">
+                <label for="username">Nombre de usuario</label>
+                <input id="username" type="text" formControlName="username" class="form-input"
+                    [class.is-invalid]="configForm.get('username')?.errors && configForm.get('username')?.touched">
+                @if (configForm.get('username')?.touched && configForm.get('username')?.errors) {
+                <div class="error-message">
+                    {{ getErrorMessage('username') }}
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Avatar</label>
+                <div class="avatar-grid">
+                    @for (avatar of avatars; track avatar){
+                    <div class="avatar-item" [class.selected]="configForm.get('avatar')?.value === avatar"
+                        (click)="selectAvatar(avatar)">
+                        <img [src]="getAvatar(avatar)" [alt]="avatar" class="avatar-image">
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="biografia">Biografía</label>
+                <textarea id="biografia" formControlName="biografia" rows="4" class="form-textarea"
+                    placeholder="Escribe una breve descripción sobre ti..."></textarea>
+                <div class="character-count">
+                    {{ configForm.get('biografia')?.value?.length || 0 }}/500
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="perfilPrivado" formControlName="perfilPrivado">
+                    <label class="form-check-label" for="perfilPrivado">
+                        Perfil privado
+                    </label>
+                </div>
+                <small class="form-text text-muted">
+                    Si activas esta opción, solo tus seguidores podrán ver tus listas y reseñas.
+                </small>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" (click)="cancelarEdicion()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn-save" [disabled]="configForm.invalid">
+                    Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+    }
+
+    <div class="profile-content">
+        <!-- Sección de Películas Pendientes -->
+        <div class="movie-section">
+            <div class="section-header">
+                <div class="section-title-container">
+                    <h2 class="section-title">Películas Pendientes</h2>
+                    <span class="count-badge">{{ getPendientesCount() }}</span>
+                </div>
+                <div class="section-navigation">
+                    <button class="btn-nav" (click)="scrollSection('pendientes', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn-nav" (click)="scrollSection('pendientes', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="pendientes" class="movie-scroll-container">
+
+
+                <div class="movie-scroll-content">
+                    @if (isOwnProfile || !userProfile.perfilPrivado || isFollowing) {
+                    @for (pelicula of peliculasPendientes; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula" [showActionButtons]="isOwnProfile"
+                            (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                            (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                            (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                            (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                        </app-pelicula-card>
+                    </div>
+                    }
+                    }@else {
+                    <div class="private-content-message">
+                        <div class="lock-icon">
+                            <i class="bi bi-lock-fill"></i>
+                        </div>
+                        <p>Las películas pendientes de este usuario son privadas</p>
+                        <p class="follow-hint">Sigue a este usuario para ver su contenido privado</p>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Películas Vistas -->
+        <div class="movie-section">
+            <div class="section-header">
+                <div class="section-title-container">
+                    <h2 class="section-title">Películas Vistas</h2>
+                    <span class="count-badge">{{ getVistasCount() }}</span>
+                </div>
+                <div class="section-navigation">
+                    <button class="btn-nav" (click)="scrollSection('vistas', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn-nav" (click)="scrollSection('vistas', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="vistas" class="movie-scroll-container">
+                <div class="movie-scroll-content">
+                    @if (isOwnProfile || !userProfile.perfilPrivado || isFollowing) {
+                    @for (pelicula of peliculasVistas; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula" [showActionButtons]="isOwnProfile"
+                            (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                            (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                            (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                            (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                        </app-pelicula-card>
+                    </div>
+                    }
+                    } @else {
+                    <div class="private-content-message">
+                        <div class="lock-icon">
+                            <i class="bi bi-lock-fill"></i>
+                        </div>
+                        <p>Las películas vistas de este usuario son privadas</p>
+                        <p class="follow-hint">Sigue a este usuario para ver su contenido privado</p>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Reseñas -->
+        <div class="movie-section">
+            <div class="section-header">
+                <div class="section-title-container">
+                    <h2 class="section-title">Reseñas</h2>
+                    <span class="count-badge">{{ getReviewsCount() }}</span>
+                </div>
+                <div class="section-navigation">
+                    <button class="btn-nav" (click)="scrollSection('resen', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn-nav" (click)="scrollSection('resen', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="resen" class="movie-scroll-container">
+                <div class="movie-scroll-content">
+                    @for (review of reviews; track review._id) {
+                    <div class="review-card" (click)="navigateReview(review)">
+                        <div class="review-header">
+                            <img [src]="review.moviePosterPath" alt="Portada de la película" class="review-poster">
+                            <div class="review-title">{{ review.movieTitle }}</div>
+                        </div>
+                        <div class="review-body">
+                            <div class="review-rating">
+                                <span class="rating-label">Rating:</span>
+                                <span class="rating-value">{{ review.rating }}</span>
+                            </div>
+                            <div class="review-comment">{{ review.comment }}</div>
+                            <div class="review-date">{{ review.createdAt | date }}</div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="movie-section">
+        <div class="section-header">
+            <div class="section-title-container">
+                <h2 class="section-title">Listas de Películas</h2>
+                <span class="count-badge">{{ totalListas }}</span>
+            </div>
+            <div class="section-navigation">
+                @if (isOwnProfile) {
+                <button class="btn-nav" (click)="mostrarFormularioCreacionLista()">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                }
+                <button class="btn-nav" (click)="scrollSection('listas', 'left')">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="btn-nav" (click)="scrollSection('listas', 'right')">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    
+        <!-- Mensaje de listas ocultas para usuarios no premium -->
+        @if (isOwnProfile && !isPremium && listasOcultas > 0) {
+        <div class="premium-required-alert mb-3">
+            <i class="bi bi-lock-fill me-2"></i>
+            Tienes {{ listasOcultas }} listas adicionales ocultas. Hazte Premium para acceder a todas tus listas.
+            <a routerLink="/premium" class="ms-2 btn-upgrade-mini">Actualizar</a>
+        </div>
+        }
+    
+        <div id="listas" class="movie-scroll-container">
+            <div class="movie-scroll-content">
+                @if (isOwnProfile || !userProfile.perfilPrivado || isFollowing) {
+                @if (listas.length === 0) {
+                <div class="empty-list-message">
+                    <i class="bi bi-collection"></i>
+                    <p>No hay listas de películas</p>
+                    @if (isOwnProfile) {
+                    <button class="btn btn-primary" (click)="mostrarFormularioCreacionLista()">
+                        Crear Lista
+                    </button>
+                    }
+                </div>
+                } @else {
+                @for (lista of listas; track lista._id) {
+                <div class="movie-scroll-item list-card-container">
+                    <div class="list-card" (click)="verDetalleLista(lista._id)">
+                        <div class="list-cover">
+                            @if (lista.coverImage) {
+                            <img [src]="lista.coverImage" [alt]="lista.title">
+                            } @else {
+                            <div class="list-cover-placeholder">
+                                <i class="bi bi-collection"></i>
+                            </div>
+                            }
+                            <div class="list-info-overlay">
+                                <h3 class="list-title">{{ lista.title }}</h3>
+                                <div class="list-meta">
+                                    <span>{{ lista.movies.length }} películas</span>
+                                    @if (!lista.isPublic) {
+                                    <i class="bi bi-lock-fill" title="Lista privada"></i>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+                }
+                } @else {
+                <div class="private-content-message">
+                    <div class="lock-icon">
+                        <i class="bi bi-lock-fill"></i>
+                    </div>
+                    <p>Las listas de este usuario son privadas</p>
+                    <p class="follow-hint">Sigue a este usuario para ver su contenido privado</p>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear lista -->
+    @if (mostrarFormularioLista) {
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <form [formGroup]="listaForm" (ngSubmit)="crearLista()" class="cyber-form">
+            <h3 class="form-title">Crear Nueva Lista</h3>
+
+            <div class="form-group">
+                <label for="title">Título *</label>
+                <input id="title" type="text" formControlName="title" class="form-control"
+                    [class.is-invalid]="hasFormError('title', listaForm)" placeholder="Nombre de la lista">
+                @if (hasFormError('title', listaForm)) {
+                <div class="error-message">
+                    {{ getFormErrorMessage('title', listaForm) }}
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" formControlName="description" class="form-control" rows="3"
+                    placeholder="Describe tu lista (opcional)"></textarea>
+                <div class="character-count">
+                    {{ listaForm.get('description')?.value?.length || 0 }}/500
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Portada (opcional)</label>
+                <div class="custom-file mb-3">
+                    <input type="file" class="custom-file-input" id="coverImage" (change)="onFileSelected($event)"
+                        accept="image/*">
+                    <label class="custom-file-label" for="coverImage">
+                        {{ selectedFile ? selectedFile.name : 'Seleccionar imagen...' }}
+                    </label>
+                </div>
+                @if (coverImagePreview) {
+                <div class="image-preview mb-3">
+                    <img [src]="coverImagePreview" alt="Preview" class="img-fluid">
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="isPublic" formControlName="isPublic">
+                    <label class="form-check-label" for="isPublic">
+                        Lista pública
+                    </label>
+                </div>
+                <small class="form-text text-muted">
+                    Si la lista es privada, solo tus seguidores podrán verla.
+                </small>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" (click)="cerrarFormularioLista()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn-save" [disabled]="listaForm.invalid">
+                    Crear Lista
+                </button>
+            </div>
+        </form>
+    </div>
+    }
+    }
+</div>

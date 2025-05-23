@@ -1,0 +1,319 @@
+/* src/app/components/premium/premium.component.css */
+.premium-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: rgba(10, 10, 10, 0.7);
+  border-radius: 15px;
+  color: white;
+  position: relative;
+}
+
+.premium-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 15px;
+  padding: 2px;
+  background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.premium-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.premium-header h1 {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.2rem;
+}
+
+/* Estilos para comparación de planes */
+.plans-comparison {
+  display: flex;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.plan-card {
+  flex: 1;
+  background: rgba(30, 35, 40, 0.6);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.plan-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.plan-card.premium {
+  border: 1px solid rgba(211, 20, 211, 0.5);
+  background: linear-gradient(135deg, rgba(30, 35, 40, 0.8), rgba(40, 45, 55, 0.8));
+}
+
+.ribbon {
+  position: absolute;
+  top: 20px;
+  right: -30px;
+  transform: rotate(45deg);
+  background-color: #ff00ff;
+  color: white;
+  padding: 5px 30px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.plan-header {
+  padding: 2rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.plan-header h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.price-period {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.plan-features {
+  padding: 2rem;
+}
+
+.plan-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-features li {
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.feature-included:before {
+  content: '✓';
+  color: #00ffff;
+  margin-right: 0.5rem;
+}
+
+.feature-excluded {
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: line-through;
+}
+
+.feature-excluded:before {
+  content: '✕';
+  color: rgba(255, 0, 0, 0.5);
+  margin-right: 0.5rem;
+}
+
+.plan-footer {
+  padding: 2rem;
+  text-align: center;
+}
+
+.btn-current {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-subscribe {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: white;
+  font-weight: bold;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-subscribe:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(211, 20, 211, 0.3);
+}
+
+.btn-subscribe:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Sección de beneficios premium activo */
+.premium-status-active {
+  padding: 2rem;
+  background: rgba(30, 35, 40, 0.6);
+  border-radius: 12px;
+  margin: 2rem 0;
+  border: 1px solid rgba(211, 20, 211, 0.5);
+}
+
+/* Continuación de premium.component.css */
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.premium-badge i {
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.subscription-info {
+  margin-bottom: 2rem;
+}
+
+.expiry-date {
+  font-weight: bold;
+  color: #00ffff;
+}
+
+.days-left {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.premium-benefits h3 {
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.benefits-list {
+  list-style: none;
+  padding: 0;
+}
+
+.benefits-list li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+}
+
+.benefits-list i {
+  color: #00ffff;
+  margin-right: 0.5rem;
+}
+
+.subscription-actions {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.btn-cancel-subscription {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel-subscription:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Sección de info adicional */
+.premium-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.info-item i {
+  font-size: 2rem;
+  color: #00ffff;
+}
+
+.info-item h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-item p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+/* Estados de carga y error */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+.error-message {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.btn-refresh {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .plans-comparison {
+    flex-direction: column;
+  }
+  
+  .premium-info {
+    grid-template-columns: 1fr;
+  }
+}

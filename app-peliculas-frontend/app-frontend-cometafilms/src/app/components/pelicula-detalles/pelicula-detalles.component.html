@@ -1,0 +1,454 @@
+<div class="hero-section position-relative">
+    <div class="backdrop-image">
+        <img [src]="'https://image.tmdb.org/t/p/original' + pelicula.backdrop_path" [alt]="pelicula.title">
+    </div>
+    <div class="overlay"></div>
+    <div class="container hero-content">
+        <div class="row">
+            <div class="col-md-3">
+                <img [src]="'https://image.tmdb.org/t/p/w500' + pelicula.poster_path" [alt]="pelicula.title"
+                    class="poster-image">
+            </div>
+            <div class="col-md-9">
+                <h1 class="hero-info">{{pelicula.title}}</h1>
+                <div class="director mt-4">
+                    <h4 class="hero-info">dirigida por: </h4>
+                    <span class="text-light">{{getDirector().name}}</span>
+                </div>
+
+                <div>
+                    <h4 class="hero-info">Productoras: </h4>
+                    @for(productora of pelicula.production_companies; track productora.id){
+                    <div>{{productora.name}}</div>
+                    }
+                </div>
+
+
+                <div class="movie-meta mt-4">
+                    <span class="meta-item">{{pelicula.release_date | date:'yyyy'}}</span>
+                    <span class="separator mx-3">•</span>
+                    <span class="meta-item">{{pelicula.runtime}} min</span>
+                    <span class="separator mx-3">•</span>
+                    <span>
+                        <i class="bi bi-star-fill me-2"></i>
+                        {{ pelicula.vote_average | number:'1.1-1'}}
+                        ({{pelicula.vote_count}} votos)
+                    </span>
+
+                </div>
+
+
+                <div class="movie-actions">
+                    <button class="action-btn watchlist-btn" [ngClass]="{ 'active': isPendiente }"
+                        (click)="togglePendiente($event)">
+                        <i class="bi" [ngClass]="{ 
+                    'bi-bookmark-plus': !isPendiente, 
+                    'bi-bookmark-x-fill': isPendiente 
+                  }"></i>
+                        {{ isPendiente ? 'Quitar de pendientes' : 'Añadir a pendientes' }}
+                    </button>
+
+                    <button class="action-btn watched-btn" [ngClass]="{ 'active': isVista }"
+                        (click)="toggleVista($event)">
+                        <i class="bi" [ngClass]="{ 
+                    'bi-eye': !isVista, 
+                    'bi-eye-slash-fill': isVista 
+                  }"></i>
+                        {{ isVista ? 'Quitar de vistas' : 'Marcar como vista' }}
+                    </button>
+
+                    <button class="action-btn list-btn" (click)="abrirModalListas($event)">
+                        <i class="bi bi-collection-play"></i>
+                        Añadir a lista
+                    </button>
+                </div>
+                <div class="genres mt-3">
+                    @for (genero of pelicula.genres; track genero.id) {
+                    <span class="badge cyber-badge me-2">{{genero.name}}</span>
+                    }
+                </div>
+                <p class="overview mt-4">{{pelicula.overview}}</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Modal de Listas Mejorado -->
+@if(mostrarModalListas){
+<div class="modal-overlay" (click)="cerrarModalListas()"></div>
+<div class="modal-container">
+    <div class="cyber-form">
+        @if(!mostrarCrearLista){
+        <!-- Mostrar listas existentes -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>Añadir a lista</h3>
+            <button class="btn btn-primary" (click)="mostrarCrearLista = true">
+                <i class="bi bi-plus"></i> Nueva lista
+            </button>
+        </div>
+
+        @if(cargandoListas){
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+        }
+
+        @if(!cargandoListas && misListas.length === 0){
+        <div class="empty-lists-message">
+            <i class="bi bi-collection-play"></i>
+            <p>Aún no has creado ninguna lista</p>
+            <button class="btn btn-primary" (click)="mostrarCrearLista = true">
+                Crear mi primera lista
+            </button>
+        </div>
+        }
+
+        @if(!cargandoListas && misListas.length > 0){
+        <div class="lists-grid">
+            @for(lista of misListas; track lista._id){
+            <div class="list-item">
+                <div class="list-item-content" [ngClass]="{'movie-in-list': peliculaEnLista(lista, pelicula.id)}"
+                    (click)="togglePeliculaEnLista(lista, pelicula.id)">
+                    <div class="list-info">
+                        <h6 class="list-title">{{lista.title}}</h6>
+                        <p class="list-count">{{lista.movies.length}} películas</p>
+                    </div>
+                    <div class="list-select-indicator">
+                        @if(peliculaEnLista(lista, pelicula.id)){
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        } @else {
+                        <i class="bi bi-circle text-muted"></i>
+                        }
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+        }
+
+        <div class="form-actions mt-4">
+            <button class="btn-cancel" (click)="cerrarModalListas()">
+                Cerrar
+            </button>
+        </div>
+        }
+
+        @if(mostrarCrearLista){
+        <!-- Formulario para crear nueva lista -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>Crear nueva lista</h3>
+            <button class="btn btn-outline-light" (click)="mostrarCrearLista = false">
+                <i class="bi bi-arrow-left"></i> Volver
+            </button>
+        </div>
+
+        <form [formGroup]="nuevaListaForm" (ngSubmit)="crearListaDesdeModal()">
+            <div class="form-group">
+                <label for="title">Título *</label>
+                <input id="title" type="text" formControlName="title" class="form-control"
+                    [class.is-invalid]="hasFormError('title', nuevaListaForm)" placeholder="Nombre de la lista">
+                @if (hasFormError('title', nuevaListaForm)) {
+                <div class="error-message">
+                    {{ getFormErrorMessage('title', nuevaListaForm) }}
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" formControlName="description" class="form-control" rows="3"
+                    placeholder="Describe tu lista (opcional)"></textarea>
+                <div class="character-count">
+                    {{ nuevaListaForm.get('description')?.value?.length || 0 }}/500
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Portada (opcional)</label>
+                <div class="custom-file mb-3">
+                    <input type="file" class="custom-file-input" id="coverImage" (change)="onFileSelected($event)"
+                        accept="image/*">
+                    <label class="custom-file-label" for="coverImage">
+                        {{ selectedFile ? selectedFile.name : 'Seleccionar imagen...' }}
+                    </label>
+                </div>
+                @if (coverImagePreview) {
+                <div class="image-preview mb-3">
+                    <img [src]="coverImagePreview" alt="Preview" class="img-fluid">
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <div class="custom-checkbox">
+                    <label>
+                        <input type="checkbox" formControlName="isPublic">
+                        <span class="checkbox-label">Lista pública</span>
+                    </label>
+                </div>
+                <small class="form-text text-muted">
+                    Si la lista es privada, solo tú podrás verla.
+                </small>
+            </div>
+
+            <div class="form-actions mt-4">
+                <button type="button" class="btn-cancel" (click)="mostrarCrearLista = false">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn-save" [disabled]="nuevaListaForm.invalid">
+                    Crear y añadir película
+                </button>
+            </div>
+        </form>
+        }
+    </div>
+</div>
+}
+
+
+<div class="container mt-5">
+    <div class="trailer-reviews-grid">
+        <section class="trailer-section">
+            <div class="d-flex justify-content-between align-items-center m-3">
+                <h2 class="section-title cyber-title">Trailer</h2>
+            </div>
+            <div class="d-flex justify-content-center align-items-center h-100">
+                @if (trailerUrl) {
+                <div class="ratio ratio-16x9">
+                    <iframe [src]="trailerUrl" title="YouTube video" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
+                </div>
+                } @else {
+                <div class="no-trailer-message">
+                    <i class="fas fa-meteor"></i>
+                    <span>No hay trailer disponible</span>
+                </div>
+                }
+            </div>
+        </section>
+
+        <!-- Sección de reviews en pelicula-detalles.component.html -->
+        <section class="reviews-section">
+            <div class="d-flex justify-content-between align-items-center p-0">
+                <h2 class="section-title">Reseñas</h2>
+
+                @if(!reviewUsuarioActual && !mostrarFormularioReview){
+                <button (click)="mostrarFormularioReview = true" class="btn cyber-button">
+                    <i class="bi bi-plus-circle-dotted"></i>
+                </button>
+                }
+
+            </div>
+
+            @if(mostrarFormularioReview){
+            <div class="modal-overlay"></div>
+            <div class="modal-container">
+                <form [formGroup]="reviewForm" (ngSubmit)="submitReview()" class="cyber-form">
+                    <h3 class="mb-3">{{ reviewUsuarioActual ? 'Editar reseña' : 'Escribir reseña' }}</h3>
+
+                    <div class="form-group">
+                        <label>Puntuación</label>
+                        <div class="rating-container">
+                            <button type="button" *ngFor="let star of [1,2,3,4,5,6,7,8,9,10]" (click)="setRating(star)"
+                                [class.active]="star <= reviewForm.get('rating')?.value" class="rating-star">
+                                ★
+                            </button>
+                            <span class="ms-2">{{ reviewForm.get('rating')?.value || 0 }}/10</span>
+                        </div>
+                    </div>
+
+
+
+
+                    <div class="form-group">
+                        <label>Comentario</label>
+                        <textarea formControlName="comment" rows="4"
+                            placeholder="Escribe tu opinión sobre la película..."></textarea>
+                    </div>
+
+                    <div class="button-container">
+                        <button type="submit" class="btn btn-primary m-1" [disabled]="!reviewForm.valid">
+                            {{ reviewUsuarioActual ? 'Actualizar' : 'Publicar' }}
+                        </button>
+                        <button type="button" class="btn btn-secondary m-1" (click)="mostrarFormularioReview = false">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+            }
+
+
+
+
+            <!-- Lista de reviews -->
+            <div class="reviews-scroll-container">
+                @if (cargandoReviews) {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                }
+
+                @if (!cargandoReviews && reviews.length === 0) {
+                <div class="no-reviews">
+                    <i class="fas fa-space-shuttle"></i>
+                    <span>No hay reseñas todavía. ¡Sé el primero en escribir una!</span>
+                </div>
+                }
+
+                @for (review of reviews; track review.reviewId) {
+                <div class="review-card" (click)="$event.stopPropagation(); navigateReview(review)">
+                    <div class="card-content">
+                        <div class="card-body-review">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-center">
+                                    <img [src]="review.avatar" alt="Avatar" class="avatar-img">
+                                    <div>
+
+                                        <h6 class="mb-0">{{review.username}}</h6>
+
+                                        <small class="text-white">{{review.createdAt | date:'mediumDate'}}</small>
+                                    </div>
+                                </div>
+
+
+
+                                @if (!review.isExternal && isCurrentUserReview(review)) {
+
+                                <div class="review-actions">
+                                    <button (click)="$event.stopPropagation(); editarReview()" class="btn btn-link">
+                                        <i class="fas fa-wrench"></i>
+                                    </button>
+                                    <button (click)="$event.stopPropagation(); eliminarReview()" class="btn btn-link">
+                                        <i class="bi bi-trash3-fill"></i>
+                                    </button>
+                                </div>
+                                }
+                            </div>
+                            <p class="review-content mt-3">{{review.comment}}</p>
+                            <span class="cyber-badge">
+                                <i class="bi bi-star-fill me-2"></i>
+                                {{review.rating}}/10
+                            </span>
+
+                            <app-like-button [contentType]="'review'" [contentId]="review.reviewId">
+                            </app-like-button>
+                        </div>
+
+                    </div>
+                </div>
+
+                }
+            </div>
+        </section>
+    </div>
+
+    <section class="movie-section mb-1">
+        <div class="section-header">
+            <h2 class="section-title mb-4">Reparto</h2>
+            <div class="section-navigation">
+                <button class="btn btn-prev" (click)="scrollSection('castSection', 'left')">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="btn btn-next" (click)="scrollSection('castSection', 'right')">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        <div id="castSection" class="movie-scroll-container">
+            <div class="movie-scroll-content p-2">
+                @for (actor of pelicula.credits.cast; track actor.id) {
+                <div class="movie-scroll-item">
+                    <div class="cast-card" [routerLink]="['/persona', actor.id]">
+                        <div class="card-content">
+                            @if (actor.profile_path) {
+                            <img [src]="'https://image.tmdb.org/t/p/w200' + actor.profile_path" [alt]="actor.name">
+                            } @else {
+                            <div class="placeholder-image">
+                                <i class="fas fa-user-astronaut fa-3x mb-3"></i>
+                            </div>
+                            }
+                            <div class="card-body">
+                                <h6 class="mb-1">{{actor.name}}</h6>
+                                <small class="text-white">interpretando a {{actor.character}}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    </section>
+
+
+    <section class="movie-section mb-3">
+        <div class="section-header">
+            <h2 class="section-title mb-4">Equipo Principal</h2>
+            <div class="section-navigation">
+                <button class="btn btn-prev" (click)="scrollSection('keyCrewSection', 'left')">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="btn btn-next" (click)="scrollSection('keyCrewSection', 'right')">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        <div id="keyCrewSection" class="movie-scroll-container">
+            <div class="movie-scroll-content p-3">
+                @for (person of pelicula.credits.crew; track person.id) {
+                <div class="movie-scroll-item">
+                    <div class="crew-card" [routerLink]="['/persona', person.id]">
+                        <div class="card-content">
+                            @if (person.profile_path) {
+                            <img [src]="'https://image.tmdb.org/t/p/w200' + person.profile_path" [alt]="person.name">
+                            } @else {
+                            <div class="placeholder-image">
+                                <i class="fas fa-user-astronaut fa-3x mb-3"></i>
+                            </div>
+                            }
+                            <div class="card-body">
+                                <h6 class="mb-1">{{person.name}}</h6>
+                                <small class="text-white">{{person.department}}</small>
+                                <small class="text-white d-block">{{person.job}}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    </section>
+
+
+
+    <div class="movie-section">
+        <div class="section-header">
+            <h2 class="section-title mb-4">Películas Similares</h2>
+            <div class="section-navigation">
+                <button class="btn btn-prev" (click)="scrollSection('pelisSimilares', 'left')">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="btn btn-next" (click)="scrollSection('pelisSimilares', 'right')">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        <div id="pelisSimilares" class="movie-scroll-container">
+            <div class=" movie-scroll-content p-3">
+                @for (similar of pelicula.similar.results; track similar.id) {
+                <div class="movie-scroll-item">
+                    <app-pelicula-card [pelicula]="similar"></app-pelicula-card>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

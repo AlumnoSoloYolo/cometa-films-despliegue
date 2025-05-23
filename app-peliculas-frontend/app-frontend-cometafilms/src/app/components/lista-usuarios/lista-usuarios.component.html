@@ -1,0 +1,122 @@
+<div class="page-container">
+    <div class="container">
+        <!-- Cabecera -->
+        <div class="text-center mb-4 mt-4">
+            <h1 class="display-5 fw-bold text-white">Comunidad CometaCine</h1>
+            <p class="lead text-white-50">Descubre a otros cinéfilxs para compartir tus gustos y opiniones sobre
+                películas</p>
+        </div>
+
+        <!-- Buscador -->
+        <div class="cyber-window screen-container mb-5">
+            <div class="p-4">
+                <form [formGroup]="searchForm">
+                    <div class="input-group">
+                        <input type="text" class="form-control search-input" formControlName="username"
+                            placeholder="Buscar usuarios por nombre...">
+                        @if (searchForm.get('username')?.value) {
+                        <button class="btn btn-primary" type="button" (click)="resetearBusqueda()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Estado de carga inicial -->
+        @if (cargando && usuarios.length === 0) {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3 text-white">Cargando usuarios...</p>
+        </div>
+        }
+
+        <!-- Estado de error -->
+        @if (error) {
+        <div class="alert alert-danger text-center my-4">
+            <p class="mb-2">Ha ocurrido un error al cargar los usuarios. Intenta de nuevo más tarde.</p>
+            <button (click)="resetearBusqueda()" class="btn btn-primary mt-2">
+                Reintentar
+            </button>
+        </div>
+        }
+
+        <!-- Sin resultados -->
+        @if (usuarios.length === 0 && !cargando && !error) {
+        <div class="text-center py-5">
+            <p class="text-white-50">No se encontraron usuarios con ese nombre</p>
+        </div>
+        }
+
+        <!-- Grid de usuarios -->
+        @if (usuarios.length > 0) {
+        <div class="resultados">
+            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+                @for (usuario of usuarios; track usuario._id) {
+                <div class="col">
+                    <div class="card h-100 bg-light">
+                        <div class="card-avatar" [routerLink]="['/usuarios', usuario._id]">
+                            <img [src]="getAvatarPath(usuario.avatar)" [alt]="usuario.username" class="img-fluid">
+                        </div>
+                        <div class="card-body" [routerLink]="['/usuarios', usuario._id]">
+                            <h5 class="card-title text-white">{{ usuario.username }}</h5>
+                            <div class="user-stats">
+                                <div class="stat">
+                                    <span class="stat-number">{{ usuario.pelisVistasCount }}</span>
+                                    <span class="stat-label">vistas</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">{{ usuario.reviewsCount }}</span>
+                                    <span class="stat-label">reseñas</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">{{ usuario.pelisPendientesCount }}</span>
+                                    <span class="stat-label">pendientes</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn w-100" [ngClass]="{
+    'btn-primary': followStatus[usuario._id] !== 'following' && followStatus[usuario._id] !== 'requested',
+    'btn-outline-warning': followStatus[usuario._id] === 'requested' && isHovering[usuario._id],
+    'btn-warning': followStatus[usuario._id] === 'requested' && !isHovering[usuario._id],
+    'btn-danger': followStatus[usuario._id] === 'following' && isHovering[usuario._id],
+    'btn-outline-light': followStatus[usuario._id] === 'following' && !isHovering[usuario._id]
+  }" (mouseenter)="setHovering(usuario._id, true)" (mouseleave)="setHovering(usuario._id, false)"
+                                (click)="toggleFollow(usuario, $event)">
+                                <i class="bi" [ngClass]="
+      followStatus[usuario._id] === 'following' ? 'bi-person-dash-fill' : 
+      (followStatus[usuario._id] === 'requested' ? 'bi-x-circle' : 'bi-person-plus-fill')
+    "></i>
+                                {{ followStatus[usuario._id] === 'following' ? (isHovering[usuario._id] ? 'Dejar de
+                                seguir' : 'Siguiendo') :
+                                (followStatus[usuario._id] === 'requested' ? (isHovering[usuario._id] ? 'Cancelar
+                                solicitud' : 'Solicitado') : 'Seguir') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- Cargador de más elementos -->
+        @if (cargando && usuarios.length > 0) {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando más...</span>
+            </div>
+            <p class="mt-2 text-white-50">Cargando más usuarios...</p>
+        </div>
+        }
+
+        <!-- Botón de volver arriba -->
+        <button class="scroll-top-btn" [class.visible]="mostrarBotonSubir" (click)="volverArriba()">
+            <i class="fas fa-rocket"></i>
+        </button>
+    </div>
+</div>

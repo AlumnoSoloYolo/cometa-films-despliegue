@@ -1,0 +1,153 @@
+<button class="btn cyber-btn scroll-top-btn" [class.visible]="mostrarBotonSubir" (click)="volverArriba()">
+    <i class="fa-solid fa-rocket"></i>
+</button>
+
+
+
+
+<div class="container px-2">
+
+    <form [formGroup]="searchForm" (ngSubmit)="buscar()" class="mb-1 mx-4">
+
+        <div class="row mb-4 cyber-window screen-container flex justify-content-center align-items-center col-lg-6">
+            <div class="p-0">
+                <div class="input-group p-4">
+                    <input type="text" formControlName="query" class="form-control search-input"
+                        [class.is-invalid]="hasError('query')" placeholder="Buscar películas...">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#filtrosCollapse" aria-expanded="false" aria-controls="filtrosCollapse">
+                        <i class="bi bi-funnel me-2"></i>Filtros
+                    </button>
+                    <button class="btn btn-primary mx-3" type="submit">
+                        <i class="bi bi-search me-2"></i>Buscar
+                    </button>
+
+                </div>
+                <div *ngIf="hasError('query')" class="invalid-feedback d-block">
+                    {{ getErrorMessage('query') }}
+                </div>
+            </div>
+        </div>
+
+
+        <div class="collapse" id="filtrosCollapse">
+            <div class="card card-body bg-light mb-3">
+                <div class="row g-3">
+
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">
+                            <i class="bi bi-calendar me-2"></i>Año
+                        </label>
+                        <input type="number" formControlName="year" class="form-control"
+                            [class.is-invalid]="hasError('year')" placeholder="Ej. 2023">
+                        <div *ngIf="hasError('year')" class="invalid-feedback">
+                            {{ getErrorMessage('year') }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">
+                            <i class="bi bi-sort-down me-2"></i>Ordenar por
+                        </label>
+                        <select formControlName="sortBy" class="form-select p-0 bg-transparent">
+                            @for (option of sortOptions; track option.value) {
+                            <option class="bg-black p-0" [value]="option.value">{{ option.label }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Valoraciones -->
+                    <div class="col-md-6 col-lg-6">
+                        <label class="form-label">
+                            <i class="bi bi-star me-2"></i>Rango de valoración
+                        </label>
+                        <div class="input-group">
+                            <input type="number" formControlName="minRating" class="form-control"
+                                [class.is-invalid]="hasError('minRating')" min="0" max="10" step="0.5"
+                                placeholder="Mínimo">
+                            <span class="input-group-text">a</span>
+                            <input type="number" formControlName="maxRating" class="form-control"
+                                [class.is-invalid]="hasError('maxRating')" min="0" max="10" step="0.5"
+                                placeholder="Máximo">
+                        </div>
+                        <!-- Mensajes de error para minRating -->
+                        <div class="invalid-feedback d-block" *ngIf="hasError('minRating')">
+                            {{ getErrorMessage('minRating') }}
+                        </div>
+                        <!-- Mensajes de error para maxRating -->
+                        <div class="invalid-feedback d-block" *ngIf="hasError('maxRating')">
+                            {{ getErrorMessage('maxRating') }}
+                        </div>
+                        <!-- Error de rango -->
+                        <div class="invalid-feedback d-block" *ngIf="searchForm.errors?.['ratingRange']">
+                            La valoración mínima no puede ser mayor que la máxima
+                        </div>
+                    </div>
+
+                    <!-- Géneros -->
+                    <div class="col-12">
+                        <label class="form-label">
+                            <i class="bi bi-tags me-2"></i>Géneros
+                        </label>
+                        <div class="border rounded bg-transparent">
+                            <select formControlName="genres" multiple class="form-select">
+                                @for (genero of generos; track genero.id) {
+                                <option [value]="genero.id">{{ genero.name }}</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+                            <i class="bi bi-x-circle me-2"></i>Limpiar filtros
+                        </button>
+                        <button type="submit" class="btn btn-primary" data-bs-toggle="collapse"
+                            data-bs-target="#filtrosCollapse">
+                            <i class="bi bi-check2 me-2"></i>Aplicar filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<div class="resultados">
+    <!-- Resultados -->
+    @if (cargando) {
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+    }
+
+    @if (peliculas.length > 0) {
+    <div class="row mx-5 my-2 p-3 row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        @for(pelicula of peliculas; track pelicula.id) {
+
+        <div class="col p-2">
+
+            <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+
+        </div>
+        }
+    </div>
+    } @else if (!cargando) {
+    <div class="text-center py-5">
+        <p class="mb-0">No se encontraron resultados</p>
+    </div>
+    }
+
+
+    @if (cargando && paginaActual > 1) {
+    <div class="text-center py-3">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando más películas...</span>
+        </div>
+    </div>
+    }
+</div>

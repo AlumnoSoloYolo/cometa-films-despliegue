@@ -1,0 +1,476 @@
+/* ======= Base Styles ======= */
+.site-header {
+  background-color: rgb(16, 25, 25);
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.site-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
+}
+
+.header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  position: relative;
+}
+
+/* ======= Logo ======= */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  z-index: 1001; /* Above the mobile menu */
+}
+
+.logo-image {
+  height: 50px;
+  filter: brightness(1.2) invert(1); /* Convertir a blanco */
+}
+
+/* ======= Navigation Container ======= */
+.nav-container {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  margin-left: 2rem;
+}
+
+/* ======= Main Navigation ======= */
+.main-nav .nav-links {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  color: #fff;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #00ffff;
+  background-color: rgba(0, 255, 255, 0.1);
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+}
+
+.nav-link i {
+  font-size: 1rem;
+}
+
+/* ======= User Actions Section ======= */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+/* ======= Search Form ======= */
+.search-form {
+  position: relative;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search-input {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  color: #fff;
+  padding: 0.5rem 0.5rem 0.5rem 2rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  width: 220px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(0, 255, 255, 0.4);
+  outline: none;
+  width: 240px;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.search-btn {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn:hover {
+  color: rgba(0, 255, 255, 0.8);
+}
+
+/* ======= Premium Button ======= */
+.premium-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+}
+
+.premium-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3), 0 4px 12px rgba(255, 0, 255, 0.3);
+}
+
+.premium-btn i {
+  font-size: 1rem;
+}
+
+/* ======= User Dropdown - Bootstrap Override ======= */
+.user-dropdown .profile-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.user-dropdown .profile-toggle:hover,
+.user-dropdown .profile-toggle:focus {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.user-dropdown .profile-toggle::after {
+  display: none; /* Ocultar la flecha por defecto de Bootstrap */
+}
+
+.avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgb(211, 20, 211);
+}
+
+.username {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+/* Estilo del dropdown de Bootstrap */
+.dropdown-menu {
+  background-color: rgb(22, 31, 31);
+  border: 1px solid rgba(211, 20, 211, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 0.5rem 0;
+  min-width: 220px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(211, 20, 211, 0.15);
+  color: rgb(0, 255, 255);
+}
+
+.dropdown-item.text-danger {
+  color: rgba(255, 107, 107, 0.9) !important;
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b !important;
+}
+
+.dropdown-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0.25rem 0;
+}
+
+/* Notification badge */
+.notification-item {
+  position: relative;
+}
+
+.notify-badge {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #FF1493;
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+@keyframes pulse {
+  0% { transform: translateY(-50%) scale(1); background-color: #FF1493; }
+  50% { transform: translateY(-50%) scale(1.2); background-color: #FF6AC1; }
+  100% { transform: translateY(-50%) scale(1); background-color: #FF1493; }
+}
+
+.notify-badge.pulse-animation {
+  animation: pulse 0.5s ease-in-out 3;
+}
+
+/* ======= Mobile Menu Toggle ======= */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  width: 40px;
+  height: 40px;
+  position: relative;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+.toggle-icon, 
+.toggle-icon::before, 
+.toggle-icon::after {
+  display: block;
+  position: absolute;
+  height: 2px;
+  width: 24px;
+  background-color: #fff;
+  transition: all 0.3s ease;
+}
+
+.toggle-icon {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.toggle-icon::before {
+  content: '';
+  top: -8px;
+  left: 0;
+}
+
+.toggle-icon::after {
+  content: '';
+  bottom: -8px;
+  left: 0;
+}
+
+/* Estilo mejorado para el ícono de hamburguesa cuando está activo */
+.menu-toggle.active .toggle-icon {
+  background-color: transparent;
+}
+
+.menu-toggle.active .toggle-icon::before {
+  top: 0;
+  transform: rotate(45deg);
+  background-color: #00ffff;
+}
+
+.menu-toggle.active .toggle-icon::after {
+  bottom: 0;
+  transform: rotate(-45deg);
+  background-color: #00ffff;
+}
+
+/* ======= Media Queries ======= */
+@media (max-width: 1200px) {
+  .search-input {
+    width: 180px;
+  }
+  
+  .search-input:focus {
+    width: 200px;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 0.6rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .menu-toggle {
+    display: block;
+  }
+  
+  .nav-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100%;
+    background-color: rgb(16, 25, 25);
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 5rem 2rem 2rem;
+    margin-left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  
+  .nav-container.open {
+    transform: translateX(0);
+  }
+  
+  .main-nav {
+    width: 100%;
+  }
+  
+  .main-nav .nav-links {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .nav-item {
+    width: 100%;
+  }
+  
+  .nav-link {
+    padding: 1rem;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+  
+  .user-actions {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 2rem;
+    gap: 1.5rem;
+  }
+  
+  .search-form {
+    width: 100%;
+  }
+  
+  .search-wrapper {
+    width: 100%;
+  }
+  
+  .search-input, 
+  .search-input:focus {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  }
+  
+  .search-btn {
+    left: 12px;
+    font-size: 1rem;
+  }
+  
+  .premium-promo {
+    width: 100%;
+  }
+  
+  .premium-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+  }
+  
+  .user-dropdown {
+    width: 100%;
+  }
+  
+  .profile-toggle {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  /* Los dropdowns de Bootstrap funcionan diferente en móvil */
+  .dropdown-menu {
+    position: static !important;
+    float: none;
+    width: 100%;
+    margin-top: 0.5rem;
+    box-shadow: none;
+    border-radius: 8px;
+    border: 1px solid rgba(211, 20, 211, 0.3);
+  }
+}
+/* Estilo para la flecha del dropdown */
+.dropdown-arrow {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  margin-left: 4px;
+  transition: transform 0.2s ease;
+}
+
+/* Rotación de la flecha cuando el dropdown está abierto */
+.dropdown.show .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 576px) {
+  .nav-container {
+    padding: 5rem 1rem 1rem;
+  }
+  
+  .logo-image {
+    height: 40px;
+  }
+  
+  .dropdown-item {
+    padding: 0.75rem;
+  }
+}

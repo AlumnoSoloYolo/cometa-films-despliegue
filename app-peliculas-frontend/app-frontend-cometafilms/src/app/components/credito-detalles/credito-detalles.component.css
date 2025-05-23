@@ -1,0 +1,189 @@
+/* Hero Section */
+.hero-section {
+  padding: 2rem 0;
+}
+
+.profile-image {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.info-item {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.label {
+  color: #6B77E5;
+  font-weight: 600;
+}
+
+/* Biography */
+.biography {
+  margin-top: 2rem;
+}
+
+.biography h2 {
+  color: #6B77E5;
+  margin-bottom: 1rem;
+}
+
+.biography p {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+
+.movie-section {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  color: #6B77E5;
+  font-size: 2rem;
+  position: relative;
+  display: inline-block;
+  margin: 0;
+}
+
+h3 {
+  color: white;
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+
+.movie-scroll-container {
+  position: relative;
+  overflow: hidden;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+
+.movie-scroll-content {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc(20% - 0.5rem);
+  gap: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 0.5rem 0;
+}
+
+.movie-scroll-content::-webkit-scrollbar {
+  display: none;
+}
+
+.movie-scroll-item {
+  position: relative;
+  width: 100%;
+  min-width: auto;
+  flex-shrink: 0;
+}
+
+
+.section-navigation {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.scroll-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(107, 119, 229, 0.2);
+  color: #6B77E5;
+  border: none;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.scroll-btn:hover {
+  background: rgba(107, 119, 229, 0.4);
+  transform: scale(1.05);
+}
+
+
+.role-info {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 0 0 8px 8px;
+  text-align: center;
+  margin-top: -8px;
+}
+
+.character {
+  font-size: 0.9rem;
+  color: #87ceeb;
+}
+
+
+:host ::ng-deep .movie-scroll-item .movie-card {
+  width: 100%;
+}
+
+:host ::ng-deep .movie-scroll-item .movie-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+}
+
+
+@media (max-width: 1400px) {
+  .movie-scroll-content {
+    grid-auto-columns: calc(25% - 0.5rem);
+  }
+}
+
+@media (max-width: 1200px) {
+  .movie-scroll-content {
+    grid-auto-columns: calc(33.333% - 0.5rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .movie-scroll-content {
+    grid-auto-columns: calc(50% - 0.5rem);
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .movie-scroll-content {
+    grid-auto-columns: calc(100% - 0.5rem);
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+}

@@ -1,0 +1,101 @@
+<div class="container-fluid p-0">
+
+
+    <div class="hero-section">
+        <div class="container py-5">
+            <div class="row">
+                <div class="col-md-3">
+                    <img *ngIf="this.person.profile_path"
+                        [src]="'https://image.tmdb.org/t/p/w500' + this.person.profile_path" [alt]="person.name"
+                        class="profile-image">
+                </div>
+                <div class="col-md-9">
+                    <h1>{{person.name}}</h1>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="label">Fecha nacimiento: </span>
+                            <span>{{person.birthday | date:'dd-MM-YYYY'}}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Lugar nacimiento: </span>
+                            <span>{{person.place_of_birth}}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Conocido por: </span>
+                            <span>{{person.known_for_department}}</span>
+                        </div>
+                    </div>
+                    <div class="biography mt-4">
+                        <h2>Biografía: </h2>
+                        <p>{{person.biography}}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title">Filmografía</h2>
+            </div>
+
+            @if (person.known_for_department === 'Acting' && person.movie_credits?.cast?.length) {
+            <div class="section-header">
+                <h3>Como Actor</h3>
+                <div class="section-navigation">
+                    <button class="scroll-btn" (click)="scrollSection('castSection', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="scroll-btn" (click)="scrollSection('castSection', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="castSection" class="movie-scroll-container">
+                <div class="movie-scroll-content">
+                    @for (pelicula of person.movie_credits.cast; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                        <div class="role-info mt-1">
+                            <span class="character">interpretando a: {{pelicula.character}}</span>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+
+            }
+
+            @if (person.known_for_department !== 'Acting' && person.movie_credits?.crew?.length) {
+            <div class="section-header">
+                <div class="section-navigation">
+                    <button class="scroll-btn" (click)="scrollSection('crewSection', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="scroll-btn" (click)="scrollSection('crewSection', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="crewSection" class="movie-scroll-container">
+                <div class="movie-scroll-content">
+                    @for (pelicula of person.movie_credits.crew; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                        <div class="role-info mt-1">
+                            <span class="job-title">{{pelicula.job}}</span>
+                            @if (pelicula.department !== person.known_for_department) {
+                            <span class="department">Departamento: {{pelicula.department}}</span>
+                            }
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,215 @@
+/* Contenedor de búsqueda centrado */
+.cyber-window.screen-container {
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  background: rgba(13, 17, 23, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+
+/* Estilos para las tarjetas de usuarios */
+.card {
+  background: rgba(30, 35, 40, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.card-avatar {
+  position: relative;
+  padding-top: 100%;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.card-avatar img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .card-avatar img {
+  transform: scale(1.05);
+}
+
+.card-body {
+  padding: 1.25rem;
+  cursor: pointer;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.card-footer {
+  background: rgba(13, 17, 23, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+}
+
+/* Estilos para las estadísticas */
+.user-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2196f3;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Estilos específicos para el botón de seguir/dejar de seguir */
+.btn-primary, .btn-secondary {
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211)) !important;
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background-color: #5a636d;
+}
+
+/* Efecto hover para los botones de seguir y dejar de seguir */
+.btn-primary:hover,
+.btn-secondary:hover {
+  transform: scale(1.025); /* Escalado ligero al hacer hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Efecto de sombra */
+}
+
+/* Estilos para el botón "Dejar de seguir" cuando está activo (color rojo comercial) */
+.btn-secondary {
+  background-color: #d32f2f; /* Rojo comercial */
+  border: none;
+}
+
+.btn-secondary:hover {
+  background-color: #b71c1c; /* Rojo oscuro para hover */
+}
+
+/* Scroll top button */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  background-color: #6B77E5;
+  border: none;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.scroll-top-btn.visible {
+  opacity: 1;
+}
+
+.scroll-top-btn:hover {
+  background-color: #8a94ed;
+  transform: translateY(-2px);
+}
+
+.fa-rocket{
+  font-size: 2rem;
+  transform: rotate(-45deg);
+}
+
+/* Spinner y estados de carga */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Buscador centrado y con fondo gris oscuro */
+.search-container {
+  background: rgba(30, 35, 40, 0.95);
+  padding: 1.5rem;
+  border-radius: 10px;
+  max-width: 500px;
+  margin: 0 auto;
+  margin-bottom: 2rem;
+}
+
+/* Estilo del buscador */
+.search-input {
+  width: 70%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+}
+
+/* Estilo del botón de cerrar en el buscador */
+.search-input + .btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.search-input + .btn:hover {
+  color: #2196f3;
+}
+
+
+.btn-outline-light {
+  color: white;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

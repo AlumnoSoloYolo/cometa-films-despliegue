@@ -1,0 +1,47 @@
+<div class="like-container">
+    <button class="like-button" [class.liked]="isLiked" (click)="onLikeClick($event)" [disabled]="loading"
+        [attr.aria-label]="isLiked ? 'Quitar me gusta' : 'Me gusta'">
+        <i class="bi" [ngClass]="isLiked ? 'bi-heart-fill' : 'bi-heart'"></i>
+    </button>
+    <span class="like-count" *ngIf="showCount && likeCount > 0" (click)="openLikesModal($event)">{{ likeCount }}</span>
+</div>
+
+<!-- Modal de likes -->
+<div class="modal-overlay" *ngIf="showLikesModal" (click)="closeLikesModal($event)"></div>
+<div class="likes-modal" *ngIf="showLikesModal">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Personas que les gusta</h3>
+            <button class="close-btn" (click)="closeLikesModal($event)">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <div *ngIf="loadingUsers" class="loading-container">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+
+            <div *ngIf="errorLoadingUsers" class="error-message">
+                {{ errorLoadingUsers }}
+            </div>
+
+            <div *ngIf="!loadingUsers && !errorLoadingUsers">
+                <div *ngIf="likeUsers.length === 0" class="empty-likes">
+                    <p>Nadie ha dado like todavía</p>
+                </div>
+
+                <ul class="users-list" *ngIf="likeUsers.length > 0">
+                    <li *ngFor="let user of likeUsers" class="user-item" (click)="navigateToProfile(user._id, $event)">
+                        <img [src]="getAvatarPath(user.avatar)" [alt]="user.username" class="user-avatar">
+                        <div class="user-info">
+                            <span class="username">{{ user.username }}</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

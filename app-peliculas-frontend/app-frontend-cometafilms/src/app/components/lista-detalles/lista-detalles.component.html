@@ -1,0 +1,213 @@
+<div class="lista-container">
+    @if (isLoading) {
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+    } @else if (lista) {
+    <div class="lista-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    @if (lista.coverImage) {
+                    <div class="lista-cover">
+                        <img [src]="lista.coverImage" [alt]="lista.title" class="cover-image">
+                    </div>
+                    } @else {
+                    <div class="lista-cover-placeholder">
+                        <i class="bi bi-collection"></i>
+                    </div>
+                    }
+                </div>
+                <div class="col-md-8">
+                    <div class="lista-info">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h1 class="lista-title">{{ lista.title }}</h1>
+
+                            <app-like-button [contentType]="'list'" [contentId]="lista._id">
+                            </app-like-button>
+
+                            @if (isOwnList) {
+                            <div class="dropdown">
+                                <button class="btn btn-options" type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#"
+                                            (click)="$event.preventDefault(); editarLista()">
+                                            <i class="bi bi-pencil me-2"></i>Editar lista
+                                        </a></li>
+                                    <li><a class="dropdown-item text-danger" href="#"
+                                            (click)="$event.preventDefault(); eliminarLista()">
+                                            <i class="bi bi-trash me-2"></i>Eliminar lista
+                                        </a></li>
+                                </ul>
+                            </div>
+                            }
+                        </div>
+                        <div class="lista-metadata">
+                            <span class="lista-creator">Por <a [routerLink]="['/usuarios', lista.userId]">{{
+                                    creadorLista }}</a></span>
+                            <span class="lista-date">{{ lista.createdAt | date:'mediumDate' }}</span>
+                            <span class="privacy-badge" [class.private]="!lista.isPublic">
+                                <i class="bi" [ngClass]="lista.isPublic ? 'bi-globe' : 'bi-lock'"></i>
+                                {{ lista.isPublic ? 'Pública' : 'Privada' }}
+                            </span>
+                        </div>
+                        <p class="lista-description">{{ lista.description || 'Sin descripción' }}</p>
+                        <div class="lista-stats">
+                            <span class="stats-item">
+                                <i class="bi bi-film"></i>
+                                {{ lista.movies.length }} películas
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        @if (isOwnList) {
+        <div class="search-container mb-4">
+            <form [formGroup]="searchForm" (ngSubmit)="buscarPeliculas()" class="d-flex gap-1">
+
+                <input type="text" class="form-control search-input" formControlName="query"
+                    placeholder="Buscar películas para añadir a la lista...">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+
+        @if (resultadosBusqueda.length > 0) {
+        <div class="search-results mb-4">
+            <h3 class="section-title">Resultados de búsqueda</h3>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3">
+                @for (pelicula of resultadosBusqueda; track pelicula.id) {
+                <div class="col">
+                    <div class="search-movie-card">
+                        <img [src]="'https://image.tmdb.org/t/p/w200' + pelicula.poster_path" [alt]="pelicula.title"
+                            class="movie-poster">
+                        <div class="movie-info">
+                            <h5 class="movie-title">{{ pelicula.title }}</h5>
+                            <p class="movie-year">{{ pelicula.release_date | date:'yyyy' }}</p>
+                        </div>
+                        <button class="btn btn-add" (click)="agregarPelicula(pelicula.id)"
+                            [disabled]="estaEnLista(pelicula.id)">
+                            <i class="bi"
+                                [ngClass]="estaEnLista(pelicula.id) ? 'bi-check2-circle' : 'bi-plus-circle'"></i>
+                            {{ estaEnLista(pelicula.id) ? 'Añadida' : 'Añadir' }}
+                        </button>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+        }
+
+        <div class="lista-movies">
+            <h3 class="section-title">Películas en la lista</h3>
+            @if (peliculasLista.length === 0) {
+            <div class="empty-list">
+                <i class="bi bi-film"></i>
+                <p>Esta lista aún no tiene películas</p>
+                @if (isOwnList) {
+                <p>Usa el buscador para añadir películas a tu lista</p>
+                }
+            </div>
+            } @else {
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+                @for (pelicula of peliculasLista; track pelicula.id) {
+                <div class="col">
+                    <div class="movie-item">
+                        <app-pelicula-card [pelicula]="pelicula" [showActionButtons]="false"></app-pelicula-card>
+                        @if (isOwnList) {
+                        <button class="btn btn-remove" (click)="quitarPelicula(pelicula.id)">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+            }
+        </div>
+    </div>
+
+    <!-- Modal para editar lista -->
+    @if (mostrarFormularioEdicion) {
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <form [formGroup]="listaForm" (ngSubmit)="guardarCambiosLista()" class="cyber-form">
+            <h3 class="form-title">Editar lista</h3>
+
+            <div class="form-group">
+                <label for="title">Título *</label>
+                <input id="title" type="text" formControlName="title" class="form-control"
+                    [class.is-invalid]="hasFormError('title', listaForm)" placeholder="Nombre de la lista">
+                @if (hasFormError('title', listaForm)) {
+                <div class="error-message">
+                    {{ getFormErrorMessage('title', listaForm) }}
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" formControlName="description" class="form-control" rows="3"
+                    placeholder="Describe tu lista (opcional)"></textarea>
+                <div class="character-count">
+                    {{ listaForm.get('description')?.value?.length || 0 }}/500
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Portada (opcional)</label>
+                <div class="custom-file mb-3">
+                    <input type="file" class="custom-file-input" id="coverImage" (change)="onFileSelected($event)"
+                        accept="image/*">
+                    <label class="custom-file-label" for="coverImage">
+                        {{ selectedFile ? selectedFile.name : 'Seleccionar imagen...' }}
+                    </label>
+                </div>
+                @if (coverImagePreview) {
+                <div class="image-preview mb-3">
+                    <img [src]="coverImagePreview" alt="Preview" class="img-fluid">
+                </div>
+                }
+            </div>
+
+            <div class="form-group">
+                <div class="custom-checkbox">
+                    <label>
+                        <input type="checkbox" formControlName="isPublic">
+                        <span class="checkbox-label">Lista pública</span>
+                    </label>
+                </div>
+                <small class="form-text text-muted">
+                    Si la lista es privada, solo tú podrás verla.
+                </small>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" (click)="cancelarEdicion()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn-save" [disabled]="listaForm.invalid">
+                    Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+    }
+    } @else {
+    <div class="error-message">
+        <p>No se encontró la lista especificada o no tienes permisos para verla.</p>
+        <button class="btn btn-primary" (click)="volver()">Volver</button>
+    </div>
+    }
+</div>

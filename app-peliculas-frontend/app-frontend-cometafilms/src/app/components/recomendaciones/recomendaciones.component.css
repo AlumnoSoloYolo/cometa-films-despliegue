@@ -1,0 +1,378 @@
+.movie-section {
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1.5rem;
+}
+
+.premium-section {
+    border: 1px solid rgba(211, 20, 211, 0.3);
+    background: rgba(211, 20, 211, 0.05);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(211, 20, 211, 0.3);
+    padding-bottom: 1rem;
+}
+
+.section-title-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: #6B77E5;
+    margin: 0;
+}
+
+.premium-badge {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(211, 20, 211, 0.5);
+}
+
+.section-navigation {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-nav {
+    width: 40px;
+    height: 40px;
+    background: rgba(211, 20, 211, 0.2);
+    color: #6B77E5;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-nav:hover {
+    background: rgba(211, 20, 211, 0.4);
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(211, 20, 211, 0.3);
+}
+
+.movie-scroll-container {
+    position: relative;
+    overflow: hidden;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+}
+
+.movie-scroll-content {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc(20% - 1.5rem);
+    gap: 1.5rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding: 1rem 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.movie-scroll-content::-webkit-scrollbar {
+    display: none;
+}
+
+.movie-scroll-item {
+    scroll-snap-align: start;
+    position: relative;
+    overflow: visible;
+    height: 400px;
+}
+
+.recommendation-container {
+    position: absolute;
+    top: 85%; /* Start exactly below the card */
+    left: 0;
+    right: 0;
+    transform: translateY(-100%); /* Initially move it up, hiding it */
+    opacity: 0;
+    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+    z-index: 1000;
+    pointer-events: none;
+    margin-top: 20px; /* Space between the card and the reason box */
+    cursor: pointer;
+}
+
+.movie-scroll-item:hover .recommendation-container {
+    transform: translateY(0); /* Move it down to its natural position below the card */
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.recommendation-reason {
+    background: rgba(107, 119, 229, 0.95);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.recommendation-reason i {
+    margin-right: 0.5rem;
+}
+
+.recommendation-container::before {
+    content: '';
+    position: absolute;
+    top: -10px; /* Position it above the reason box */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid rgba(107, 119, 229, 0.95); /* Matches background of reason, points down */
+    z-index: 1001;
+}
+
+.premium-promo {
+    background: linear-gradient(135deg, rgba(13, 17, 23, 0.8), rgba(30, 35, 40, 0.8));
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.premium-promo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(211, 20, 211, 0.3), rgba(0, 255, 255, 0.3));
+    mask: radial-gradient(circle at center, transparent 50%, black 75%);
+    -webkit-mask: radial-gradient(circle at center, transparent 50%, black 75%);
+}
+
+.promo-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+
+.promo-content i {
+    color: #ff00ff;
+    display: block;
+}
+
+.promo-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.btn-premium {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(211, 20, 211, 0.5);
+}
+
+.btn-premium:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(211, 20, 211, 0.7);
+}
+
+.refresh-btn {
+    background-color: rgba(211, 20, 211, 0.3);
+}
+
+.refresh-btn:hover {
+    background-color: rgba(211, 20, 211, 0.5);
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+
+.premium-required-badge {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: white;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  margin-left: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.premium-required-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(211, 20, 211, 0.3);
+}
+
+.premium-upgrade-banner {
+  background: rgba(30, 35, 40, 0.7);
+  border-radius: 10px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(211, 20, 211, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-upgrade-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1));
+  z-index: -1;
+}
+
+.banner-content {
+  text-align: center;
+}
+
+.banner-content h3 {
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.banner-content p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1.5rem;
+}
+
+.btn-upgrade {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 30px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.btn-upgrade:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(211, 20, 211, 0.3);
+}
+
+.premium-promo {
+  background: linear-gradient(135deg, rgba(13, 17, 23, 0.8), rgba(30, 35, 40, 0.8));
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.premium-promo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(211, 20, 211, 0.3), rgba(0, 255, 255, 0.3));
+  mask: radial-gradient(circle at center, transparent 50%, black 75%);
+  -webkit-mask: radial-gradient(circle at center, transparent 50%, black 75%);
+}
+
+.promo-content {
+  position: relative;
+  z-index: 2;
+  color: white;
+}
+
+.promo-content i {
+  color: #ff00ff;
+  display: block;
+}
+
+.promo-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.btn-premium {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  border: none;
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(211, 20, 211, 0.5);
+}
+
+.btn-premium:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(211, 20, 211, 0.7);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 1200px) {
+    .movie-scroll-content {
+        grid-auto-columns: calc(25% - 1.5rem);
+    }
+}
+
+@media (max-width: 992px) {
+    .movie-scroll-content {
+        grid-auto-columns: calc(33.333% - 1.5rem);
+    }
+}
+
+@media (max-width: 768px) {
+    .movie-scroll-content {
+        grid-auto-columns: calc(50% - 1.5rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .movie-scroll-content {
+        grid-auto-columns: calc(100% - 1.5rem);
+    }
+    
+    .premium-promo {
+        padding: 1.5rem;
+    }
+}

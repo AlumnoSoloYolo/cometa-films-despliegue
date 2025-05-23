@@ -1,0 +1,213 @@
+/* Estructura principal y contenedores */
+.page-container {
+  min-height: 100vh;
+  padding: 2rem 0;
+  background: var(--bg-color, #0d1117);
+}
+
+.container {
+  margin: 0 auto;
+  margin-top: 2rem;
+  padding: 0 2rem; /* Aumentado el padding lateral para encorsetar */
+}
+
+/* Contenedor de búsqueda centrado */
+.cyber-window.screen-container {
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  background: rgba(13, 17, 23, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+/* Contenedor de resultados */
+.resultados {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Estilos de la barra de búsqueda */
+.search-input {
+  height: 48px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px;
+  color: white !important;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Estilos de formularios */
+.form-control,
+.form-select,
+.input-group-text,
+select[multiple],
+.card.bg-light {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.form-group {
+  margin-bottom: 0.5rem;
+}
+
+/* Selects y Opciones */
+.form-select option,
+select[multiple] option {
+  background-color: rgb(30, 35, 40) !important;
+  color: white !important;
+}
+
+select[multiple] {
+  min-height: 150px;
+}
+
+select[multiple] option:checked {
+  background: linear-gradient(45deg, #2196f3, #21CBF3) !important;
+  color: white !important;
+}
+
+/* Focus states */
+.form-control:focus,
+.form-select:focus {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(33, 150, 243, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.25) !important;
+  color: white !important;
+}
+
+/* Panel de filtros */
+.card.bg-light {
+  background: rgba(30, 35, 40, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Botones */
+.btn-primary {
+  background: linear-gradient(45deg, #2196f3, #21CBF3) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 10px !important;
+}
+
+.btn-secondary,
+.btn-outline-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #1e88e5, #1eb8e5) !important;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3) !important;
+}
+
+
+.scroll-top-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  background-color: #6B77E5;
+  border: none;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.scroll-top-btn.visible {
+  opacity: 1;
+}
+
+.scroll-top-btn:hover {
+  background-color: #8a94ed;
+  transform: translateY(-2px);
+}
+
+.fa-rocket{
+  font-size: 2rem;
+  transform: rotate(-45deg);
+}
+
+.form-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.form-label i {
+  color: #2196f3;
+}
+
+::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+
+.invalid-feedback {
+  color: #ff4444;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.is-invalid {
+  border-color: #ff4444 !important;
+}
+
+.is-invalid:focus {
+  box-shadow: 0 0 0 0.2rem rgba(255, 68, 68, 0.25) !important;
+}
+
+.alert-danger {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+
+
+.row-cols-1.row-cols-md-3.row-cols-lg-4 {
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+
+.collapse {
+  transition: all 0.3s ease-in-out;
+}
+
+
+@media (max-width: 1200px) {
+  .container {
+    padding: 0 3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+
+  .input-group {
+    flex-wrap: nowrap;
+  }
+  
+  .input-group .btn {
+    padding: 0.5rem;
+  }
+
+  .cyber-window.screen-container {
+    margin: 0 1rem 2rem;
+  }
+}

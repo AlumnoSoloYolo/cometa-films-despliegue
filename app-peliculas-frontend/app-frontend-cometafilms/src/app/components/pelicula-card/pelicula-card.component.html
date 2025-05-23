@@ -1,0 +1,59 @@
+<div class="movie-card position-relative" [routerLink]="['/pelicula', pelicula.id]">
+
+    @if (showActionButtons) {
+    <div class="action-buttons">
+        <button class="action-btn watchlist-btn" [ngClass]="{ 'active': pendiente }" (click)="togglePendiente($event)">
+            <i class="bi" [ngClass]="{ 
+                    'bi-bookmark-plus': !pendiente, 
+                    'bi-bookmark-x-fill': pendiente 
+                }" [title]="pendiente ? 'Eliminar de pendientes' : 'Añadir a pendientes'"></i>
+        </button>
+
+        <button class="action-btn watched-btn" [ngClass]="{ 'active': vista }" (click)="toggleVista($event)">
+            <i class="bi" [ngClass]="{ 
+                    'bi-eye': !vista, 
+                    'bi-eye-slash-fill': vista 
+                }" [title]="vista ? 'Eliminar de vistas' : 'Marcar como vista'"></i>
+        </button>
+    </div>
+    }
+
+    <div class="card-img-container position-relative">
+        @if(pelicula.poster_path){
+        <img [src]="'https://image.tmdb.org/t/p/w500' + pelicula.poster_path" [alt]="pelicula.title"
+            class="card-img-top">
+        }@else{
+        <i class="bi bi-moon-fill position-absolute top-50 start-50 translate-middle fs-1"></i>
+        }
+    </div>
+
+    <div class="card-content">
+        <div class="card-body">
+            <h5 class="card-title text-light">{{ pelicula.title }}</h5>
+
+            <div class="vote-info">
+                <span class="badge text-dark mx-2" [style.background-color]="pelicula.vote_average | votoColor">
+                    <i class="bi bi-star-fill"></i>
+                    {{ pelicula.vote_average | number:'1.1-1' }}
+                </span>
+                <small class="text-light">{{ pelicula.vote_count }} votos</small>
+            </div>
+
+            <p class="movie-overview text-light opacity-75">
+                {{ pelicula.overview | slice:0:100 }}...
+            </p>
+
+            <div class="genre-tags">
+                @for(genero_id of pelicula.genre_ids; track genero_id){
+                <span class="cyber-badge text-white mx-1">
+                    {{ nombreGeneros(genero_id)}}
+                </span>
+                }
+            </div>
+
+            <small class="text-white release-date text-light opacity-75">
+                {{ pelicula.release_date | date:'yyyy' }}
+            </small>
+        </div>
+    </div>
+</div>

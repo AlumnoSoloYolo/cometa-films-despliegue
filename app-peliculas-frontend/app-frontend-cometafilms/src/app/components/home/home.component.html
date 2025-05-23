@@ -1,0 +1,175 @@
+<div class="container-fluid p-0 mb-5">
+    <!-- Carrusel Principal -->
+    <div id="movieCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            @for (pelicula of pelisPopulares; track pelicula.id; let i = $index) {
+            <div class="carousel-item" [class.active]="i === 0" [routerLink]="['/pelicula', pelicula.id]">
+                <div class=" movie-backdrop">
+                    <img [src]="'https://image.tmdb.org/t/p/original' + pelicula.backdrop_path" [alt]="pelicula.title"
+                        class="backdrop-image">
+                    <div class="backdrop-overlay"></div>
+                    <div class="movie-info">
+                        <div class="container">
+                            <h2 class="movie-title">{{pelicula.title}}</h2>
+                            <div class="d-flex gap-3 align-items-center">
+                                <span class="badge" [style.background-color]="pelicula.vote_average | votoColor">
+                                    <i class="bi bi-star-fill"></i>
+                                    {{ pelicula.vote_average | number:'1.1-1' }}
+                                </span>
+                                <span class="text-light">
+                                    {{pelicula.release_date | date:'yyyy'}}
+                                </span>
+                                <span class="text-light">
+                                    {{pelicula.vote_count}} votos
+                                </span>
+                            </div>
+                            <p class="movie-overview mt-3">{{pelicula.overview}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#movieCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Anterior</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#movieCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Siguiente</span>
+        </button>
+    </div>
+
+    <div class="container mt-5 px-8">
+
+
+        <app-recomendaciones></app-recomendaciones>
+
+
+        <!-- Géneros -->
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title mb-4">Géneros</h2>
+                <div class="section-navigation">
+                    <button class="btn btn-prev" (click)="scrollSection('generos', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-next" (click)="scrollSection('generos', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="generos" class="movie-scroll-container">
+                <div class="movie-scroll-content p-3">
+                    @for (genero of listaGeneros; track genero.id) {
+                    <div class="movie-scroll-item">
+                        <div class="genre-card">
+                            <div class="card-content text-center">
+                                <h5 class="mb-0 text-light">{{ genero.name }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Películas Mejor Valoradas -->
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title mb-4">Películas Mejor Valoradas</h2>
+                <div class="section-navigation">
+                    <button class="btn btn-prev" (click)="scrollSection('mejorValoradas', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-next" (click)="scrollSection('mejorValoradas', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="mejorValoradas" class="movie-scroll-container" (wheel)="onWheel($event, 'mejorValoradas')">
+                <div class=" movie-scroll-content p-3">
+                    @for (pelicula of pelisMasValoradas; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Tendencias Semanales -->
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title mb-4">Tendencias de la Semana</h2>
+                <div class="section-navigation">
+                    <button class="btn btn-prev" (click)="scrollSection('tendencias', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-next" (click)="scrollSection('tendencias', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="tendencias" class="movie-scroll-container" (wheel)="onWheel($event, 'tendencias')">
+                <div class="movie-scroll-content p-3">
+                    @for (pelicula of pelisTendenciasSemanales; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Películas en Cine Actualmente -->
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title mb-4">En Cines Ahora</h2>
+                <div class="section-navigation">
+                    <button class="btn btn-prev" (click)="scrollSection('cineAhora', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-next" (click)="scrollSection('cineAhora', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="cineAhora" class="movie-scroll-container" (wheel)="onWheel($event, 'cineAhora')">
+                <div class=" movie-scroll-content p-3">
+                    @for (pelicula of pelisEnCines; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Próximos Estrenos -->
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title mb-4">Próximos Estrenos</h2>
+                <div class="section-navigation">
+                    <button class="btn btn-prev" (click)="scrollSection('proximosEstrenos', 'left')">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-next" (click)="scrollSection('proximosEstrenos', 'right')">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="proximosEstrenos" class="movie-scroll-container" (wheel)="onWheel($event, 'proximosEstrenos')">
+                <div class=" movie-scroll-content p-3">
+                    @for (pelicula of pelisProximosEstrenos; track pelicula.id) {
+                    <div class="movie-scroll-item">
+                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

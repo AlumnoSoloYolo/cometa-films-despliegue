@@ -1,0 +1,206 @@
+.movie-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+  cursor: pointer;
+  overflow: visible; /* Mantener visible para que sobresalgan los botones */
+  margin-bottom: 30px; /* Espacio para los botones */
+}
+  
+ 
+
+ 
+  
+  .card-img-container {
+    position: relative;
+    padding-top: 150%; /* Proporción 2:3 (altura / anchura * 100) */
+  }
+  
+  .card-img-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    object-fit: cover;
+    transition: opacity 0.3s ease;
+  }
+  
+  .card-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+  
+  .card-title {
+    margin-bottom: 0.5rem;
+  }
+  
+  .vote-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .movie-overview {
+    margin-bottom: 1rem;
+  }
+  
+  .genre-tags {
+    margin-bottom: 0.5rem;
+  }
+  
+  .movie-card:hover {
+    transform: scale(1.05);
+  }
+  
+  .movie-card:hover .card-img-top {
+    opacity: 0.5;
+    border-radius: 15px;
+  }
+  
+  .movie-card:hover .card-content {
+    opacity: 1;
+    border-radius: 15px;
+  }
+
+  .cyber-badge {
+  
+    border-radius: 4px;
+    background: rgba(0,255,255,0.1);
+    border: 1px solid rgba(0,255,255,0.2);
+    color: #fff;
+  }
+
+  .bi-moon-fill {
+    font-size: 6rem;
+    color: rgba(201, 201, 201, 0.4);
+}
+  
+
+.action-buttons {
+  position: absolute;
+  top: 95%; /* Cambiar de top a bottom */
+  left: 50%;
+  transform: translateX(-50%) translateY(0); /* Ajustar el translateY inicial */
+  display: flex;
+  gap: 1rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.movie-card:hover .action-buttons {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-10px); /* Hacer que suban un poco al aparecer */
+  pointer-events: all;
+}
+
+/* Mejorar el aspecto de los botones */
+.action-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1); /* Añadir borde */
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Mantener el hover de los botones pero ajustar el transform */
+.action-btn:hover {
+  transform: translateY(-2px) scale(1.1);
+}
+
+/* Estilos específicos para cada botón */
+.watchlist-btn:hover {
+  background: #D7D7D7;
+  color: black;
+}
+
+.watched-btn:hover {
+  background:  #D7D7D7 ;
+  color: black;
+}
+
+/* Estilos cuando la película está en la lista */
+.watchlist-btn.active {
+  background: #D7D7D7;
+  color: black;
+}
+
+.watched-btn.active {
+  background:  #D7D7D7 ;
+  color: black;
+}
+
+/* Icono dentro del botón */
+.action-btn i {
+  font-size: 1.2rem;
+}
+  
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.modal-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 500px;
+  width: 90%;
+  background: rgba(10, 10, 10, 0.8);
+  border-radius: 15px;
+  padding: 2rem;
+  z-index: 1001;
+}
+
+.modal-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 15px;
+  padding: 2px;
+  background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+  z-index: -1;
+}
+  
