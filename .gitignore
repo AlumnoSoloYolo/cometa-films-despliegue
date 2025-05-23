@@ -36,3 +36,23 @@ Thumbs.db
 # Lock files (opcional, algunos prefieren incluirlos)
 # **/package-lock.json
 # **/yarn.lock
+
+# Archivos de backup
+*.backup
+.env.backup
+
+# Scripts locales personalizados
+actualizar-local.sh
+deploy-local.sh
+
+# SSL certificates (si los usas)
+*.pem
+*.key
+*.crt
+
+# Bases de datos locales
+*.db
+*.sqlite
+
+# Archivos de monitoreo
+*.pid
