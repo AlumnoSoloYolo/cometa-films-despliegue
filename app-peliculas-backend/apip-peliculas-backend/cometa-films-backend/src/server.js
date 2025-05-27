@@ -15,10 +15,11 @@ const movieListRoutes = require('./routes/movieListRoutes');
 const likeRoutes = require('./routes/likeRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const premiumRoutes = require('./routes/premiumRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 
 const app = express();
-const server = http.createServer(app); // Crear servidor HTTP
+const server = http.createServer(app); //servidor HTTP
 
 // Middleware
 const corsOptions = {
@@ -54,6 +55,7 @@ app.use('/movie-lists', movieListRoutes);
 app.use('/likes', likeRoutes);
 app.use('/activity', activityRoutes);
 app.use('/api/premium', premiumRoutes);
+app.use('/chat', chatRoutes);
 
 // Ruta para prueba de salud del API
 app.get('/', (req, res) => {
