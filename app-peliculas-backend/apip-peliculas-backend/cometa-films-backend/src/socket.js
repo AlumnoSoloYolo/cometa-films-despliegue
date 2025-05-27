@@ -13,7 +13,7 @@ function initializeSocketServer(server) {
             origin: [
                 process.env.FRONTEND_URL,
                 "http://localhost:4200",
-                "*" 
+                "*" // Permitir todo temporalmente
             ],
             methods: ["GET", "POST"],
             credentials: true,
@@ -86,27 +86,6 @@ function initializeSocketServer(server) {
             });
         });
 
-        // Eventos de chat
-        socket.on('join_chat', (chatId) => {
-            console.log(`Socket.IO: Usuario ${userId} se unió al chat ${chatId}`);
-            socket.join(`chat_${chatId}`);
-        });
-
-        socket.on('leave_chat', (chatId) => {
-            console.log(`Socket.IO: Usuario ${userId} salió del chat ${chatId}`);
-            socket.leave(`chat_${chatId}`);
-        });
-
-        // Evento para escribiendo mensaje
-        socket.on('typing', (data) => {
-            const { chatId, isTyping } = data;
-            socket.to(`chat_${chatId}`).emit('user_typing', {
-                userId,
-                username: socket.username || 'Usuario',
-                isTyping
-            });
-        });
-
         socket.on('disconnect', (reason) => {
             console.log(`Socket.IO: Usuario desconectado: ${userId} - Reason: ${reason}`);
             userConnections.delete(userId.toString());
@@ -162,48 +141,6 @@ function sendFollowRequest(recipientId, requestData) {
     }
 }
 
-// Nueva función para enviar mensajes de chat
-function sendMessageToUser(userId, messageData) {
-    try {
-        if (!io) {
-            console.error('Socket.IO: No inicializado.');
-            return false;
-        }
-
-        const userIdStr = userId.toString();
-        const socketId = userConnections.get(userIdStr);
-        
-        if (socketId) {
-            io.to(userIdStr).emit('chat_message', messageData);
-            console.log(`Socket.IO: Mensaje de chat enviado a ${userIdStr}`);
-            return true;
-        } else {
-            console.log(`Socket.IO: Usuario ${userIdStr} no está conectado.`);
-            return false;
-        }
-    } catch (error) {
-        console.error('Socket.IO: Error al enviar mensaje de chat:', error);
-        return false;
-    }
-}
-
-// Función para enviar mensaje a una sala de chat
-function sendMessageToChat(chatId, messageData) {
-    try {
-        if (!io) {
-            console.error('Socket.IO: No inicializado.');
-            return false;
-        }
-
-        io.to(`chat_${chatId}`).emit('chat_message', messageData);
-        console.log(`Socket.IO: Mensaje enviado al chat ${chatId}`);
-        return true;
-    } catch (error) {
-        console.error('Socket.IO: Error al enviar mensaje al chat:', error);
-        return false;
-    }
-}
-
 // Función para obtener estadísticas
 function getConnectionStats() {
     return {
@@ -215,6 +152,4 @@ function getConnectionStats() {
 
 module.exports = initializeSocketServer;
 module.exports.sendFollowRequest = sendFollowRequest;
-module.exports.sendMessageToUser = sendMessageToUser;
-module.exports.sendMessageToChat = sendMessageToChat;
 module.exports.getConnectionStats = getConnectionStats;
