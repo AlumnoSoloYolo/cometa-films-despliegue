@@ -267,6 +267,7 @@
   100% { transform: translateY(-50%) scale(1); background-color: #FF1493; }
 }
 
+
 .notify-badge.pulse-animation {
   animation: pulse 0.5s ease-in-out 3;
 }
@@ -328,6 +329,25 @@
   transform: rotate(-45deg);
   background-color: #00ffff;
 }
+
+.message-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: #FF1493;
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+}
+
+
 
 /* ======= Media Queries ======= */
 @media (max-width: 1200px) {

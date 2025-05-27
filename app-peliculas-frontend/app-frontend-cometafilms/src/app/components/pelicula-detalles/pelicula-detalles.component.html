@@ -61,6 +61,15 @@
                         <i class="bi bi-collection-play"></i>
                         Añadir a lista
                     </button>
+
+                     <app-share-movie-button 
+                            [movie]="{
+                                id: pelicula.id.toString(),
+                                title: pelicula.title,
+                                poster_path: pelicula.poster_path,
+                                release_date: pelicula.release_date
+                            }">
+                    </app-share-movie-button>
                 </div>
                 <div class="genres mt-3">
                     @for (genero of pelicula.genres; track genero.id) {

@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service';
 import { MovieListsService } from '../../services/movie-lists.service';
 import { MovieList } from '../../models/movie-list.model';
 import { LikeButtonComponent } from '../like-button/like-button.component';
+import { ShareButtonComponent } from '../share-button/share-button.component';
 
 
 @Component({
@@ -22,7 +23,8 @@ import { LikeButtonComponent } from '../like-button/like-button.component';
     CommonModule,
     ReactiveFormsModule,
     PeliculaCardComponent,
-    LikeButtonComponent
+    LikeButtonComponent,
+    ShareButtonComponent
   ],
   templateUrl: './pelicula-detalles.component.html',
   styleUrl: './pelicula-detalles.component.css'

@@ -10,8 +10,14 @@ import { io, Socket } from 'socket.io-client';
 export class SocketService {
   private socket: Socket | null = null;
   private connected = false;
+  
+  // Subjects para actividades
   private newActivitySubject = new BehaviorSubject<any>(null);
   private newFollowRequestSubject = new BehaviorSubject<any>(null);
+  
+  // Subjects para chat
+  private newMessageSubject = new BehaviorSubject<any>(null);
+  private userTypingSubject = new BehaviorSubject<any>(null);
 
   constructor(private authService: AuthService) {
     this.authService.currentUser.subscribe(user => {
@@ -102,6 +108,30 @@ export class SocketService {
         `${request.requester.username} quiere seguirte`
       );
     });
+
+    // Eventos de chat
+    this.socket.on('chat_message', (data) => {
+      console.log('Socket.IO: Nuevo mensaje de chat recibido', data);
+      this.newMessageSubject.next(data);
+
+      // Mostrar notificación del navegador si el chat no está activo
+      if (data.message && data.chat && data.chat.otherParticipant) {
+        const messagePreview = data.message.messageType === 'movie' 
+          ? `📽️ ${data.message.movieData?.title}`
+          : data.message.text || 'Nuevo mensaje';
+
+        this.showBrowserNotification(
+          `Mensaje de ${data.chat.otherParticipant.username}`,
+          messagePreview
+        );
+      }
+    });
+
+    // Evento para indicador de "escribiendo"
+    this.socket.on('user_typing', (data) => {
+      console.log('Socket.IO: Usuario escribiendo:', data);
+      this.userTypingSubject.next(data);
+    });
   }
 
   private disconnect(): void {
@@ -123,6 +153,27 @@ export class SocketService {
     }
   }
 
+  // Métodos para chat
+  joinChat(chatId: string): void {
+    if (this.socket && this.connected) {
+      console.log('Socket.IO: Uniéndose al chat:', chatId);
+      this.socket.emit('join_chat', chatId);
+    }
+  }
+
+  leaveChat(chatId: string): void {
+    if (this.socket && this.connected) {
+      console.log('Socket.IO: Saliendo del chat:', chatId);
+      this.socket.emit('leave_chat', chatId);
+    }
+  }
+
+  sendTypingIndicator(chatId: string, isTyping: boolean): void {
+    if (this.socket && this.connected) {
+      this.socket.emit('typing', { chatId, isTyping });
+    }
+  }
+
   // Obtener información del socket (simplificado para evitar errores TypeScript)
   getSocketInfo(): any {
     if (this.socket) {
@@ -137,22 +188,39 @@ export class SocketService {
 
   private showBrowserNotification(title: string, body: string): void {
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body });
+      new Notification(title, { 
+        body,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico'
+      });
     } else if ('Notification' in window && Notification.permission !== 'denied') {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          new Notification(title, { body });
+          new Notification(title, { 
+            body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico'
+          });
         }
       });
     }
   }
 
+  // Getters para los observables
   get newActivity$(): Observable<any> {
     return this.newActivitySubject.asObservable();
   }
 
   get newFollowRequest$(): Observable<any> {
     return this.newFollowRequestSubject.asObservable();
+  }
+
+  get newMessage$(): Observable<any> {
+    return this.newMessageSubject.asObservable();
+  }
+
+  get userTyping$(): Observable<any> {
+    return this.userTypingSubject.asObservable();
   }
 
   isConnected(): boolean {

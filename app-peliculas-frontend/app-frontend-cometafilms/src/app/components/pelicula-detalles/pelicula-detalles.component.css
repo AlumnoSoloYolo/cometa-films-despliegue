@@ -491,6 +491,32 @@
   color: #fff;
 }
 
+
+.movie-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.action-btn, 
+app-share-movie-button {
+    flex: 1;
+    min-width: 180px;
+}
+
+@media (max-width: 768px) {
+    .movie-actions {
+        flex-direction: column;
+    }
+    
+    .action-btn,
+    app-share-movie-button {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
 /* Responsive */
 @media (max-width: 1400px) {
   .movie-scroll-content {

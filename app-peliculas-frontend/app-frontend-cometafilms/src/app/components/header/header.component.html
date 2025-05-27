@@ -89,6 +89,18 @@
                                     }
                                 </a>
                             </li>
+                            
+                            <li>
+                                <a class="dropdown-item" routerLink="/chat" routerLinkActive="active"
+                                    (click)="navigateTo('/chat')">
+                                    <i class="bi bi-chat-dots"></i> 
+                                    Mensajes
+                                  
+                                    @if (unreadMessagesCount > 0) {
+                                        <span class="message-badge">{{ unreadMessagesCount }}</span>
+                                    }
+                                </a>
+                            </li>
 
                    
                             @if (isPremiumUser) {

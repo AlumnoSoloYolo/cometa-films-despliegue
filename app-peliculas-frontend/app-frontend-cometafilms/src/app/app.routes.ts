@@ -15,6 +15,8 @@ import { ActivityFeedComponent } from './components/activity-feed/activity-feed.
 import { PremiumComponent } from './components/premium/premium/premium.component';
 import { PremiumSuccessComponent } from './components/premium/premium-success/premium-success.component';
 import { PremiumCancelComponent } from './components/premium/premium-cancel/premium-cancel.component';
+import { ChatContainerComponent } from './components/chat/chat-container/chat-container.component';
+import { ChatWindowComponent } from './components/chat/chat-window/chat-window.component';
 
 export const routes: Routes = [
 
@@ -101,6 +103,17 @@ export const routes: Routes = [
         path: 'feed',
         component: ActivityFeedComponent,
         canActivate: [AuthGuard]
+    },
+        {
+        path: 'chat',
+        component: ChatContainerComponent,
+        canActivate: [AuthGuard],
+        children: [
+            {
+                path: ':id',
+                component: ChatWindowComponent
+            }
+        ]
     },
 
     { path: '**', redirectTo: 'login' },

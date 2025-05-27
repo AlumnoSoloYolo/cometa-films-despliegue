@@ -1,0 +1,215 @@
+ <div class="chat-window-container">
+      @if (loading) {
+        <div class="loading-container">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      }
+
+      @if (!loading && chat) {
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="user-info">
+            <img 
+              [src]="getAvatarPath(chat.otherParticipant.avatar)" 
+              [alt]="chat.otherParticipant.username"
+              class="avatar-img"
+            >
+            <div class="user-details">
+              <h3>{{ chat.otherParticipant.username }}</h3>
+              <span class="status">
+                @if (isTyping) {
+                  <i class="bi bi-three-dots typing-indicator"></i>
+                  escribiendo...
+                } @else {
+                  en línea
+                }
+              </span>
+            </div>
+          </div>
+          
+          <div class="chat-actions">
+            <button class="btn-action" title="Información">
+              <i class="bi bi-info-circle"></i>
+            </button>
+            <button class="btn-action" title="Archivar" (click)="archiveChat()">
+              <i class="bi bi-archive"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="messages-container" #messagesContainer>
+          <div class="messages-content">
+            @if (loadingMessages) {
+              <div class="loading-messages">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <span class="ms-2">Cargando mensajes...</span>
+              </div>
+            }
+
+            @for (message of messages; track message._id) {
+              <div 
+                class="message-wrapper"
+                [class.own-message]="isOwnMessage(message)"
+                [class.other-message]="!isOwnMessage(message)"
+              >
+                <div class="message-bubble">
+                  @if (message.messageType === 'text') {
+                    <div class="text-content">
+                      {{ message.text }}
+                      @if (message.isEdited) {
+                        <span class="edited-indicator">(editado)</span>
+                      }
+                    </div>
+                  }
+                  
+                  @if (message.messageType === 'movie') {
+                    <div class="movie-content" (click)="goToMovie(message.movieData?.tmdbId)">
+                      <div class="movie-poster">
+                        <img 
+                          [src]="getMoviePosterUrl(message.movieData?.posterPath)" 
+                          [alt]="message.movieData?.title"
+                          class="poster-img"
+                        >
+                      </div>
+                      <div class="movie-info">
+                        <h6>{{ message.movieData?.title }}</h6>
+                        <span class="movie-year">{{ message.movieData?.year }}</span>
+                        <div class="shared-label">
+                          <i class="bi bi-film me-1"></i>
+                          Película compartida
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  
+                  <div class="message-footer">
+                    <span class="message-time">
+                      {{ formatMessageTime(message.createdAt) }}
+                    </span>
+                    
+                    @if (isOwnMessage(message)) {
+                      <div class="message-actions">
+                        @if (message.messageType === 'text') {
+                          <button class="btn-edit" (click)="startEditMessage(message)">
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                        }
+                        <button class="btn-delete" (click)="deleteMessage(message._id)">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+            
+            @if (messages.length === 0) {
+              <div class="empty-messages">
+                <i class="bi bi-chat-heart"></i>
+                <p>Inicia la conversación</p>
+                <p class="sub-text">Envía un mensaje para comenzar</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="message-input-container">
+          @if (editingMessage) {
+            <div class="editing-banner">
+              <i class="bi bi-pencil me-2"></i>
+              Editando mensaje
+              <button class="btn-cancel-edit ms-auto" (click)="cancelEdit()">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          }
+          
+          <div class="input-wrapper">
+            <div class="input-actions">
+              <button class="btn-action" title="Compartir película" (click)="showMovieShareModal = true">
+                <i class="bi bi-film"></i>
+              </button>
+            </div>
+            
+            <div class="text-input-container">
+              <textarea
+                #messageInput
+                [(ngModel)]="messageText"
+                (keydown)="handleKeyDown($event)"
+                (input)="handleTyping()"
+                placeholder="Escribe un mensaje..."
+                class="message-input"
+                rows="1"
+              ></textarea>
+            </div>
+            
+            <button 
+              class="btn-send" 
+              [disabled]="!messageText.trim()" 
+              (click)="sendMessage()"
+            >
+              <i class="bi bi-send"></i>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Modal para compartir película -->
+      @if (showMovieShareModal) {
+        <div class="modal-overlay" (click)="showMovieShareModal = false"></div>
+        <div class="modal-container">
+          <div class="cyber-form">
+            <div class="modal-header">
+              <h3>Compartir película</h3>
+              <button class="close-btn" (click)="showMovieShareModal = false">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            
+            <div class="search-section">
+              <div class="search-input-container">
+                <i class="bi bi-search"></i>
+                <input 
+                  type="text" 
+                  placeholder="Buscar películas..."
+                  [(ngModel)]="movieSearchQuery"
+                  (input)="searchMovies()"
+                  class="search-input"
+                >
+              </div>
+            </div>
+
+            @if (searchingMovies) {
+              <div class="searching">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <span class="ms-2">Buscando películas...</span>
+              </div>
+            }
+
+            @if (movieSearchResults.length > 0) {
+              <div class="movie-results">
+                @for (movie of movieSearchResults; track movie.id) {
+                  <div class="movie-result" (click)="shareMovie(movie)">
+                    <img 
+                      [src]="getMoviePosterUrl(movie.poster_path)" 
+                      [alt]="movie.title"
+                      class="movie-poster-small"
+                    >
+                    <div class="movie-details">
+                      <h6>{{ movie.title }}</h6>
+                      <span class="movie-year">{{ getMovieYear(movie.release_date) }}</span>
+                    </div>
+                    <i class="bi bi-arrow-right ms-auto"></i>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>

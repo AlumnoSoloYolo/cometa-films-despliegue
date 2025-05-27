@@ -1,0 +1,124 @@
+ <button class="btn-share-movie" (click)="openShareModal()" title="Compartir película">
+      <i class="bi bi-share"></i>
+      <span>Compartir</span>
+    </button>
+
+    <!-- Modal para compartir película -->
+    @if (showShareModal) {
+      <div class="modal-overlay" (click)="closeModal()"></div>
+      <div class="modal-container">
+        <div class="cyber-form">
+          <div class="modal-header">
+            <h3>Compartir película</h3>
+            <button class="close-btn" (click)="closeModal()">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+
+          <!-- Información de la película -->
+          <div class="movie-preview">
+            <img 
+              [src]="getMoviePosterUrl(movie.poster_path)" 
+              [alt]="movie.title"
+              class="movie-poster"
+            >
+            <div class="movie-info">
+              <h4>{{ movie.title }}</h4>
+              <span class="movie-year">{{ getMovieYear(movie.release_date) }}</span>
+            </div>
+          </div>
+
+          <!-- Búsqueda de usuarios -->
+          <div class="search-section">
+            <div class="search-input-container">
+              <i class="bi bi-search"></i>
+              <input 
+                type="text" 
+                placeholder="Buscar usuarios para compartir..."
+                [(ngModel)]="searchQuery"
+                (input)="searchUsers()"
+                class="search-input"
+              >
+            </div>
+          </div>
+
+          @if (searchingUsers) {
+            <div class="searching">
+              <div class="spinner-border spinner-border-sm" role="status"></div>
+              <span class="ms-2">Buscando usuarios...</span>
+            </div>
+          }
+
+          <!-- Conversaciones recientes -->
+          @if (!searchQuery && recentChats.length > 0) {
+            <div class="section">
+              <h5>Conversaciones recientes</h5>
+              <div class="chat-list">
+                @for (chat of recentChats; track chat._id) {
+                  <div 
+                    class="chat-item" 
+                    (click)="shareToChat(chat._id)"
+                    [class.sharing]="sharingToChatId === chat._id"
+                  >
+                    <img 
+                      [src]="getAvatarPath(chat.otherParticipant.avatar)" 
+                      [alt]="chat.otherParticipant.username"
+                      class="user-avatar"
+                    >
+                    <span class="username">{{ chat.otherParticipant.username }}</span>
+                    @if (sharingToChatId === chat._id) {
+                      <div class="spinner-border spinner-border-sm ms-auto" role="status"></div>
+                    } @else {
+                      <i class="bi bi-arrow-right ms-auto"></i>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Resultados de búsqueda -->
+          @if (searchResults.length > 0) {
+            <div class="section">
+              <h5>Usuarios encontrados</h5>
+              <div class="user-list">
+                @for (user of searchResults; track user._id) {
+                  <div 
+                    class="user-item" 
+                    (click)="shareToUser(user._id)"
+                    [class.sharing]="sharingToUserId === user._id"
+                  >
+                    <img 
+                      [src]="getAvatarPath(user.avatar)" 
+                      [alt]="user.username"
+                      class="user-avatar"
+                    >
+                    <span class="username">{{ user.username }}</span>
+                    @if (sharingToUserId === user._id) {
+                      <div class="spinner-border spinner-border-sm ms-auto" role="status"></div>
+                    } @else {
+                      <i class="bi bi-arrow-right ms-auto"></i>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (!searchingUsers && searchQuery && searchResults.length === 0) {
+            <div class="no-results">
+              <i class="bi bi-person-x"></i>
+              <p>No se encontraron usuarios</p>
+            </div>
+          }
+
+          @if (!searchQuery && recentChats.length === 0) {
+            <div class="no-chats">
+              <i class="bi bi-chat-square-text"></i>
+              <p>No tienes conversaciones recientes</p>
+              <p class="sub-text">Busca usuarios para compartir la película</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
