@@ -30,11 +30,14 @@
           </div>
           
           <div class="chat-actions">
-            <!-- <button class="btn-action" title="Información">
-              <i class="bi bi-info-circle"></i>
-            </button> -->
-            <button class="btn-action" title="Archivar" (click)="archiveChat()">
-              <i class="bi bi-archive"></i>
+            <button class="btn-action" 
+                    [title]="chat.isArchived ? 'Desarchivar' : 'Archivar'" 
+                    (click)="toggleArchiveChat()">
+              <i class="bi" [class.bi-archive]="!chat.isArchived" [class.bi-archive-fill]="chat.isArchived"></i>
+            </button>
+            
+            <button class="btn-action" title="Limpiar chat" (click)="clearChatForUser()">
+              <i class="bi bi-eraser"></i>
             </button>
           </div>
         </div>

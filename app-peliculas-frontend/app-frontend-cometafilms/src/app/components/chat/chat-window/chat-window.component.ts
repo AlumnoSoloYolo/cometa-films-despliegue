@@ -352,21 +352,42 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.subscriptions.push(sub);
   }
 
-  archiveChat(): void {
-    if (!this.currentChatId || !confirm('¿Archivar esta conversación?')) return;
+  toggleArchiveChat(): void {
+  if (!this.currentChatId) return;
+  
+  const action = this.chat?.isArchived ? 'desarchivar' : 'archivar';
+  
+  if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} esta conversación?`)) return;
 
-    const sub = this.chatService.archiveChat(this.currentChatId).subscribe({
-      next: () => {
-        this.router.navigate(['/chat']);
-      },
-      error: (error) => {
-        console.error('Error al archivar chat:', error);
-        alert('Error al archivar la conversación.');
+  const sub = this.chatService.toggleArchiveChat(this.currentChatId).subscribe({
+    next: () => {
+      if (this.chat) {
+        this.chat.isArchived = !this.chat.isArchived;
       }
-    });
-    this.subscriptions.push(sub);
-  }
+    },
+    error: (error) => {
+      console.error(`Error al ${action} chat:`, error);
+      alert(`Error al ${action} la conversación.`);
+    }
+  });
+  this.subscriptions.push(sub);
+}
 
+clearChatForUser(): void {
+  if (!this.currentChatId || !confirm('¿Limpiar todo el historial del chat? (Solo para ti)')) return;
+
+  const sub = this.chatService.clearChatForUser(this.currentChatId).subscribe({
+    next: () => {
+      this.messages = [];
+      alert('Chat limpiado correctamente');
+    },
+    error: (error) => {
+      console.error('Error al limpiar chat:', error);
+      alert('Error al limpiar el chat.');
+    }
+  });
+  this.subscriptions.push(sub);
+}
   goToMovie(tmdbId?: string): void {
     if (tmdbId) {
       this.router.navigate(['/pelicula', tmdbId]);

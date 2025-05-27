@@ -14,7 +14,7 @@ import { Subscription } from 'rxjs';
   styleUrl: './chat-list.component.css'
 })
 export class ChatListComponent implements OnInit, OnDestroy {
-  chats: Chat[] = [];
+  chats: any[] = [];
   loading = true;
   selectedChatId: string | null = null;
   
@@ -79,33 +79,39 @@ export class ChatListComponent implements OnInit, OnDestroy {
   }
 
   handleNewMessage(message: any): void {
-    console.log('Nuevo mensaje recibido en chat-list:', message);
+  console.log('Nuevo mensaje recibido en chat-list:', message);
+  
+  // Actualizar el chat en la lista
+  const chatIndex = this.chats.findIndex(chat => chat._id === message.chatId);
+  
+  if (chatIndex !== -1) {
+    // Chat existente - actualizar
+    this.chats[chatIndex].lastMessage = message.message;
+    this.chats[chatIndex].lastActivity = new Date();
     
-    // Actualizar el chat en la lista
-    const chatIndex = this.chats.findIndex(chat => chat._id === message.chatId);
-    
-    if (chatIndex !== -1) {
-      // Chat existente - actualizar
-      this.chats[chatIndex].lastMessage = message.message;
-      this.chats[chatIndex].lastActivity = new Date();
+    // Solo incrementar unread count si no es el chat actualmente activo
+    const currentChatId = this.getCurrentChatId();
+    if (message.chatId !== currentChatId) {
+      this.chats[chatIndex].unreadCount = (this.chats[chatIndex].unreadCount || 0) + 1;
       
-      // Solo incrementar unread count si no es el chat actualmente activo
-      const currentChatId = this.getCurrentChatId();
-      if (message.chatId !== currentChatId) {
-        this.chats[chatIndex].unreadCount = (this.chats[chatIndex].unreadCount || 0) + 1;
-      }
-      
-      // Mover al inicio de la lista
-      const chat = this.chats.splice(chatIndex, 1)[0];
-      this.chats.unshift(chat);
-      
-      console.log('Chat actualizado en la lista');
-    } else {
-      // Chat nuevo - recargar la lista completa
-      console.log('Chat nuevo detectado, recargando lista...');
-      this.loadChats();
+      // FORZAR ANIMACIÓN
+      this.chats[chatIndex].shouldAnimate = true;
+      setTimeout(() => {
+        this.chats[chatIndex].shouldAnimate = false;
+      }, 600);
     }
+    
+    // Mover al inicio de la lista
+    const chat = this.chats.splice(chatIndex, 1)[0];
+    this.chats.unshift(chat);
+    
+    console.log('Chat actualizado en la lista, unreadCount:', this.chats[0].unreadCount);
+  } else {
+    // Chat nuevo - recargar la lista completa
+    console.log('Chat nuevo detectado, recargando lista...');
+    this.loadChats();
   }
+}
 
   getCurrentChatId(): string | null {
     // Obtener el ID del chat actual desde la URL
@@ -114,10 +120,27 @@ export class ChatListComponent implements OnInit, OnDestroy {
     return parts.length >= 3 && parts[1] === 'chat' ? parts[2] : null;
   }
 
-  selectChat(chatId: string): void {
-    this.selectedChatId = chatId;
-    this.router.navigate(['/chat', chatId]);
-  }
+ selectChat(chatId: string): void {
+  this.selectedChatId = chatId;
+  
+  // Navegar primero
+  this.router.navigate(['/chat', chatId]);
+  
+  // Resetear badge después de un pequeño delay para que se vea la animación
+  setTimeout(() => {
+    const chatIndex = this.chats.findIndex(chat => chat._id === chatId);
+    if (chatIndex !== -1) {
+      this.chats[chatIndex].unreadCount = 0;
+      this.chats[chatIndex].shouldAnimate = false;
+    }
+    
+    // Marcar mensajes como leídos en el backend
+    this.chatService.markMessagesAsRead(chatId).subscribe({
+      next: () => console.log('Mensajes marcados como leídos'),
+      error: (error) => console.error('Error al marcar como leídos:', error)
+    });
+  }, 300); // Delay de 300ms para ver el badge antes de que desaparezca
+}
 
   searchUsers(): void {
     if (this.searchTimeout) {

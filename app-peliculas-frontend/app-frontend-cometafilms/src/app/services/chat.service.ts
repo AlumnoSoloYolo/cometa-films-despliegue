@@ -45,6 +45,8 @@ export interface Chat {
     avatar: string;
   };
   unreadCount: number;
+  isArchived?: boolean;
+  shouldAnimate?: boolean; 
 }
 
 export interface ChatListResponse {
@@ -176,13 +178,22 @@ export class ChatService {
   }
 
   // Archivar chat
-  archiveChat(chatId: string): Observable<any> {
+    toggleArchiveChat(chatId: string): Observable<any> {
     return this.http.post(
-      `${this.apiUrl}/chats/${chatId}/archive`,
+      `${this.apiUrl}/chats/${chatId}/toggle-archive`,
       {},
       this.getHeaders()
     );
   }
+
+// Limpiar chat para usuario actual
+    clearChatForUser(chatId: string): Observable<any> {
+      return this.http.post(
+        `${this.apiUrl}/chats/${chatId}/clear`,
+        {},
+        this.getHeaders()
+      );
+    }
 
   // NUEVA: Buscar usuarios para chat
   searchUsersForChat(query: string): Observable<ChatUser[]> {

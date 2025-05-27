@@ -1,19 +1,29 @@
-   .chat-app-container {
-      display: flex;
-      height: 100vh;
-      background: rgba(5, 5, 5, 0.95);
-    }
+        .chat-app-container {
+        display: flex;
+        height: calc(100vh - 120px); /* Reducir altura total */
+        max-height: 800px; /* Altura máxima */
+        background: rgba(5, 5, 5, 0.95);
+        margin: 2rem auto;
+        max-width: 1400px; /* Limitar ancho máximo */
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
 
-    .chat-sidebar {
-      width: 350px;
-      min-width: 300px;
-      border-right: 1px solid rgba(255, 255, 255, 0.1);
-    }
+      .chat-sidebar {
+        width: 350px;
+        min-width: 300px;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        height: 100%;
+      }
 
-    .chat-main {
-      flex: 1;
-      position: relative;
-    }
+      .chat-main {
+        flex: 1;
+        position: relative;
+        height: 100%;
+      }
+
+ 
 
     .chat-placeholder {
       height: 100%;

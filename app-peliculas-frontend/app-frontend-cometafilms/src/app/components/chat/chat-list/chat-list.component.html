@@ -46,7 +46,7 @@
                     class="avatar-img"
                   >
                   @if (chat.unreadCount > 0) {
-                    <span class="unread-badge">{{ chat.unreadCount }}</span>
+                    <span class="unread-badge" [class.pulse-trigger]="chat.shouldAnimate">{{ chat.unreadCount }}</span>
                   }
                 </div>
                 
