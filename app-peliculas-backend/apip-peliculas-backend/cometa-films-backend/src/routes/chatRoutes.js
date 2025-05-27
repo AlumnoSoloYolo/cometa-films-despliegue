@@ -8,9 +8,10 @@ const {
     sendMessage,
     editMessage,
     deleteMessage,
-    archiveChat,
     searchUsersForChat,
-    markMessagesAsRead
+    markMessagesAsRead,
+    toggleArchiveChat,
+    clearChatForUser
 } = require('../controllers/chatController');
 
 router.use(auth);
@@ -23,7 +24,8 @@ router.get('/users/search', searchUsersForChat);
 router.post('/chats/:chatId/messages', sendMessage);
 router.put('/messages/:messageId', editMessage);
 router.delete('/messages/:messageId', deleteMessage);
-router.post('/chats/:chatId/archive', archiveChat);
+router.post('/chats/:chatId/toggle-archive', toggleArchiveChat);
+router.post('/chats/:chatId/clear', clearChatForUser)
 router.post('/chats/:chatId/mark-read', markMessagesAsRead);
 
 

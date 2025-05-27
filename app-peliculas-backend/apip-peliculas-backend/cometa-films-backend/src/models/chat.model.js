@@ -15,7 +15,6 @@ const messageSchema = new mongoose.Schema({
         enum: ['text', 'movie'],
         default: 'text'
     },
-    // Para mensajes de tipo película
     movieData: {
         tmdbId: String,
         title: String,
@@ -31,6 +30,10 @@ const messageSchema = new mongoose.Schema({
             type: Date,
             default: Date.now
         }
+    }],
+    hiddenFor: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }],
     isEdited: {
         type: Boolean,

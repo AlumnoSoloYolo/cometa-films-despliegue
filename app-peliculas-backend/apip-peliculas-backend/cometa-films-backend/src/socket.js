@@ -150,6 +150,27 @@ function getConnectionStats() {
     };
 }
 
+
+function sendMessageToUser(userId, data) {
+    try {
+        if (!io) {
+            console.error('Socket.IO: No inicializado.');
+            return false;
+        }
+
+        const userIdStr = userId.toString();
+        
+        // Emitir a la sala del usuario
+        io.to(userIdStr).emit('chat_message', data);
+        console.log(`Socket.IO: Mensaje enviado a usuario ${userIdStr}`);
+        return true;
+    } catch (error) {
+        console.error('Socket.IO: Error al enviar mensaje:', error);
+        return false;
+    }
+}
+
 module.exports = initializeSocketServer;
 module.exports.sendFollowRequest = sendFollowRequest;
 module.exports.getConnectionStats = getConnectionStats;
+module.exports.sendMessageToUser = sendMessageToUser;

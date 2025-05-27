@@ -35,7 +35,10 @@ exports.getChatMessages = async (req, res) => {
 
         // 2. METODO 1: Buscar mensajes por chat ID
         console.log('METODO 1: Buscando mensajes por chat ID...');
-        const messagesByChat = await Message.find({ chat: chatId })
+        const messagesByChat = await Message.find({ 
+            chat: chatId,
+            hiddenFor: { $ne: userId }
+        })
             .populate('sender', 'username avatar')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -212,18 +215,18 @@ exports.sendMessage = async (req, res) => {
         
         for (const participant of otherParticipants) {
             socket.sendMessageToUser(participant._id.toString(), {
-                type: 'new_message',
-                chatId,
-                message: populatedMessage,
-                chat: {
-                    _id: chat._id,
-                    otherParticipant: {
-                        _id: req.user._id,
-                        username: req.user.username,
-                        avatar: req.user.avatar
-                    }
+            type: 'new_message',
+            chatId,
+            message: populatedMessage,
+            chat: {
+                _id: chat._id,
+                otherParticipant: {
+                    _id: req.user._id,
+                    username: req.user.username,
+                    avatar: req.user.avatar
                 }
-            });
+            }
+        });
         }
 
         res.status(201).json(populatedMessage);
@@ -271,17 +274,19 @@ exports.getUserChats = async (req, res) => {
             const unreadCount = await Message.countDocuments({
                 chat: chat._id,
                 sender: { $ne: userId },
-                'readBy.user': { $ne: userId }
+                'readBy.user': { $ne: userId },
+                hiddenFor: { $ne: userId } 
             });
 
             return {
                 ...chat,
                 otherParticipant,
                 unreadCount,
+                isArchived: chat.archivedBy.includes(userId), 
                 lastMessagePopulated: chat.lastMessage ? {
                     ...chat.lastMessage,
                     isOwn: chat.lastMessage.sender && chat.lastMessage.sender._id ? 
-                           chat.lastMessage.sender._id.toString() === userId : false
+                        chat.lastMessage.sender._id.toString() === userId : false
                 } : null
             };
         }));
@@ -426,20 +431,84 @@ exports.deleteMessage = async (req, res) => {
 };
 
 // Archivar chat
-exports.archiveChat = async (req, res) => {
+exports.toggleArchiveChat = async (req, res) => {
     try {
         const userId = req.user.id;
         const { chatId } = req.params;
 
-        await Chat.findByIdAndUpdate(chatId, {
-            $addToSet: { archivedBy: userId }
+        const chat = await Chat.findOne({
+            _id: chatId,
+            participants: userId
         });
 
-        res.json({ message: 'Chat archivado correctamente' });
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat no encontrado' });
+        }
+
+        // Verificar si ya está archivado por este usuario
+        const isArchived = chat.archivedBy.includes(userId);
+
+        if (isArchived) {
+            // Desarchivar: remover del array
+            await Chat.findByIdAndUpdate(chatId, {
+                $pull: { archivedBy: userId }
+            });
+            res.json({ message: 'Chat desarchivado correctamente', isArchived: false });
+        } else {
+            // Archivar: añadir al array
+            await Chat.findByIdAndUpdate(chatId, {
+                $addToSet: { archivedBy: userId }
+            });
+            res.json({ message: 'Chat archivado correctamente', isArchived: true });
+        }
     } catch (error) {
-        console.error('Error al archivar chat:', error);
+        console.error('Error al archivar/desarchivar chat:', error);
         res.status(500).json({
-            message: 'Error al archivar chat',
+            message: 'Error al procesar chat',
+            error: error.message
+        });
+    }
+};
+
+
+
+// Limpiar mensajes del chat para un usuario específico
+exports.clearChatForUser = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { chatId } = req.params;
+
+        // Verificar que el usuario participa en el chat
+        const chat = await Chat.findOne({
+            _id: chatId,
+            participants: userId
+        });
+
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat no encontrado' });
+        }
+
+        // En lugar de eliminar los mensajes, podríamos añadir un campo "hiddenFor"
+        // para ocultar mensajes solo para este usuario
+        await Message.updateMany(
+            { chat: chatId },
+            { 
+                $addToSet: { 
+                    hiddenFor: userId 
+                }
+            }
+        );
+
+        console.log(`Chat ${chatId} limpiado para usuario ${userId}`);
+
+        res.json({ 
+            message: 'Chat limpiado correctamente',
+            chatId: chatId
+        });
+    } catch (error) {
+        console.error('Error al limpiar chat:', error);
+        res.status(500).json({
+            message: 'Error al limpiar chat',
             error: error.message
         });
     }
