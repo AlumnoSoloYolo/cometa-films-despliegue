@@ -117,7 +117,7 @@ export class SocketService {
       // Mostrar notificación del navegador si el chat no está activo
       if (data.message && data.chat && data.chat.otherParticipant) {
         const messagePreview = data.message.messageType === 'movie' 
-          ? `📽️ ${data.message.movieData?.title}`
+          ? ` ${data.message.movieData?.title}`
           : data.message.text || 'Nuevo mensaje';
 
         this.showBrowserNotification(

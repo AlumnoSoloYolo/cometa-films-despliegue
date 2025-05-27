@@ -67,6 +67,13 @@ export interface MessagesResponse {
   };
 }
 
+// Interfaz para usuarios en búsqueda de chat
+export interface ChatUser {
+  _id: string;
+  username: string;
+  avatar: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -177,10 +184,53 @@ export class ChatService {
     );
   }
 
+  // NUEVA: Buscar usuarios para chat
+  searchUsersForChat(query: string): Observable<ChatUser[]> {
+    if (!query || query.trim().length < 2) {
+      return new Observable(observer => {
+        observer.next([]);
+        observer.complete();
+      });
+    }
+
+    const params = new HttpParams().set('query', query.trim());
+
+    return this.http.get<ChatUser[]>(
+      `${this.apiUrl}/users/search`,
+      { headers: this.getHeaders().headers, params }
+    );
+  }
+
   // Métodos para manejar eventos de Socket.IO desde el componente
   handleNewMessage(message: ChatMessage): void {
     this.newMessageSubject.next(message);
+    this.notifyChatsUpdated();
+  }
+
+  // Notificar que los chats necesitan actualizarse
+  notifyChatsUpdated(): void {
     this.chatsUpdatedSubject.next(true);
+  }
+
+  markMessagesAsRead(chatId: string): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/chats/${chatId}/mark-read`,
+      {},
+      this.getHeaders()
+    );
+  }
+
+  // Método para resetear el contador de no leídos de un chat específico
+  markChatAsRead(chatId: string): void {
+    // Este método puede ser llamado cuando el usuario entra a un chat
+    this.markMessagesAsRead(chatId).subscribe({
+      next: () => {
+        this.notifyChatsUpdated();
+      },
+      error: (error) => {
+        console.error('Error al marcar mensajes como leídos:', error);
+      }
+    });
   }
 
   // Obtener avatar path
@@ -230,133 +280,14 @@ export class ChatService {
     }
   }
 
-  // Obtener información de un chat específico
-  getChatById(chatId: string): Observable<Chat> {
-    return this.http.get<Chat>(
-      `${this.apiUrl}/chats/${chatId}`,
-      this.getHeaders()
-    );
-  }
-
-  // Buscar en mensajes
-  searchMessages(chatId: string, query: string): Observable<ChatMessage[]> {
-    const params = new HttpParams().set('q', query);
-    
-    return this.http.get<ChatMessage[]>(
-      `${this.apiUrl}/chats/${chatId}/search`,
-      { headers: this.getHeaders().headers, params }
-    );
-  }
-
-  // Obtener estadísticas del chat
-  getChatStats(chatId: string): Observable<any> {
-    return this.http.get(
-      `${this.apiUrl}/chats/${chatId}/stats`,
-      this.getHeaders()
-    );
-  }
-
-  // Marcar mensajes como leídos
-  markMessagesAsRead(chatId: string): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/chats/${chatId}/mark-read`,
-      {},
-      this.getHeaders()
-    );
-  }
-
-  // Obtener chats archivados
-  getArchivedChats(page: number = 1, limit: number = 20): Observable<ChatListResponse> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString())
-      .set('archived', 'true');
-
-    return this.http.get<ChatListResponse>(
-      `${this.apiUrl}/chats/archived`,
-      { headers: this.getHeaders().headers, params }
-    );
-  }
-
-  // Desarchivar chat
-  unarchiveChat(chatId: string): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/chats/${chatId}/unarchive`,
-      {},
-      this.getHeaders()
-    );
-  }
-
-  // Limpiar historial de chat
-  clearChatHistory(chatId: string): Observable<any> {
-    return this.http.delete(
-      `${this.apiUrl}/chats/${chatId}/clear`,
-      this.getHeaders()
-    );
-  }
-
-  // Exportar chat
-  exportChat(chatId: string, format: 'json' | 'txt' = 'json'): Observable<Blob> {
-    const params = new HttpParams().set('format', format);
-    
-    return this.http.get(
-      `${this.apiUrl}/chats/${chatId}/export`,
-      { 
-        headers: this.getHeaders().headers, 
-        params,
-        responseType: 'blob'
-      }
-    );
-  }
-
-  // Verificar si el usuario puede enviar mensajes
-  canSendMessage(chatId: string): Observable<{ canSend: boolean, reason?: string }> {
-    return this.http.get<{ canSend: boolean, reason?: string }>(
-      `${this.apiUrl}/chats/${chatId}/can-send`,
-      this.getHeaders()
-    );
-  }
-
-  // Reportar chat
-  reportChat(chatId: string, reason: string, description?: string): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/chats/${chatId}/report`,
-      { reason, description },
-      this.getHeaders()
-    );
-  }
-
-  // Obtener información de entrega de mensajes
-  getMessageDeliveryInfo(messageId: string): Observable<any> {
-    return this.http.get(
-      `${this.apiUrl}/messages/${messageId}/delivery`,
-      this.getHeaders()
-    );
-  }
-
-  // Helpers para UI
-  isMessageFromCurrentUser(message: ChatMessage): boolean {
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return message.sender._id === currentUser.id;
-  }
-
-  getMessageStatusIcon(message: ChatMessage): string {
-    if (!this.isMessageFromCurrentUser(message)) return '';
-    
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const isRead = message.readBy.some(read => read.user !== currentUser.id);
-    
-    if (isRead) return 'bi-check-all text-primary';
-    return 'bi-check text-muted';
-  }
-
   // Validaciones
   isValidMessage(text: string): boolean {
     return text && text.trim().length > 0 && text.trim().length <= 1000 ? true : false;
   }
 
   canEditMessage(message: ChatMessage): boolean {
-    if (!this.isMessageFromCurrentUser(message)) return false;
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (message.sender._id !== currentUser.id) return false;
     if (message.messageType !== 'text') return false;
     
     const messageDate = new Date(message.createdAt);
@@ -367,12 +298,19 @@ export class ChatService {
   }
 
   canDeleteMessage(message: ChatMessage): boolean {
-    if (!this.isMessageFromCurrentUser(message)) return false;
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (message.sender._id !== currentUser.id) return false;
     
     const messageDate = new Date(message.createdAt);
     const now = new Date();
     const diffInHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
     
     return diffInHours <= 24; // Solo se puede eliminar en las primeras 24 horas
+  }
+
+  // Helper para verificar si el mensaje es del usuario actual
+  isMessageFromCurrentUser(message: ChatMessage): boolean {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    return message.sender._id === currentUser.id;
   }
 }

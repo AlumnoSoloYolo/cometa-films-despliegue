@@ -39,7 +39,7 @@ export class ShareButtonComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadRecentChats();
+    // Cargar chats recientes cuando se inicializa el componente
   }
 
   ngOnDestroy(): void {
@@ -65,10 +65,11 @@ export class ShareButtonComponent implements OnInit, OnDestroy {
   loadRecentChats(): void {
     const sub = this.chatService.getUserChats(1, 10).subscribe({
       next: (response) => {
-        this.recentChats = response.chats;
+        this.recentChats = response.chats.slice(0, 5); // Solo los 5 más recientes
       },
       error: (error) => {
         console.error('Error al cargar chats recientes:', error);
+        this.recentChats = []; // Continuar sin chats recientes
       }
     });
     this.subscriptions.push(sub);
@@ -86,13 +87,14 @@ export class ShareButtonComponent implements OnInit, OnDestroy {
 
     this.searchTimeout = setTimeout(() => {
       this.searchingUsers = true;
-      const sub = this.userSocialService.searchUsers(this.searchQuery).subscribe({
+      const sub = this.userSocialService.searchUsers(this.searchQuery.trim()).subscribe({
         next: (users) => {
           this.searchResults = users;
           this.searchingUsers = false;
         },
         error: (error) => {
           console.error('Error al buscar usuarios:', error);
+          this.searchResults = [];
           this.searchingUsers = false;
         }
       });
@@ -114,10 +116,10 @@ export class ShareButtonComponent implements OnInit, OnDestroy {
 
     const sub = this.chatService.sendMovieMessage(chatId, movieData).subscribe({
       next: () => {
-        this.showSuccessAnimation('chat', chatId);
+        this.showSuccessMessage('Película compartida correctamente');
         setTimeout(() => {
           this.closeModal();
-        }, 1000);
+        }, 1500);
       },
       error: (error) => {
         console.error('Error al compartir película:', error);
@@ -149,17 +151,28 @@ export class ShareButtonComponent implements OnInit, OnDestroy {
     this.subscriptions.push(sub);
   }
 
-  showSuccessAnimation(type: 'chat' | 'user', id: string): void {
-    const element = type === 'chat' 
-      ? document.querySelector(`.chat-item[data-id="${id}"]`)
-      : document.querySelector(`.user-item[data-id="${id}"]`);
+  showSuccessMessage(message: string): void {
+    // Crear un elemento temporal para mostrar el éxito
+    const successDiv = document.createElement('div');
+    successDiv.textContent = message;
+    successDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10B981;
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      z-index: 9999;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
     
-    if (element) {
-      element.classList.add('success');
-      setTimeout(() => {
-        element.classList.remove('success');
-      }, 600);
-    }
+    document.body.appendChild(successDiv);
+    
+    setTimeout(() => {
+      document.body.removeChild(successDiv);
+    }, 3000);
   }
 
   getAvatarPath(avatar: string): string {

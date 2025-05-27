@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ChatService, Chat, ChatMessage } from '../../../services/chat.service';
 import { SocketService } from '../../../services/socket.service';
+import { PeliculasService } from '../../../services/peliculas.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -23,6 +24,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   loadingMessages = false;
   messageText = '';
   isTyping = false;
+  currentChatId: string = '';
   
   // Edición de mensajes
   editingMessage: ChatMessage | null = null;
@@ -41,15 +43,18 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   constructor(
     private chatService: ChatService,
     private socketService: SocketService,
-    private route: ActivatedRoute
+    private peliculasService: PeliculasService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       const chatId = params['id'];
       if (chatId) {
-        this.loadChat(chatId);
-        this.loadMessages(chatId);
+        this.currentChatId = chatId;
+        console.log('Iniciando carga para chat:', chatId);
+        this.loadChatAndMessages(chatId);
         this.joinChatRoom(chatId);
       }
     });
@@ -61,6 +66,11 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.subscriptions.forEach(sub => sub.unsubscribe());
     if (this.typingTimeout) clearTimeout(this.typingTimeout);
     if (this.searchTimeout) clearTimeout(this.searchTimeout);
+    
+    // Salir del chat room
+    if (this.currentChatId) {
+      this.socketService.leaveChat(this.currentChatId);
+    }
   }
 
   ngAfterViewChecked(): void {
@@ -70,73 +80,152 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     }
   }
 
-  loadChat(chatId: string): void {
+  loadChatAndMessages(chatId: string): void {
     this.loading = true;
-    // Aquí necesitarías implementar un método para obtener un chat por ID
-    // Por ahora, asumimos que tienes esta funcionalidad
+    console.log('🔄 Cargando chat y mensajes para:', chatId);
+    
+    // Primero cargar la lista de chats para obtener info del chat
+    const sub = this.chatService.getUserChats().subscribe({
+      next: (response) => {
+        console.log('📋 Chats obtenidos:', response.chats.length);
+        const foundChat = response.chats.find(c => c._id === chatId);
+        
+        if (foundChat) {
+          this.chat = foundChat;
+          console.log('✅ Chat encontrado:', this.chat);
+          
+          // Ahora cargar los mensajes
+          this.loadMessages(chatId);
+        } else {
+          console.warn('⚠️ Chat no encontrado en la lista');
+          // Intentar cargar mensajes de todas formas
+          this.loadMessages(chatId);
+        }
+        
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error al obtener chats:', error);
+        // Intentar cargar mensajes de todas formas
+        this.loadMessages(chatId);
+        this.loading = false;
+      }
+    });
+    this.subscriptions.push(sub);
   }
 
   loadMessages(chatId: string): void {
     this.loadingMessages = true;
+    console.log('💬 Cargando mensajes para chat:', chatId);
+    
     const sub = this.chatService.getChatMessages(chatId).subscribe({
       next: (response) => {
-        this.messages = response.messages;
+        console.log('✅ Mensajes obtenidos:', response.messages.length);
+        console.log('📝 Mensajes:', response.messages);
+        
+        this.messages = response.messages || [];
         this.loadingMessages = false;
         this.shouldScrollToBottom = true;
+        
+        // Si tenemos mensajes pero no info del chat, crear info básica
+        if (this.messages.length > 0 && !this.chat) {
+          this.createBasicChatInfo(chatId);
+        }
       },
       error: (error) => {
-        console.error('Error al cargar mensajes:', error);
+        console.error('❌ Error al cargar mensajes:', error);
+        this.messages = [];
         this.loadingMessages = false;
       }
     });
     this.subscriptions.push(sub);
   }
 
+  createBasicChatInfo(chatId: string): void {
+    console.log('🔧 Creando info básica del chat...');
+    
+    // Encontrar el otro usuario basado en los mensajes
+    const currentUserId = this.getCurrentUserId();
+    const otherUserMessage = this.messages.find(m => m.sender._id !== currentUserId);
+    
+    if (otherUserMessage) {
+      this.chat = {
+        _id: chatId,
+        participants: [],
+        chatType: 'private',
+        lastActivity: new Date(),
+        otherParticipant: otherUserMessage.sender,
+        unreadCount: 0
+      } as Chat;
+      
+      console.log('✅ Info básica del chat creada:', this.chat);
+    }
+  }
+
   joinChatRoom(chatId: string): void {
-    // Aquí emitirías el evento de unirse al chat via Socket.IO
     if (this.socketService.isConnected()) {
-      // this.socketService.joinChat(chatId);
+      console.log('🔌 Uniéndose al chat room:', chatId);
+      this.socketService.joinChat(chatId);
     }
   }
 
   setupSocketListeners(): void {
     const newMessageSub = this.socketService.newMessage$.subscribe(message => {
-      if (message) {
-        this.handleNewMessage(message);
+      if (message && message.chatId === this.currentChatId) {
+        console.log('📨 Nuevo mensaje recibido:', message);
+        this.messages.push(message.message);
+        this.shouldScrollToBottom = true;
       }
     });
     this.subscriptions.push(newMessageSub);
-  }
 
-  handleNewMessage(message: any): void {
-    if (message.chatId === this.chat?._id) {
-      this.messages.push(message.message);
-      this.shouldScrollToBottom = true;
-    }
+    const typingSub = this.socketService.userTyping$.subscribe(typing => {
+      if (typing && typing.userId !== this.getCurrentUserId()) {
+        this.isTyping = typing.isTyping;
+        if (this.isTyping) {
+          setTimeout(() => {
+            this.isTyping = false;
+          }, 3000);
+        }
+      }
+    });
+    this.subscriptions.push(typingSub);
   }
 
   sendMessage(): void {
-    if (!this.messageText.trim() || !this.chat) return;
+    if (!this.messageText.trim() || !this.currentChatId) {
+      console.warn('⚠️ No se puede enviar mensaje: texto vacío o sin chat');
+      return;
+    }
 
     if (this.editingMessage) {
       this.saveEditMessage();
       return;
     }
 
-    const sub = this.chatService.sendTextMessage(this.chat._id, this.messageText.trim()).subscribe({
+    console.log('📤 Enviando mensaje:', this.messageText);
+
+    const sub = this.chatService.sendTextMessage(this.currentChatId, this.messageText.trim()).subscribe({
       next: (message) => {
+        console.log('✅ Mensaje enviado:', message);
         this.messages.push(message);
         this.messageText = '';
         this.shouldScrollToBottom = true;
       },
       error: (error) => {
-        console.error('Error al enviar mensaje:', error);
+        console.error('❌ Error al enviar mensaje:', error);
+        alert('Error al enviar el mensaje. Inténtalo de nuevo.');
       }
     });
     this.subscriptions.push(sub);
   }
 
   startEditMessage(message: ChatMessage): void {
+    if (!this.chatService.canEditMessage(message)) {
+      alert('No se puede editar este mensaje');
+      return;
+    }
+
     this.editingMessage = message;
     this.messageText = message.text || '';
     setTimeout(() => {
@@ -157,6 +246,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       },
       error: (error) => {
         console.error('Error al editar mensaje:', error);
+        alert('Error al editar el mensaje.');
       }
     });
     this.subscriptions.push(sub);
@@ -168,6 +258,12 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   deleteMessage(messageId: string): void {
+    const message = this.messages.find(m => m._id === messageId);
+    if (!message || !this.chatService.canDeleteMessage(message)) {
+      alert('No se puede eliminar este mensaje');
+      return;
+    }
+
     if (!confirm('¿Estás seguro de que quieres eliminar este mensaje?')) return;
 
     const sub = this.chatService.deleteMessage(messageId).subscribe({
@@ -176,6 +272,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       },
       error: (error) => {
         console.error('Error al eliminar mensaje:', error);
+        alert('Error al eliminar el mensaje.');
       }
     });
     this.subscriptions.push(sub);
@@ -189,12 +286,15 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   handleTyping(): void {
-    // Implementar lógica de "escribiendo..."
-    if (this.typingTimeout) clearTimeout(this.typingTimeout);
-    
-    this.typingTimeout = setTimeout(() => {
-      // Enviar evento de dejar de escribir
-    }, 1000);
+    if (this.socketService.isConnected() && this.currentChatId) {
+      this.socketService.sendTypingIndicator(this.currentChatId, true);
+      
+      if (this.typingTimeout) clearTimeout(this.typingTimeout);
+      
+      this.typingTimeout = setTimeout(() => {
+        this.socketService.sendTypingIndicator(this.currentChatId, false);
+      }, 1000);
+    }
   }
 
   searchMovies(): void {
@@ -207,17 +307,27 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
     this.searchTimeout = setTimeout(() => {
       this.searchingMovies = true;
-      // Aquí implementarías la búsqueda de películas
-      // Usar el servicio de películas existente
-      setTimeout(() => {
-        this.movieSearchResults = [];
-        this.searchingMovies = false;
-      }, 500);
+      
+      const sub = this.peliculasService.busquedaAvanzadaPeliculas({
+        query: this.movieSearchQuery.trim(),
+        page: 1
+      }).subscribe({
+        next: (response) => {
+          this.movieSearchResults = response.results || [];
+          this.searchingMovies = false;
+        },
+        error: (error) => {
+          console.error('Error al buscar películas:', error);
+          this.movieSearchResults = [];
+          this.searchingMovies = false;
+        }
+      });
+      this.subscriptions.push(sub);
     }, 300);
   }
 
   shareMovie(movie: any): void {
-    if (!this.chat) return;
+    if (!this.currentChatId) return;
 
     const movieData = {
       tmdbId: movie.id.toString(),
@@ -226,7 +336,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       year: this.getMovieYear(movie.release_date)
     };
 
-    const sub = this.chatService.sendMovieMessage(this.chat._id, movieData).subscribe({
+    const sub = this.chatService.sendMovieMessage(this.currentChatId, movieData).subscribe({
       next: (message) => {
         this.messages.push(message);
         this.showMovieShareModal = false;
@@ -236,20 +346,22 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       },
       error: (error) => {
         console.error('Error al compartir película:', error);
+        alert('Error al compartir la película.');
       }
     });
     this.subscriptions.push(sub);
   }
 
   archiveChat(): void {
-    if (!this.chat || !confirm('¿Archivar esta conversación?')) return;
+    if (!this.currentChatId || !confirm('¿Archivar esta conversación?')) return;
 
-    const sub = this.chatService.archiveChat(this.chat._id).subscribe({
+    const sub = this.chatService.archiveChat(this.currentChatId).subscribe({
       next: () => {
-        // Navegar de vuelta a la lista de chats
+        this.router.navigate(['/chat']);
       },
       error: (error) => {
         console.error('Error al archivar chat:', error);
+        alert('Error al archivar la conversación.');
       }
     });
     this.subscriptions.push(sub);
@@ -257,8 +369,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   goToMovie(tmdbId?: string): void {
     if (tmdbId) {
-      // Navegar a los detalles de la película
-      // this.router.navigate(['/pelicula', tmdbId]);
+      this.router.navigate(['/pelicula', tmdbId]);
     }
   }
 
@@ -274,8 +385,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   isOwnMessage(message: ChatMessage): boolean {
+    const currentUserId = this.getCurrentUserId();
+    return message.sender._id === currentUserId;
+  }
+
+  getCurrentUserId(): string {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return message.sender._id === currentUser.id;
+    return currentUser.id || '';
   }
 
   getAvatarPath(avatar: string): string {
@@ -291,6 +407,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   formatMessageTime(date: Date | string): string {
-    return this.chatService.formatMessageTime(date);
+    return this.chatService.formatFullTime(date);
   }
 }

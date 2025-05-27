@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ChatService, Chat } from '../../../services/chat.service';
 import { SocketService } from '../../../services/socket.service';
 import { Subscription } from 'rxjs';
@@ -8,11 +9,10 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-chat-list',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './chat-list.component.html',
   styleUrl: './chat-list.component.css'
 })
-
 export class ChatListComponent implements OnInit, OnDestroy {
   chats: Chat[] = [];
   loading = true;
@@ -79,20 +79,39 @@ export class ChatListComponent implements OnInit, OnDestroy {
   }
 
   handleNewMessage(message: any): void {
+    console.log('Nuevo mensaje recibido en chat-list:', message);
+    
     // Actualizar el chat en la lista
     const chatIndex = this.chats.findIndex(chat => chat._id === message.chatId);
+    
     if (chatIndex !== -1) {
+      // Chat existente - actualizar
       this.chats[chatIndex].lastMessage = message.message;
       this.chats[chatIndex].lastActivity = new Date();
-      this.chats[chatIndex].unreadCount++;
+      
+      // Solo incrementar unread count si no es el chat actualmente activo
+      const currentChatId = this.getCurrentChatId();
+      if (message.chatId !== currentChatId) {
+        this.chats[chatIndex].unreadCount = (this.chats[chatIndex].unreadCount || 0) + 1;
+      }
       
       // Mover al inicio de la lista
       const chat = this.chats.splice(chatIndex, 1)[0];
       this.chats.unshift(chat);
+      
+      console.log('Chat actualizado en la lista');
     } else {
-      // Es un chat nuevo, recargar la lista
+      // Chat nuevo - recargar la lista completa
+      console.log('Chat nuevo detectado, recargando lista...');
       this.loadChats();
     }
+  }
+
+  getCurrentChatId(): string | null {
+    // Obtener el ID del chat actual desde la URL
+    const path = window.location.pathname;
+    const parts = path.split('/');
+    return parts.length >= 3 && parts[1] === 'chat' ? parts[2] : null;
   }
 
   selectChat(chatId: string): void {
@@ -112,12 +131,20 @@ export class ChatListComponent implements OnInit, OnDestroy {
 
     this.searchTimeout = setTimeout(() => {
       this.searchingUsers = true;
-      // Aquí iría la llamada al servicio de búsqueda de usuarios
-      // Por ahora simulamos la búsqueda
-      setTimeout(() => {
-        this.searchResults = []; // Implementar búsqueda real
-        this.searchingUsers = false;
-      }, 500);
+      
+      // Usar el servicio de búsqueda específico para chat
+      const sub = this.chatService.searchUsersForChat(this.searchQuery.trim()).subscribe({
+        next: (users) => {
+          this.searchResults = users;
+          this.searchingUsers = false;
+        },
+        error: (error) => {
+          console.error('Error al buscar usuarios:', error);
+          this.searchResults = [];
+          this.searchingUsers = false;
+        }
+      });
+      this.subscriptions.push(sub);
     }, 300);
   }
 
@@ -128,9 +155,12 @@ export class ChatListComponent implements OnInit, OnDestroy {
         this.searchQuery = '';
         this.searchResults = [];
         this.selectChat(chat._id);
+        // Recargar la lista para mostrar el nuevo chat
+        this.loadChats();
       },
       error: (error) => {
         console.error('Error al crear chat:', error);
+        alert('Error al crear la conversación. Inténtalo de nuevo.');
       }
     });
     this.subscriptions.push(sub);

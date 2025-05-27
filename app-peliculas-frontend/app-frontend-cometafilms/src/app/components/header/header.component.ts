@@ -5,10 +5,12 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { UserSocialService } from '../../services/social.service';
 import { SocketService } from '../../services/socket.service';
+import { ChatService } from '../../services/chat.service'; 
 import { CommonModule } from '@angular/common';
-import { interval, Subscription, combineLatest } from 'rxjs';
-import { switchMap, filter, startWith, distinctUntilChanged } from 'rxjs/operators';
+import { interval, Subscription } from 'rxjs';
+import { switchMap, filter, startWith } from 'rxjs/operators';
 import { PremiumService } from '../../services/premium.service';
+
 
 @Component({
   selector: 'app-header',
@@ -20,6 +22,7 @@ import { PremiumService } from '../../services/premium.service';
 export class HeaderComponent implements OnInit, OnDestroy {
   searchForm: FormGroup;
   pendingRequestsCount: number = 0;
+  unreadMessagesCount: number = 0;
   isPremiumUser: boolean = false;
   isMenuOpen: boolean = false;
   isMobileView: boolean = false;
@@ -28,6 +31,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private premiumSubscription?: Subscription;
   private socialCheckSubscription?: Subscription;
   private authStatusSubscription?: Subscription;
+  private chatSubscription?: Subscription; 
 
   constructor(
     private fb: FormBuilder,
@@ -35,7 +39,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private userSocialService: UserSocialService,
     private socketService: SocketService,
-    private premiumService: PremiumService
+    private premiumService: PremiumService,
+    private chatService: ChatService 
   ) {
     this.searchForm = this.fb.group({
       query: ['', [Validators.minLength(2)]]
@@ -68,12 +73,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.setupPremiumCheck();
         this.cargarSolicitudesPendientes();
         this.setupSocketListeners();
+        this.loadUnreadMessagesCount(); 
       });
   }
 
   setupPremiumCheck() {
-    // Simplificar: suscribirse directamente al estado premium 
-    // sin crear un combineLatest innecesario
+    //suscribirse directamente al estado premium 
     this.premiumSubscription = this.premiumService.premiumStatus$
       .pipe(
         // Filtrar valores nulos
@@ -97,7 +102,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.premiumService.getPremiumStatus().subscribe();
     
     // Configurar verificación periódica cada 5 minutos
-    // Pero sin usar combineLatest para evitar múltiples emisiones
     this.socialCheckSubscription = interval(5 * 60 * 1000)
       .subscribe(() => {
         if (this.isAuthenticated()) {
@@ -116,6 +120,45 @@ export class HeaderComponent implements OnInit, OnDestroy {
         }
       }
     );
+
+    // Suscribirse a nuevos mensajes de chat
+    const newMessageSub = this.socketService.newMessage$.subscribe(
+      message => {
+        if (message) {
+          this.unreadMessagesCount++;
+          this.mostrarIndicadorNuevoMensaje();
+        }
+      }
+    );
+    
+
+    if (this.socketSubscription) {
+      this.socketSubscription.add(newMessageSub);
+    } else {
+      this.socketSubscription = newMessageSub;
+    }
+  }
+
+  loadUnreadMessagesCount(): void {
+    this.chatSubscription = this.chatService.getUserChats(1, 50).subscribe({
+      next: (response) => {
+        this.unreadMessagesCount = response.chats.reduce((total, chat) => total + chat.unreadCount, 0);
+      },
+      error: (error) => {
+        console.error('Error al cargar contador de mensajes no leídos:', error);
+      }
+    });
+  }
+
+  
+  mostrarIndicadorNuevoMensaje(): void {
+    const messageBadge = document.querySelector('.message-badge');
+    if (messageBadge) {
+      messageBadge.classList.add('pulse-animation');
+      setTimeout(() => {
+        messageBadge.classList.remove('pulse-animation');
+      }, 2000);
+    }
   }
 
   ngOnDestroy() {
@@ -130,6 +173,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
     if (this.authStatusSubscription) {
       this.authStatusSubscription.unsubscribe();
+    }
+    if (this.chatSubscription) { 
+      this.chatSubscription.unsubscribe();
     }
   }
 
@@ -199,6 +245,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   navigateTo(route: string) {
     this.router.navigate([route]);
+
+    // Reset unread messages count when navigating to chat
+    if (route === '/chat') {
+      this.unreadMessagesCount = 0;
+    }
 
     // Cerrar menú móvil si está abierto
     if (this.isMenuOpen && this.isMobileView) {

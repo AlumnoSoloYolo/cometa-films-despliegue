@@ -85,19 +85,17 @@
                                     (click)="navigateTo('/notificaciones')">
                                     <i class="bi bi-bell me-2"></i>Notificaciones
                                     @if (pendingRequestsCount > 0) {
-                                    <span class="notify-badge">{{ pendingRequestsCount }}</span>
+                                    <span class="notify-badge animated-badge">{{ pendingRequestsCount }}</span>
                                     }
                                 </a>
                             </li>
                             
                             <li>
-                                <a class="dropdown-item" routerLink="/chat" routerLinkActive="active"
+                                <a class="dropdown-item notification-item" routerLink="/chat"
                                     (click)="navigateTo('/chat')">
-                                    <i class="bi bi-chat-dots"></i> 
-                                    Mensajes
-                                  
+                                    <i class="bi bi-chat-dots me-2"></i>Mensajes
                                     @if (unreadMessagesCount > 0) {
-                                        <span class="message-badge">{{ unreadMessagesCount }}</span>
+                                        <span class="message-badge animated-badge">{{ unreadMessagesCount }}</span>
                                     }
                                 </a>
                             </li>
