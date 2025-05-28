@@ -57,7 +57,8 @@
                         </div>
                     </form>
 
-                    @if (!isPremiumUser) {
+                    <!-- CAMBIADO: Usar shouldShowPremiumButton() en lugar de !isPremiumUser -->
+                    @if (shouldShowPremiumButton()) {
                     <div class="premium-promo">
                         <a routerLink="/premium" class="premium-btn" (click)="navigateTo('/premium')">
                             <i class="bi bi-star-fill"></i>

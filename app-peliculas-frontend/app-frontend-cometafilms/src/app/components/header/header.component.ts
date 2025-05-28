@@ -1,3 +1,4 @@
+// header.component.ts
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -11,7 +12,6 @@ import { interval, Subscription } from 'rxjs';
 import { switchMap, filter, startWith } from 'rxjs/operators';
 import { PremiumService } from '../../services/premium.service';
 
-
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -24,6 +24,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   pendingRequestsCount: number = 0;
   unreadMessagesCount: number = 0;
   isPremiumUser: boolean = false;
+  
+  // NUEVO: Estado de carga para controlar la visibilidad
+  premiumStatusLoaded: boolean = false;
+  
   isMenuOpen: boolean = false;
   isMobileView: boolean = false;
 
@@ -47,6 +51,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     });
 
     this.checkScreenSize();
+    
+    // NUEVO: Inicializar el estado premium desde localStorage si existe
+    this.initializePremiumStateFromStorage();
   }
 
   @HostListener('window:resize', ['$event'])
@@ -60,6 +67,23 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  // NUEVO: Inicializar estado desde localStorage
+  private initializePremiumStateFromStorage(): void {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (typeof user.isPremium === 'boolean') {
+          this.isPremiumUser = user.isPremium;
+          this.premiumStatusLoaded = true; // Marcar como cargado si hay info válida
+          console.log('Estado premium inicializado desde localStorage:', this.isPremiumUser);
+        }
+      }
+    } catch (error) {
+      console.error('Error al inicializar estado premium desde localStorage:', error);
+    }
   }
 
   ngOnInit() {
@@ -78,7 +102,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   setupPremiumCheck() {
-    //suscribirse directamente al estado premium 
+    // Suscribirse directamente al estado premium 
     this.premiumSubscription = this.premiumService.premiumStatus$
       .pipe(
         // Filtrar valores nulos
@@ -91,15 +115,24 @@ export class HeaderComponent implements OnInit, OnDestroy {
             console.log('Estado premium actualizado:', status);
           }
           this.isPremiumUser = status.isPremium;
+          this.premiumStatusLoaded = true; // NUEVO: Marcar como cargado
         },
         error: (error) => {
           console.error('Error al verificar estado premium:', error);
           this.isPremiumUser = false;
+          this.premiumStatusLoaded = true; // NUEVO: Marcar como cargado incluso en error
         }
       });
       
     // Iniciar verificación de estado premium
-    this.premiumService.getPremiumStatus().subscribe();
+    this.premiumService.getPremiumStatus().subscribe({
+      next: () => {
+        // Ya se maneja en la suscripción anterior
+      },
+      error: () => {
+        this.premiumStatusLoaded = true; // NUEVO: Asegurar que se marca como cargado
+      }
+    });
     
     // Configurar verificación periódica cada 5 minutos
     this.socialCheckSubscription = interval(5 * 60 * 1000)
@@ -150,7 +183,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     });
   }
 
-  
   mostrarIndicadorNuevoMensaje(): void {
     const messageBadge = document.querySelector('.message-badge');
     if (messageBadge) {
@@ -255,5 +287,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (this.isMenuOpen && this.isMobileView) {
       this.isMenuOpen = false;
     }
+  }
+
+  // NUEVO: Método para determinar si mostrar el botón premium
+  shouldShowPremiumButton(): boolean {
+    return this.premiumStatusLoaded && !this.isPremiumUser;
   }
 }

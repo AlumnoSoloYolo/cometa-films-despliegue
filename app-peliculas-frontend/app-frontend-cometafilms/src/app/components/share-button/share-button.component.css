@@ -2,14 +2,17 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      background: linear-gradient(45deg, #6B77E5, #5A67D8);
+      background: rgba(0, 0, 0, 0.85);
       color: white;
       border: none;
       padding: 0.5rem 1rem;
       border-radius: 20px;
-      font-size: 0.9rem;
+      font-size: 1rem;
       cursor: pointer;
       transition: all 0.3s ease;
+        border: 2px solid white;
+      border-radius: 8px;
+  
     }
 
     .btn-share-movie:hover {

@@ -1,4 +1,3 @@
-/* Variables para consistencia */
 :root {
   --color-primary: #6B77E5;
   --color-accent: rgb(211, 20, 211);
@@ -39,22 +38,26 @@
   z-index: -1;
 }
 
-/* Header del perfil */
+/* Header del perfil rediseñado */
 .profile-header {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px 12px 0 0;
   margin-bottom: 1rem;
+  position: relative;
+  min-height: 320px; /* Altura fija para evitar movimientos */
 }
 
-/* Sección de avatar y nombre */
+/* Sección de avatar y nombre rediseñada */
 .avatar-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
 .profile-avatar {
@@ -62,9 +65,236 @@
   height: 120px;
   border-radius: 50%;
   border: 4px solid var(--color-primary);
-  margin-right: 1.5rem;
+  margin-bottom: 1.5rem;
   box-shadow: 0 0 20px rgba(211, 20, 211, 0.3);
   object-fit: cover;
+}
+
+/* Contenedor de información del usuario */
+.user-info-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 160px; /* Altura fija para evitar movimiento */
+  width: 100%;
+}
+
+.username-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.username-section h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Premium badge rediseñado para estar junto al nombre */
+.premium-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  margin-left: 0.5rem;
+}
+
+.premium-badge-inline i {
+  margin-right: 0.25rem;
+  font-size: 0.7rem;
+}
+
+/* Botones de acción compactos */
+.profile-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+  min-height: 36px; /* Altura fija para evitar saltos */
+  align-items: center;
+}
+
+.btn-follow-compact,
+.btn-message-compact {
+  padding: 0.4rem 1rem;
+  border-radius: 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 85px; /* Ancho mínimo fijo para evitar cambios de tamaño */
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
+  height: 36px; /* Altura fija */
+}
+
+/* Botón seguir - estado normal */
+.btn-follow-compact {
+  background: linear-gradient(45deg, var(--color-primary), #8B5DFF);
+  color: white;
+  border: 1px solid transparent;
+}
+
+.btn-follow-compact:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 119, 229, 0.3);
+  color: white;
+}
+
+/* Botón seguir - estado siguiendo */
+.btn-follow-compact.following {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-follow-compact.following:hover {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.5);
+  color: #dc3545;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+}
+
+/* Botón seguir - estado solicitado */
+.btn-follow-compact.requested {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.btn-follow-compact.requested:hover {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.5);
+  color: #dc3545;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+}
+
+/* Botón mensaje */
+.btn-message-compact {
+  background: rgba(211, 20, 211, 0.1);
+  color: var(--color-accent);
+  border: 1px solid rgba(211, 20, 211, 0.4);
+}
+
+.btn-message-compact:hover {
+  background: rgba(211, 20, 211, 0.2);
+  border-color: var(--color-accent);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(211, 20, 211, 0.3);
+  text-decoration: none;
+}
+
+/* Iconos de los botones */
+.btn-follow-compact i,
+.btn-message-compact i {
+  font-size: 0.8rem;
+}
+
+/* Estados de carga para botones */
+.btn-follow-compact:disabled,
+.btn-message-compact:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-follow-compact.loading::after,
+.btn-message-compact.loading::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-left: 0.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Estadísticas del usuario mejoradas */
+.user-stats {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  padding: 0.75rem 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  min-width: 70px;
+}
+
+.stat-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.stat-count {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--color-primary);
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Botón de configuración reposicionado */
+.settings-container {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  margin: 0;
+}
+
+.btn-settings {
+  background: rgba(107, 119, 229, 0.2);
+  color: var(--color-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+}
+
+.btn-settings:hover {
+  background: rgba(107, 119, 229, 0.4);
+  transform: rotate(30deg);
 }
 
 /* Sección de información personal */
@@ -93,26 +323,7 @@
   font-size: 0.9rem;
 }
 
-/*Botón de seguir*/
-.follow-button-container {
-  margin-left: auto;
-  width: 250px;
-}
-
-.btn-follow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.5rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all var(--transition-speed) ease;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-}
-
+/* Mensajes de contenido privado */
 .private-content-message {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
@@ -140,40 +351,6 @@
 .follow-hint {
   font-size: 0.9rem;
   color: var(--color-text-secondary);
-}
-
-/* .btn-follow.following {
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  border: 2px solid white;
-} */
-
-/* .btn-follow.following:hover {
-  background: rgba(20, 20, 20, 0.95);
-}  */
-
-/* Botón de configuración */
-.settings-container {
-  margin-left: 1rem;
-}
-
-.btn-settings {
-  background: rgba(107, 119, 229, 0.2);
-  color: var(--color-primary);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all var(--transition-speed) ease;
-}
-
-.btn-settings:hover {
-  background: rgba(107, 119, 229, 0.4);
-  transform: rotate(30deg);
 }
 
 /* Estilos del dropdown */
@@ -691,55 +868,6 @@
   margin-bottom: 1rem;
 }
 
-/* Estilos para el formulario de creación de listas */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(5px);
-  z-index: 998;
-}
-
-.modal-container {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 999;
-  width: 90%;
-  max-width: 500px;
-}
-
-.cyber-form {
-  background: rgba(10, 10, 10, 0.8);
-  padding: 2rem;
-  border-radius: 15px;
-  position: relative;
-  z-index: 1;
-  color: white;
-  backdrop-filter: blur(10px);
-}
-
-.cyber-form::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 15px;
-  padding: 2px;
-  background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.6;
-  z-index: -1;
-}
-
 .image-preview {
   border-radius: 8px;
   overflow: hidden;
@@ -771,13 +899,6 @@
   left: -9999px;
 }
 
-.character-count {
-  text-align: right;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 0.25rem;
-}
-
 .premium-badge {
   display: inline-flex;
   align-items: center;
@@ -793,122 +914,6 @@
 
 .premium-badge i {
   margin-right: 0.3rem;
-}
-
-/* Media queries para responsive */
-@media (max-width: 1200px) {
-  .movie-scroll-content {
-    grid-auto-columns: calc(33.333% - 1.5rem);
-  }
-}
-
-@media (max-width: 992px) {
-  .review-card {
-    padding: 1.25rem;
-  }
-  
-  .review-poster {
-    width: 60px;
-    height: 90px;
-  }
-}
-
-@media (max-width: 768px) {
-  .profile-container {
-    padding: 1.5rem;
-    margin: 20px;
-  }
-  
-  .movie-scroll-content {
-    grid-auto-columns: calc(50% - 1rem);
-  }
-  
-  .profile-header {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-  .detail-section {
-    flex-direction: column;
-  }
-  
-  .settings-container {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    margin: 0;
-  }
-  
-  .avatar-section {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .profile-avatar {
-    margin-right: 0;
-    margin-bottom: 1rem;
-  }
-  
-  .bio-container {
-    margin-bottom: 1.5rem;
-  }
-  
-  .follow-button-container {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .btn-follow {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-}
-
-.btn-follow.requested {
-  background: rgba(0, 0, 0, 0.9);
-  color: #ffc107; /* Color amarillo para solicitado */
-  border: 2px solid #ffc107;
-}
-
-.btn-follow.requested:hover {
-  background: rgba(20, 20, 20, 0.95);
-}
-
-
-/* Añadir en perfil.component.css */
-.user-stats {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-}
-
-.stat-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.stat-count {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #6B77E5;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 .modal-header {
@@ -1044,6 +1049,8 @@
 .btn-upgrade-mini:hover {
   transform: translateY(-2px);
   box-shadow: 0 3px 8px rgba(211, 20, 211, 0.3);
+  color: white;
+  text-decoration: none;
 }
 
 /* Scrollbar styling for the users list */
@@ -1065,6 +1072,114 @@
   background: rgba(211, 20, 211, 0.5);
 }
 
+/* Media queries para responsive */
+@media (max-width: 1200px) {
+  .movie-scroll-content {
+    grid-auto-columns: calc(33.333% - 1.5rem);
+  }
+}
+
+@media (max-width: 992px) {
+  .review-card {
+    padding: 1.25rem;
+  }
+  
+  .review-poster {
+    width: 60px;
+    height: 90px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1.5rem;
+    margin: 20px;
+  }
+  
+  .movie-scroll-content {
+    grid-auto-columns: calc(50% - 1rem);
+  }
+  
+  .profile-header {
+    min-height: 280px;
+    padding: 1.5rem;
+  }
+  
+  .detail-section {
+    flex-direction: column;
+  }
+  
+  .settings-container {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    margin: 0;
+  }
+  
+  .bio-container {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .profile-actions {
+    gap: 0.5rem;
+  }
+  
+  .btn-follow-compact,
+  .btn-message-compact {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.8rem;
+    min-width: 80px;
+    height: 32px;
+  }
+  
+  .username-section h2 {
+    font-size: 1.5rem;
+  }
+  
+  .premium-badge-inline {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+  }
+  
+  .user-stats {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .profile-actions {
+    width: 100%;
+    justify-content: center;
+    flex-direction: row;
+  }
+  
+  .btn-follow-compact,
+  .btn-message-compact {
+    flex: 1;
+    max-width: 120px;
+  }
+  
+  .username-section {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .premium-badge-inline {
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .user-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+}
+
 @media (max-width: 480px) {
   .movie-scroll-content {
     grid-auto-columns: calc(100% - 1rem);
@@ -1072,5 +1187,19 @@
   
   .avatar-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .profile-header {
+    min-height: 250px;
+    padding: 1rem;
+  }
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .username-section h2 {
+    font-size: 1.3rem;
   }
 }

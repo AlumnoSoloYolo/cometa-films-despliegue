@@ -1,20 +1,22 @@
-// perfil.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { UserMovieService } from '../../services/user.service';
 import { PeliculasService } from '../../services/peliculas.service';
 import { UserSocialService } from '../../services/social.service';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, User as AuthUser } from '../../services/auth.service'; // Importar User como AuthUser
 import { VotoColorPipe } from '../../shared/pipes/voto-color.pipe';
 import { PeliculaCardComponent } from '../pelicula-card/pelicula-card.component';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms'; // FormsModule para ngModel
 import { ReactiveFormsModule } from '@angular/forms';
 import { MovieListsService } from '../../services/movie-lists.service';
 import { MovieList } from '../../models/movie-list.model';
+import { ChatService } from '../../services/chat.service';
 
 interface UserProfile {
+  _id?: string;
   username: string;
   email?: string;
   avatar: string;
@@ -24,6 +26,7 @@ interface UserProfile {
   reviews: Review[];
   biografia: string;
   perfilPrivado: boolean;
+  isPremium?: boolean;
 }
 
 interface Review {
@@ -43,11 +46,18 @@ interface Review {
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [CommonModule, RouterModule, VotoColorPipe, PeliculaCardComponent, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    VotoColorPipe,
+    PeliculaCardComponent,
+    ReactiveFormsModule,
+    FormsModule // Añadir FormsModule para [(ngModel)] en el filtro de usuarios
+  ],
   templateUrl: './perfil.component.html',
   styleUrl: './perfil.component.css'
 })
-export class PerfilComponent implements OnInit {
+export class PerfilComponent implements OnInit, OnDestroy {
   userProfile: UserProfile | null = null;
   mostrarFormularioEdicion: boolean = false;
   configForm: FormGroup;
@@ -55,7 +65,6 @@ export class PerfilComponent implements OnInit {
   peliculasVistas: any[] = [];
   reviews: Review[] = [];
   isOwnProfile: boolean = true;
-  isFollowing: boolean = false;
   isHovering: boolean = false;
   avatars = [
     'avatar1', 'avatar2', 'avatar3', 'avatar4',
@@ -68,6 +77,7 @@ export class PerfilComponent implements OnInit {
   coverImagePreview: string | null = null;
   followStatus: 'none' | 'requested' | 'following' = 'none';
   requestId: string | null = null;
+  isFollowing: boolean = false;
 
   seguidores: any[] = [];
   seguidos: any[] = [];
@@ -80,28 +90,31 @@ export class PerfilComponent implements OnInit {
 
   totalListas: number = 0;
   listasOcultas: number = 0;
-  isPremium: boolean = false;
+  isPremium: boolean = false; // Refleja el estado premium DEL PERFIL QUE SE ESTÁ VIENDO
+
+  readonly LISTS_LIMIT_FREE_USER = 5;
+  private currentUserSubscription: Subscription | undefined;
+  private routeParamsSubscription: Subscription | undefined;
+
 
   constructor(
     private userMovieService: UserMovieService,
     private movieService: PeliculasService,
     private userSocialService: UserSocialService,
     private movieListsService: MovieListsService,
-    private authService: AuthService,
+    public authService: AuthService, // Hacerlo público para usarlo en la plantilla si es necesario (o obtener valores en el init)
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
+    private chatService: ChatService
   ) {
-
-    // formulario de edicion de perfil
     this.configForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
       avatar: ['avatar1'],
       biografia: ['', [Validators.maxLength(500)]],
       perfilPrivado: [false]
-    })
+    });
 
-    //  formulario de lista
     this.listaForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(100)]],
       description: ['', [Validators.maxLength(500)]],
@@ -110,32 +123,21 @@ export class PerfilComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
-      const userId = params['id'];
-      console.log('ID de usuario en la ruta:', userId);
+    this.routeParamsSubscription = this.route.params.subscribe(params => {
+      const userIdFromRoute = params['id'];
+      // Es importante obtener el usuario actual de AuthService de forma reactiva o su valor actual
+      const currentAuthUser = this.authService.currentUserSubject.value;
 
-      if (userId) {
-        // Estamos en la ruta /usuarios/:id
-        this.authService.currentUser.subscribe(currentUser => {
-          console.log('Usuario actual:', currentUser);
-          this.isOwnProfile = currentUser && currentUser.id === userId;
-          console.log('¿Es perfil propio?', this.isOwnProfile);
-
-          if (this.isOwnProfile) {
-            // Es nuestro propio perfil
-            console.log('Cargando perfil propio');
-            this.loadUserProfile();
-            this.cargarListasPropias();
-          } else {
-            // Es perfil de otro usuario
-            console.log('Cargando perfil de otro usuario:', userId);
-            this.loadOtherUserProfile(userId);
-            this.cargarListasUsuario(userId);
-          }
-        });
+      if (userIdFromRoute) {
+        this.isOwnProfile = currentAuthUser?.id === userIdFromRoute;
+        if (this.isOwnProfile) {
+          this.loadUserProfile();
+          this.cargarListasPropias();
+        } else {
+          this.loadOtherUserProfile(userIdFromRoute);
+          this.cargarListasDeOtroUsuario(userIdFromRoute);
+        }
       } else {
-        // Estamos en la ruta /perfil
-        console.log('Cargando perfil sin ID específico');
         this.isOwnProfile = true;
         this.loadUserProfile();
         this.cargarListasPropias();
@@ -143,11 +145,20 @@ export class PerfilComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    if (this.currentUserSubscription) {
+      this.currentUserSubscription.unsubscribe();
+    }
+    if (this.routeParamsSubscription) {
+      this.routeParamsSubscription.unsubscribe();
+    }
+  }
 
   loadUserProfile() {
     this.userMovieService.getUserPerfil().subscribe({
       next: (userData) => {
         this.userProfile = {
+          _id: userData._id,
           username: userData.username,
           email: userData.email,
           avatar: userData.avatar || 'avatar1',
@@ -157,27 +168,21 @@ export class PerfilComponent implements OnInit {
           reviews: userData.reviews || [],
           biografia: userData.biografia || '',
           perfilPrivado: userData.perfilPrivado || false,
+          isPremium: userData.isPremium || false,
         };
+        this.isPremium = userData.isPremium || false;
 
-        // Establecer explícitamente isFollowing
-        this.isFollowing = userData.isFollowing || false;
-
-        if (this.userProfile.pelisPendientes.length > 0) {
-          this.loadPeliculasPendientes();
+        if (this.userProfile?.pelisPendientes?.length > 0) this.loadPeliculasPendientes();
+        if (this.userProfile?.pelisVistas?.length > 0) this.loadPeliculasVistas();
+        if (this.userProfile?.reviews?.length > 0) this.loadReviews(); // Asegurar que se llama si hay reviews
+        
+        const userIdForSocial = this.userProfile?._id;
+        if (userIdForSocial) {
+          this.cargarSeguidores(userIdForSocial);
+          this.cargarSeguidos(userIdForSocial);
         }
-
-        if (this.userProfile.pelisVistas.length > 0) {
-          this.loadPeliculasVistas();
-        }
-
-        this.loadReviews();
-        const userId = userData._id || this.authService.currentUserSubject.value.id;
-        this.cargarSeguidores(userId);
-        this.cargarSeguidos(userId);
       },
-      error: (error) => {
-        console.error('Error al cargar datos del servidor:', error);
-      }
+      error: (error) => console.error('Error al cargar datos del perfil propio:', error)
     });
   }
 
@@ -185,8 +190,8 @@ export class PerfilComponent implements OnInit {
     this.userSocialService.getUserProfile(userId).subscribe({
       next: (userData: any) => {
         this.userProfile = {
+          _id: userData._id,
           username: userData.username,
-          email: userData.email || '',
           avatar: userData.avatar || 'avatar1',
           createdAt: new Date(userData.createdAt),
           pelisPendientes: userData.pelisPendientes || [],
@@ -194,74 +199,110 @@ export class PerfilComponent implements OnInit {
           reviews: userData.reviews || [],
           biografia: userData.biografia || '',
           perfilPrivado: userData.perfilPrivado || false,
+          isPremium: userData.isPremium || false,
         };
+        this.isPremium = userData.isPremium || false;
 
+        if (this.userProfile?.pelisPendientes?.length > 0) this.loadPeliculasPendientes();
+        if (this.userProfile?.pelisVistas?.length > 0) this.loadPeliculasVistas();
+        if (this.userProfile?.reviews?.length > 0) this.loadReviews();
 
-        this.isFollowing = userData.isFollowing || false;
-
-        if (this.userProfile.pelisPendientes.length > 0) {
-          this.loadPeliculasPendientes();
-        }
-
-        if (this.userProfile.pelisVistas.length > 0) {
-          this.loadPeliculasVistas();
-        }
-
-        this.loadReviews();
-        this.checkFollowStatus();
+        this.checkFollowStatus(userId);
         this.cargarSeguidores(userId);
         this.cargarSeguidos(userId);
       },
-      error: (error: any) => {
-        console.error('Error al cargar datos del usuario:', error);
+      error: (error: any) => console.error('Error al cargar datos del usuario ajeno:', error)
+    });
+  }
+
+  iniciarChatConUsuario(): void {
+    if (!this.userProfile || !this.userProfile._id) {
+      console.error('ID de perfil de usuario no disponible para iniciar chat.');
+      alert('No se pudo obtener la información del usuario para iniciar el chat.');
+      return;
+    }
+    const recipientId = this.userProfile._id;
+    const currentAuthUser = this.authService.currentUserSubject.value;
+
+    if (!currentAuthUser || !currentAuthUser.id) {
+      console.error('Usuario actual no autenticado.');
+      alert('Debes iniciar sesión para enviar mensajes.');
+      this.router.navigate(['/login']); // Opcional: redirigir a login
+      return;
+    }
+
+    if (currentAuthUser.id === recipientId) {
+      // Esto no debería ocurrir si el botón solo aparece en perfiles ajenos
+      console.warn('Intentando iniciar un chat consigo mismo.');
+      return;
+    }
+
+    this.chatService.getOrCreateChat(recipientId).subscribe({
+      next: (chat) => {
+        if (chat && chat._id) {
+          // Navegar al chat, el ChatContainerComponent se encargará de seleccionar y mostrar la conversación
+          this.router.navigate(['/chat', chat._id]);
+        } else {
+          console.error('Respuesta inválida del servidor al crear/obtener el chat:', chat);
+          alert('No se pudo iniciar la conversación. Inténtalo de nuevo más tarde.');
+        }
+      },
+      error: (error) => {
+        console.error('Error al iniciar el chat:', error);
+        alert('Error al iniciar la conversación: ' + (error.error?.message || 'Problema de conexión o del servidor.'));
       }
     });
   }
 
+
+
+
+
   loadPeliculasPendientes() {
-    if (!this.userProfile || !this.userProfile.pelisPendientes) return;
-
-    this.peliculasPendientes = [];
-
+    if (!this.userProfile || !this.userProfile.pelisPendientes || this.userProfile.pelisPendientes.length === 0) {
+        this.peliculasPendientes = [];
+        return;
+    }
+    this.peliculasPendientes = []; // Limpiar antes de cargar
     this.userProfile.pelisPendientes.forEach(peli => {
       this.movieService.getDetallesPelicula(peli.movieId).subscribe({
-        next: (movie) => {
-          this.peliculasPendientes.push(movie);
-        },
-        error: (error) => console.error('Error al cargar detalles de película pendiente:', error)
+        next: (movie) => this.peliculasPendientes.push(movie),
+        error: (error) => console.error('Error al cargar detalles de película pendiente:', peli.movieId, error)
       });
     });
   }
 
   loadPeliculasVistas() {
-    if (!this.userProfile || !this.userProfile.pelisVistas) return;
-
-    this.peliculasVistas = [];
-
+    if (!this.userProfile || !this.userProfile.pelisVistas || this.userProfile.pelisVistas.length === 0) {
+        this.peliculasVistas = [];
+        return;
+    }
+    this.peliculasVistas = []; // Limpiar antes de cargar
     this.userProfile.pelisVistas.forEach(peli => {
       this.movieService.getDetallesPelicula(peli.movieId).subscribe({
-        next: (movie) => {
-          this.peliculasVistas.push(movie);
-        },
-        error: (error) => console.error('Error al cargar detalles de película vista:', error)
+        next: (movie) => this.peliculasVistas.push(movie),
+        error: (error) => console.error('Error al cargar detalles de película vista:', peli.movieId, error)
       });
     });
   }
 
   loadReviews() {
-    if (!this.userProfile || !this.userProfile.reviews) return;
-
-    this.reviews = this.userProfile.reviews;
+    if (!this.userProfile || !this.userProfile.reviews || this.userProfile.reviews.length === 0) {
+        this.reviews = [];
+        return;
+    }
+    this.reviews = this.userProfile.reviews.map(review => ({...review})); // Crear copias para evitar mutaciones si es necesario
 
     this.reviews.forEach(review => {
       if (review.movieId) {
         this.movieService.getDetallesPelicula(review.movieId).subscribe({
           next: (movie) => {
             review.movieTitle = movie.title;
-            review.moviePosterPath = `https://image.tmdb.org/t/p/w200${movie.poster_path}`;
+            review.moviePosterPath = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : undefined;
           },
           error: (error) => {
-            console.error('Error al cargar los detalles de la película:', error);
+            console.error('Error al cargar los detalles de la película para la reseña:', review.movieId, error);
+            review.movieTitle = 'Película no encontrada'; // Fallback
           }
         });
       }
@@ -269,172 +310,117 @@ export class PerfilComponent implements OnInit {
   }
 
   getAvatarPath(): string {
-    return `/avatares/${this.userProfile?.avatar}.gif`;
+    return this.userProfile?.avatar ? `/avatares/${this.userProfile.avatar}.gif` : '/avatares/avatar1.gif';
   }
 
-  getAvatar(avatar: string): string {
-    return `/avatares/${avatar}.gif`
+  getAvatar(avatar: string | undefined): string {
+    return avatar ? `/avatares/${avatar}.gif` : '/avatares/avatar1.gif';
   }
 
-  getPendientesCount(): number {
-    return this.userProfile?.pelisPendientes.length || 0;
-  }
-
-  getVistasCount(): number {
-    return this.userProfile?.pelisVistas.length || 0;
-  }
-
-  getReviewsCount(): number {
-    return this.userProfile?.reviews.length || 0;
-  }
+  getPendientesCount(): number { return this.userProfile?.pelisPendientes?.length || 0; }
+  getVistasCount(): number { return this.userProfile?.pelisVistas?.length || 0; }
+  getReviewsCount(): number { return this.userProfile?.reviews?.length || 0; }
 
   onPeliculaVistaAgregada(movieId: string) {
     if (this.userProfile) {
-      this.userProfile.pelisVistas = [...this.userProfile.pelisVistas, { movieId, watchedAt: new Date() }];
+      if (!this.userProfile.pelisVistas.some(p => p.movieId === movieId)) {
+        this.userProfile.pelisVistas.push({ movieId, watchedAt: new Date() });
+      }
       this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter(peli => peli.movieId !== movieId);
-
-      this.movieService.getDetallesPelicula(movieId).subscribe({
-        next: (movie) => {
-          this.peliculasVistas = [...this.peliculasVistas, movie];
-          this.peliculasPendientes = this.peliculasPendientes.filter(peli => peli.id.toString() !== movieId);
-        },
-        error: (error) => console.error('Error al cargar detalles de película vista:', error)
-      });
+      this.loadPeliculasVistas();
+      this.loadPeliculasPendientes();
     }
   }
 
   onPeliculaPendienteAgregada(movieId: string) {
     if (this.userProfile) {
-      this.userProfile.pelisPendientes = [...this.userProfile.pelisPendientes, { movieId, addedAt: new Date() }];
+       if (!this.userProfile.pelisPendientes.some(p => p.movieId === movieId)) {
+        this.userProfile.pelisPendientes.push({ movieId, addedAt: new Date() });
+      }
       this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter(peli => peli.movieId !== movieId);
-
-      this.movieService.getDetallesPelicula(movieId).subscribe({
-        next: (movie) => {
-          this.peliculasVistas = this.peliculasVistas.filter(peli => peli.id.toString() !== movieId);
-
-          if (!this.peliculasPendientes.some(peli => peli.id.toString() === movieId)) {
-            this.peliculasPendientes = [...this.peliculasPendientes, movie];
-          }
-        },
-        error: (error) => console.error('Error al cargar detalles de película pendiente:', error)
-      });
+      this.loadPeliculasVistas();
+      this.loadPeliculasPendientes();
     }
   }
 
   onPeliculaVistaEliminada(movieId: string) {
     if (this.userProfile) {
       this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter(peli => peli.movieId !== movieId);
-      this.peliculasVistas = this.peliculasVistas.filter(peli => peli.id.toString() !== movieId);
+      this.peliculasVistas = this.peliculasVistas.filter(peli => peli.id?.toString() !== movieId);
     }
   }
 
   onPeliculaPendienteEliminada(movieId: string) {
     if (this.userProfile) {
       this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter(peli => peli.movieId !== movieId);
-      this.peliculasPendientes = this.peliculasPendientes.filter(peli => peli.id.toString() !== movieId);
+      this.peliculasPendientes = this.peliculasPendientes.filter(peli => peli.id?.toString() !== movieId);
     }
   }
 
   scrollSection(sectionId: string, direction: 'left' | 'right'): void {
     const container = document.getElementById(sectionId);
     if (!container) return;
-
     const scrollContenido = container.querySelector('.movie-scroll-content');
     if (!scrollContenido) return;
-
     const itemAncho = scrollContenido.querySelector('.movie-scroll-item')?.clientWidth || 300;
     const scrollCantidad = itemAncho * 2;
     const scrollActual = scrollContenido.scrollLeft;
-
-    let newScroll = direction === 'right'
-      ? scrollActual + scrollCantidad
-      : scrollActual - scrollCantidad;
-
-    scrollContenido.scrollTo({
-      left: newScroll,
-      behavior: 'smooth'
-    });
+    let newScroll = direction === 'right' ? scrollActual + scrollCantidad : scrollActual - scrollCantidad;
+    scrollContenido.scrollTo({ left: newScroll, behavior: 'smooth' });
   }
 
-
-  navigateReview(review: any): void {
-    console.log('Navegando a review con ID:', review._id);
+  navigateReview(review: Review): void {
     if (review && review._id) {
       this.router.navigate(['/resenia', review._id]);
     }
   }
 
-
-
   toggleFollow(): void {
-    const userId = this.route.snapshot.paramMap.get('id');
+    const userIdToFollowOrUnfollow = this.userProfile?._id;
+    if (!userIdToFollowOrUnfollow || this.isOwnProfile) return;
 
-    if (!userId) return;
-
-    // Si ya está siguiendo, dejar de seguir
     if (this.followStatus === 'following') {
-      this.userSocialService.unfollowUser(userId).subscribe({
+      this.userSocialService.unfollowUser(userIdToFollowOrUnfollow).subscribe({
         next: () => {
-          this.followStatus = 'none';
-          this.isFollowing = false;
-          this.isHovering = false;
+          this.followStatus = 'none'; this.isFollowing = false; this.isHovering = false;
+          this.seguidoresCount = Math.max(0, (this.seguidoresCount || 0) - 1);
         },
-        error: (error) => {
-          console.error('Error al dejar de seguir:', error);
-        }
+        error: (error) => console.error('Error al dejar de seguir:', error)
       });
-      return;
-    }
-
-    // Si hay una solicitud pendiente, cancelarla
-    if (this.followStatus === 'requested' && this.requestId) {
+    } else if (this.followStatus === 'requested' && this.requestId) {
       this.userSocialService.cancelFollowRequest(this.requestId).subscribe({
-        next: () => {
-          this.followStatus = 'none';
-          this.requestId = null;
-        },
-        error: (error) => {
-          console.error('Error al cancelar solicitud:', error);
-        }
+        next: () => { this.followStatus = 'none'; this.requestId = null; },
+        error: (error) => console.error('Error al cancelar solicitud:', error)
       });
-      return;
+    } else {
+      this.userSocialService.followUser(userIdToFollowOrUnfollow).subscribe({
+        next: (response) => {
+          this.followStatus = response.status;
+          this.requestId = response.requestId || null;
+          this.isFollowing = response.status === 'following';
+          if (response.status === 'following') {
+            this.seguidoresCount = (this.seguidoresCount || 0) + 1;
+          }
+        },
+        error: (error) => console.error('Error al seguir usuario:', error)
+      });
     }
-
-    // En cualquier otro caso, intentar seguir o enviar solicitud
-    this.userSocialService.followUser(userId).subscribe({
-      next: (response) => {
-        this.followStatus = response.status;
-        this.requestId = response.requestId || null;
-        this.isFollowing = response.status === 'following';
-      },
-      error: (error) => {
-        console.error('Error al seguir usuario:', error);
-      }
-    });
   }
 
-
-  checkFollowStatus(): void {
-    const userId = this.route.snapshot.paramMap.get('id');
+  checkFollowStatus(userId: string): void {
     if (!userId || this.isOwnProfile) return;
-
     this.userSocialService.getFollowStatus(userId).subscribe({
       next: (response: any) => {
         this.followStatus = response.status;
         this.requestId = response.requestId || null;
         this.isFollowing = response.status === 'following';
       },
-      error: (error) => {
-        console.error('Error al verificar estado de seguimiento:', error);
-      }
+      error: (error) => console.error('Error al verificar estado de seguimiento:', error)
     });
   }
 
-
-  // Método para inicializar el formulario con los datos actuales
   initConfigForm(): void {
     if (!this.userProfile) return;
-
     this.configForm.patchValue({
       username: this.userProfile.username,
       avatar: this.userProfile.avatar || 'avatar1',
@@ -443,39 +429,38 @@ export class PerfilComponent implements OnInit {
     });
   }
 
-  // Método para abrir el modal de edición
-  editarPerfil(): void {
-    this.initConfigForm();
-    this.mostrarFormularioEdicion = true;
-  }
+  editarPerfil(): void { this.initConfigForm(); this.mostrarFormularioEdicion = true; }
+  cancelarEdicion(): void { this.mostrarFormularioEdicion = false; }
 
-  // Método para cerrar el modal
-  cancelarEdicion(): void {
-    this.mostrarFormularioEdicion = false;
-  }
-
-  // Método para guardar los cambios
   guardarCambiosPerfil(): void {
-    if (this.configForm.invalid) return;
+    if (this.configForm.invalid || !this.userProfile?._id) return;
 
     const formData = this.configForm.value;
-
+    // El ID del usuario no se envía en el cuerpo, se usa el del usuario autenticado en el backend
     this.userMovieService.updateUserProfile(formData).subscribe({
-      next: (updatedUser) => {
-        // Actualizar datos locales
+      next: (updatedUserResponse) => { // updatedUserResponse es la respuesta del backend con el usuario actualizado
         if (this.userProfile) {
-          this.userProfile = {
-            ...this.userProfile,
-            username: updatedUser.username,
-            avatar: updatedUser.avatar,
-            biografia: updatedUser.biografia,
-            perfilPrivado: updatedUser.perfilPrivado,
-            email: updatedUser.email || this.userProfile.email
-          };
+          this.userProfile.username = updatedUserResponse.username;
+          this.userProfile.avatar = updatedUserResponse.avatar;
+          this.userProfile.biografia = updatedUserResponse.biografia;
+          this.userProfile.perfilPrivado = updatedUserResponse.perfilPrivado;
         }
 
+        // Actualizar el BehaviorSubject en AuthService y localStorage
+        const currentAuthUser = this.authService.currentUserSubject.value;
+        if (currentAuthUser && currentAuthUser.id === updatedUserResponse._id) {
+          const userToStore: AuthUser = { // Usar la interfaz AuthUser
+            ...currentAuthUser,
+            username: updatedUserResponse.username,
+            avatar: updatedUserResponse.avatar,
+            // Mantener isPremium y premiumExpiry si existen en currentAuthUser
+            isPremium: currentAuthUser.isPremium,
+            premiumExpiry: currentAuthUser.premiumExpiry,
+          };
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          this.authService.currentUserSubject.next(userToStore);
+        }
         this.cancelarEdicion();
-        // Opcional: mostrar mensaje de éxito
         alert('Perfil actualizado correctamente');
       },
       error: (error) => {
@@ -485,10 +470,8 @@ export class PerfilComponent implements OnInit {
     });
   }
 
-  // Método para eliminar la cuenta
   eliminarCuenta(): void {
     if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
-
     this.userMovieService.deleteAccount().subscribe({
       next: () => {
         this.authService.logout();
@@ -502,168 +485,136 @@ export class PerfilComponent implements OnInit {
     });
   }
 
-  // Método para seleccionar avatar
-  selectAvatar(avatar: string): void {
-    this.configForm.get('avatar')?.setValue(avatar);
-  }
+  selectAvatar(avatar: string): void { this.configForm.get('avatar')?.setValue(avatar); }
 
-  // Método para obtener mensaje de error
   getErrorMessage(field: string): string {
     const control = this.configForm.get(field);
-
     if (control?.errors) {
-      if (control.errors['required']) return 'Este campo es obligatorio';
-      if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
-      if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
+      if (control.errors['required']) return 'Este campo es obligatorio.';
+      if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres.`;
+      if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres.`;
     }
-
     return '';
   }
 
-
-
-  // Métodos para listas
   cargarListasPropias(): void {
     this.movieListsService.getUserLists().subscribe({
       next: (response) => {
-        this.listas = response.lists;
-        this.totalListas = response.totalLists || this.listas.length;
+        this.listas = response.lists || [];
+        this.totalListas = response.totalLists || 0;
         this.listasOcultas = response.hiddenLists || 0;
         this.isPremium = response.isPremium || false;
       },
       error: (error) => {
-        console.error('Error al cargar listas:', error);
+        console.error('Error al cargar listas propias:', error);
+        this.listas = []; this.totalListas = 0; this.listasOcultas = 0; // Resets en caso de error
       }
     });
   }
-  
-  cargarListasUsuario(userId: string): void {
-    console.log(`Cargando listas para el usuario: ${userId}`);
-    // Para listas públicas de otro usuario
+
+  cargarListasDeOtroUsuario(userId: string): void {
     this.movieListsService.getUserPublicLists(userId).subscribe({
       next: (response) => {
-        console.log(`Listas recibidas:`, response);
-        this.listas = response.lists;
-        this.totalListas = response.totalLists || this.listas.length;
-        this.listasOcultas = response.hiddenLists || 0;
+        this.listas = response.lists || [];
+        this.totalListas = response.totalLists || 0;
         this.isPremium = response.isPremium || false;
+        this.listasOcultas = 0; 
       },
       error: (error) => {
         console.error('Error al cargar listas de usuario:', error);
+        this.listas = []; this.totalListas = 0; // Resets en caso de error
       }
     });
   }
 
   mostrarFormularioCreacionLista(): void {
-    this.listaForm.reset({
-      title: '',
-      description: '',
-      isPublic: true
-    });
+    this.listaForm.reset({ title: '', description: '', isPublic: true });
     this.selectedFile = null;
     this.coverImagePreview = null;
     this.mostrarFormularioLista = true;
   }
 
-  cerrarFormularioLista(): void {
-    this.mostrarFormularioLista = false;
-  }
-
-
-
+  cerrarFormularioLista(): void { this.mostrarFormularioLista = false; }
 
   async crearLista(): Promise<void> {
     if (this.listaForm.invalid) {
-      console.log('Formulario inválido', this.listaForm.errors);
-      return;
+        Object.values(this.listaForm.controls).forEach(control => { // Marcar todos los campos como tocados para mostrar errores
+            control.markAsTouched();
+        });
+        return;
     }
-  
     const formData = this.listaForm.value;
-    console.log('Datos del formulario:', formData);
-  
     let coverImageBase64 = null;
-  
-    // Si hay un archivo seleccionado, convertirlo a base64
     if (this.selectedFile) {
       try {
         coverImageBase64 = await this.fileToBase64(this.selectedFile);
       } catch (error) {
         console.error('Error al convertir imagen:', error);
-        alert('Error al procesar la imagen. Por favor, inténtalo con otra imagen.');
+        alert('Error al procesar la imagen. Inténtalo con otra.');
         return;
       }
     }
-  
-    const listaData = {
-      ...formData,
-      coverImage: coverImageBase64
-    };
-  
-    console.log('Enviando datos al servidor:', listaData);
-  
-    // Crear nueva lista
+    const listaData = { ...formData, coverImage: coverImageBase64 };
+
     this.movieListsService.createList(listaData).subscribe({
       next: (response) => {
-        console.log('Respuesta del servidor:', response);
-        
-        // Asegurarnos de que tenemos la nueva lista
         if (response && response.list) {
-          // Asegurar que listas es un array
-          if (!Array.isArray(this.listas)) {
-            this.listas = [];
+          if (this.isOwnProfile) {
+            // Actualizar las listas mostradas localmente
+            const newListas = [response.list, ...this.listas];
+            this.totalListas = (this.totalListas || 0) + 1;
+
+            if (!this.isPremium && newListas.length > this.LISTS_LIMIT_FREE_USER) {
+              this.listas = newListas.slice(0, this.LISTS_LIMIT_FREE_USER);
+              this.listasOcultas = this.totalListas - this.LISTS_LIMIT_FREE_USER;
+            } else {
+              this.listas = newListas; // Si es premium o no supera el límite, simplemente añade
+              if (!this.isPremium) { // Si no es premium y no supera el límite
+                 this.listas = this.listas.slice(0, this.LISTS_LIMIT_FREE_USER); // Asegurar que no se muestren más de 5
+              }
+              this.listasOcultas = Math.max(0, this.totalListas - this.listas.length);
+            }
           }
-          
-          // Añadir la nueva lista al principio
-          this.listas.unshift(response.list);
-          
-          // Actualizar los contadores
-          this.totalListas = (this.totalListas || 0) + 1;
-          
-          console.log('Lista añadida localmente, total ahora:', this.totalListas);
-        } else {
-          console.error('Respuesta del servidor no contiene la lista', response);
         }
-        
         this.cerrarFormularioLista();
       },
       error: (error) => {
         console.error('Error al crear lista:', error);
-        alert('Error al crear la lista. Por favor, inténtalo de nuevo.');
+        if (error.error && error.error.error === 'PREMIUM_REQUIRED') {
+          alert(error.error.message);
+        } else {
+          alert('Error al crear la lista: ' + (error.error?.message || 'Por favor, inténtalo de nuevo.'));
+        }
       }
     });
   }
 
-
-
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (!input.files?.length) return;
-
+    if (!input.files?.length) {
+        this.selectedFile = null;
+        this.coverImagePreview = null;
+        return;
+    }
     const file = input.files[0];
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const maxSize = 1 * 1024 * 1024; // 1MB
 
     if (!validTypes.includes(file.type)) {
       alert('Por favor selecciona una imagen (JPG, PNG, GIF, WEBP)');
-      input.value = '';
-      return;
+      input.value = ''; this.selectedFile = null; this.coverImagePreview = null; return;
     }
-
     if (file.size > maxSize) {
       alert('La imagen es demasiado grande. El tamaño máximo es 1MB.');
-      input.value = '';
-      return;
+      input.value = ''; this.selectedFile = null; this.coverImagePreview = null; return;
     }
-
     this.selectedFile = file;
     this.previewImage(file);
   }
 
   previewImage(file: File): void {
     const reader = new FileReader();
-    reader.onload = () => {
-      this.coverImagePreview = reader.result as string;
-    };
+    reader.onload = () => this.coverImagePreview = reader.result as string;
     reader.readAsDataURL(file);
   }
 
@@ -676,11 +627,8 @@ export class PerfilComponent implements OnInit {
     });
   }
 
-  verDetalleLista(listaId: string): void {
-    this.router.navigate(['/listas', listaId]);
-  }
+  verDetalleLista(listaId: string): void { this.router.navigate(['/listas', listaId]); }
 
-  // Método auxiliar para validación que puedes reutilizar para ambos formularios
   hasFormError(field: string, form: FormGroup): boolean {
     const control = form.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
@@ -689,27 +637,23 @@ export class PerfilComponent implements OnInit {
   getFormErrorMessage(field: string, form: FormGroup): string {
     const control = form.get(field);
     if (!control) return '';
-
     if (control.errors) {
-      if (control.errors['required']) return 'Este campo es obligatorio';
-      if (control.errors['maxlength']) {
-        const maxLength = control.errors['maxlength'].requiredLength;
-        return `Máximo ${maxLength} caracteres`;
-      }
+      if (control.errors['required']) return 'Este campo es obligatorio.';
+      if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres.`;
+      if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres.`;
     }
     return '';
   }
 
-
-  // Métodos para cargar seguidores y seguidos
   cargarSeguidores(userId: string): void {
     this.userSocialService.getUserFollowers(userId).subscribe({
       next: (data) => {
-        this.seguidores = data.followers;
-        this.seguidoresCount = data.followers.length;
+        this.seguidores = data.followers || [];
+        this.seguidoresCount = data.followers?.length || 0;
       },
       error: (error) => {
         console.error('Error al cargar seguidores:', error);
+        this.seguidores = []; this.seguidoresCount = 0;
       }
     });
   }
@@ -717,79 +661,60 @@ export class PerfilComponent implements OnInit {
   cargarSeguidos(userId: string): void {
     this.userSocialService.getUserFollowing(userId).subscribe({
       next: (data) => {
-        this.seguidos = data.following;
-        this.seguidosCount = data.following.length;
+        this.seguidos = data.following || [];
+        this.seguidosCount = data.following?.length || 0;
       },
       error: (error) => {
         console.error('Error al cargar seguidos:', error);
+        this.seguidos = []; this.seguidosCount = 0;
       }
     });
   }
 
-  // Métodos para los modales
-  abrirModalSeguidores(): void {
-    this.usuariosFiltrados = [...this.seguidores];
-    this.mostrarModalSeguidores = true;
-  }
-
-  abrirModalSeguidos(): void {
-    this.usuariosFiltrados = [...this.seguidos];
-    this.mostrarModalSeguidos = true;
-  }
-
-  cerrarModales(): void {
-    this.mostrarModalSeguidores = false;
-    this.mostrarModalSeguidos = false;
-    this.filtroUsuarios = '';
-  }
+  abrirModalSeguidores(): void { this.usuariosFiltrados = [...this.seguidores]; this.mostrarModalSeguidores = true; this.filtroUsuarios = ''; }
+  abrirModalSeguidos(): void { this.usuariosFiltrados = [...this.seguidos]; this.mostrarModalSeguidos = true; this.filtroUsuarios = ''; }
+  cerrarModales(): void { this.mostrarModalSeguidores = false; this.mostrarModalSeguidos = false; this.filtroUsuarios = ''; }
 
   filtrarUsuarios(event: Event): void {
     const valor = (event.target as HTMLInputElement).value.toLowerCase();
-
+    this.filtroUsuarios = valor; // Actualizar para el mensaje de "no hay..."
     if (this.mostrarModalSeguidores) {
-      this.usuariosFiltrados = this.seguidores.filter(u =>
-        u.username.toLowerCase().includes(valor)
-      );
+      this.usuariosFiltrados = this.seguidores.filter(u => u.username.toLowerCase().includes(valor));
     } else if (this.mostrarModalSeguidos) {
-      this.usuariosFiltrados = this.seguidos.filter(u =>
-        u.username.toLowerCase().includes(valor)
-      );
+      this.usuariosFiltrados = this.seguidos.filter(u => u.username.toLowerCase().includes(valor));
     }
   }
 
-  dejarDeSeguir(userId: string): void {
-    this.userSocialService.unfollowUser(userId).subscribe({
+  dejarDeSeguir(userIdToUnfollow: string): void { // Desde el modal de "Seguidos"
+    if (!this.isOwnProfile) return; // Solo el dueño del perfil puede modificar su lista de seguidos
+    this.userSocialService.unfollowUser(userIdToUnfollow).subscribe({
       next: () => {
-        // Actualizar lista de seguidos
-        this.seguidos = this.seguidos.filter(u => u._id !== userId);
-        this.usuariosFiltrados = this.usuariosFiltrados.filter(u => u._id !== userId);
-        this.seguidosCount--;
-
-        // Si estamos viendo el perfil de este usuario, actualizar el estado del botón
-        if (this.route.snapshot.paramMap.get('id') === userId) {
+        this.seguidos = this.seguidos.filter(u => u._id !== userIdToUnfollow);
+        this.usuariosFiltrados = this.usuariosFiltrados.filter(u => u._id !== userIdToUnfollow);
+        this.seguidosCount = Math.max(0, (this.seguidosCount || 0) - 1);
+        // Si el perfil que se está viendo es el del usuario que se acaba de dejar de seguir desde el modal,
+        // actualiza el botón de seguir principal (esto es poco probable pero por completitud)
+        if (this.userProfile?._id === userIdToUnfollow && !this.isOwnProfile) {
           this.followStatus = 'none';
           this.isFollowing = false;
         }
       },
-      error: (error) => {
-        console.error('Error al dejar de seguir:', error);
-      }
+      error: (error) => console.error('Error al dejar de seguir desde modal:', error)
     });
   }
 
-  eliminarSeguidor(userId: string): void {
-    this.userSocialService.removeFollower(userId).subscribe({
+  eliminarSeguidor(userIdToRemove: string): void { // Desde el modal de "Seguidores"
+    if (!this.isOwnProfile) return; // Solo el dueño del perfil puede eliminar a sus seguidores
+    this.userSocialService.removeFollower(userIdToRemove).subscribe({
       next: () => {
-        // Actualizar lista de seguidores
-        this.seguidores = this.seguidores.filter(u => u._id !== userId);
-        this.usuariosFiltrados = this.usuariosFiltrados.filter(u => u._id !== userId);
-        this.seguidoresCount--;
+        this.seguidores = this.seguidores.filter(u => u._id !== userIdToRemove);
+        this.usuariosFiltrados = this.usuariosFiltrados.filter(u => u._id !== userIdToRemove);
+        this.seguidoresCount = Math.max(0, (this.seguidoresCount || 0) - 1);
       },
       error: (error) => {
         console.error('Error al eliminar seguidor:', error);
-        alert(`Error: ${error.error?.message || 'No se pudo eliminar el seguidor'}`);
+        alert(`Error al eliminar seguidor: ${error.error?.message || 'Ocurrió un problema.'}`);
       }
     });
   }
-
 }

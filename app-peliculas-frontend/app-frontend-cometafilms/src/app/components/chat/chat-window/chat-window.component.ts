@@ -82,22 +82,22 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   loadChatAndMessages(chatId: string): void {
     this.loading = true;
-    console.log('🔄 Cargando chat y mensajes para:', chatId);
+    console.log('Cargando chat y mensajes para:', chatId);
     
     // Primero cargar la lista de chats para obtener info del chat
     const sub = this.chatService.getUserChats().subscribe({
       next: (response) => {
-        console.log('📋 Chats obtenidos:', response.chats.length);
+        console.log('Chats obtenidos:', response.chats.length);
         const foundChat = response.chats.find(c => c._id === chatId);
         
         if (foundChat) {
           this.chat = foundChat;
-          console.log('✅ Chat encontrado:', this.chat);
+          console.log('Chat encontrado:', this.chat);
           
           // Ahora cargar los mensajes
           this.loadMessages(chatId);
         } else {
-          console.warn('⚠️ Chat no encontrado en la lista');
+          console.warn('Chat no encontrado en la lista');
           // Intentar cargar mensajes de todas formas
           this.loadMessages(chatId);
         }
@@ -105,7 +105,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
         this.loading = false;
       },
       error: (error) => {
-        console.error('❌ Error al obtener chats:', error);
+        console.error('Error al obtener chats:', error);
         // Intentar cargar mensajes de todas formas
         this.loadMessages(chatId);
         this.loading = false;
@@ -116,12 +116,12 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   loadMessages(chatId: string): void {
     this.loadingMessages = true;
-    console.log('💬 Cargando mensajes para chat:', chatId);
+    console.log('Cargando mensajes para chat:', chatId);
     
     const sub = this.chatService.getChatMessages(chatId).subscribe({
       next: (response) => {
-        console.log('✅ Mensajes obtenidos:', response.messages.length);
-        console.log('📝 Mensajes:', response.messages);
+        console.log('Mensajes obtenidos:', response.messages.length);
+        console.log('Mensajes:', response.messages);
         
         this.messages = response.messages || [];
         this.loadingMessages = false;
@@ -133,7 +133,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
         }
       },
       error: (error) => {
-        console.error('❌ Error al cargar mensajes:', error);
+        console.error('Error al cargar mensajes:', error);
         this.messages = [];
         this.loadingMessages = false;
       }
@@ -142,7 +142,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   createBasicChatInfo(chatId: string): void {
-    console.log('🔧 Creando info básica del chat...');
+    console.log('Creando info básica del chat...');
     
     // Encontrar el otro usuario basado en los mensajes
     const currentUserId = this.getCurrentUserId();
@@ -158,13 +158,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
         unreadCount: 0
       } as Chat;
       
-      console.log('✅ Info básica del chat creada:', this.chat);
+      console.log('Info básica del chat creada:', this.chat);
     }
   }
 
   joinChatRoom(chatId: string): void {
     if (this.socketService.isConnected()) {
-      console.log('🔌 Uniéndose al chat room:', chatId);
+      console.log('Uniéndose al chat room:', chatId);
       this.socketService.joinChat(chatId);
     }
   }
@@ -172,7 +172,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   setupSocketListeners(): void {
     const newMessageSub = this.socketService.newMessage$.subscribe(message => {
       if (message && message.chatId === this.currentChatId) {
-        console.log('📨 Nuevo mensaje recibido:', message);
+        console.log('Nuevo mensaje recibido:', message);
         this.messages.push(message.message);
         this.shouldScrollToBottom = true;
       }
@@ -194,7 +194,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   sendMessage(): void {
     if (!this.messageText.trim() || !this.currentChatId) {
-      console.warn('⚠️ No se puede enviar mensaje: texto vacío o sin chat');
+      console.warn('No se puede enviar mensaje: texto vacío o sin chat');
       return;
     }
 
@@ -207,13 +207,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
 
     const sub = this.chatService.sendTextMessage(this.currentChatId, this.messageText.trim()).subscribe({
       next: (message) => {
-        console.log('✅ Mensaje enviado:', message);
+        console.log('Mensaje enviado:', message);
         this.messages.push(message);
         this.messageText = '';
         this.shouldScrollToBottom = true;
       },
       error: (error) => {
-        console.error('❌ Error al enviar mensaje:', error);
+        console.error('Error al enviar mensaje:', error);
         alert('Error al enviar el mensaje. Inténtalo de nuevo.');
       }
     });
