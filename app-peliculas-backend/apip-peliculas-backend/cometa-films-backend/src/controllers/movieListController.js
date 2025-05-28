@@ -41,7 +41,7 @@ exports.createList = async (req, res) => {
         });
 
         // Registrar actividad si es pública
-        if (isPublic) {
+        if (newList.isPublic) { // Asegurarse de usar el valor final de isPublic
             await activityService.registerActivity({
                 userId,
                 actionType: 'created_public_list',
@@ -67,36 +67,36 @@ exports.createList = async (req, res) => {
     }
 };
 
-// Obtener todas las listas de un usuario
+// Obtener todas las listas de un usuario (para su propio perfil)
 exports.getUserLists = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.id; // El ID del usuario autenticado
         const isPremium = req.user.isPremium || false;
         const LISTS_LIMIT = 5; // Límite para usuarios no premium
 
-        // Obtener todas las listas del usuario
+        // Obtener todas las listas del usuario, ordenadas por fecha de creación
         const allLists = await MovieList.find({ userId }).sort({ createdAt: 1 });
 
-        // Preparar respuesta con metadatos adicionales
-        let response = {
-            lists: [],
-            isPremium,
-            totalLists: allLists.length,
-            hiddenLists: 0
-        };
+        let listsToReturn;
+        let hiddenLists = 0;
 
         if (isPremium) {
             // Usuario premium: mostrar todas las listas
-            response.lists = allLists;
+            listsToReturn = allLists;
         } else {
             // Usuario no premium: mostrar solo hasta el límite (las más antiguas primero)
-            response.lists = allLists.slice(0, LISTS_LIMIT);
-            response.hiddenLists = Math.max(0, allLists.length - LISTS_LIMIT);
+            listsToReturn = allLists.slice(0, LISTS_LIMIT);
+            hiddenLists = Math.max(0, allLists.length - LISTS_LIMIT);
         }
-
-        res.json(response);
+        
+        res.json({
+            lists: listsToReturn,
+            isPremium, // El estado premium del usuario que hace la solicitud (dueño del perfil)
+            totalLists: allLists.length, // El número total real de listas que tiene el usuario
+            hiddenLists
+        });
     } catch (error) {
-        console.error('Error al obtener listas:', error);
+        console.error('Error al obtener listas del propio usuario:', error);
         res.status(500).json({
             message: 'Error al obtener las listas',
             error: error.message
@@ -104,79 +104,57 @@ exports.getUserLists = async (req, res) => {
     }
 };
 
-// Obtener listas públicas de un usuario específico
+
+// Obtener listas públicas de un usuario específico (para cuando un visitante ve un perfil)
 exports.getUserPublicLists = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const currentUserId = req.user.id;
-        const LISTS_LIMIT = 5; // Límite para usuarios no premium
+        const { userId } = req.params; // ID del usuario cuyo perfil se está visitando
+        // const currentUserId = req.user ? req.user.id : null; // ID del usuario que realiza la solicitud (visitante)
+        const LISTS_LIMIT = 5;
 
-        // Verificar si el usuario existe
-        const userToShow = await User.findById(userId);
+        const userToShow = await User.findById(userId).select('username profileImageUrl isPremium');
         if (!userToShow) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
+        const targetIsPremium = userToShow.isPremium || false; // Premium status del dueño del perfil
 
-        // Determinar si el usuario cuyo perfil visitamos es premium
-        const targetIsPremium = userToShow.isPremium || false;
-        const currentIsPremium = req.user.isPremium || false;
+        let listsToReturn;
+        let totalListsForVisitor; // Este será el contador que vea el visitante
 
-        // Si es el propio usuario, aplicar lógica existente
-        if (userId === currentUserId) {
-            // Obtener todas las listas
-            const allLists = await MovieList.find({ userId }).sort({ createdAt: 1 });
-            
-            // Preparar respuesta
-            let response = {
-                lists: [],
-                isPremium: currentIsPremium,
-                totalLists: allLists.length,
-                hiddenLists: 0
-            };
-
-            if (currentIsPremium) {
-                // Usuario premium: mostrar todas las listas
-                response.lists = allLists;
-            } else {
-                // Usuario no premium: mostrar solo hasta el límite
-                response.lists = allLists.slice(0, LISTS_LIMIT);
-                response.hiddenLists = Math.max(0, allLists.length - LISTS_LIMIT);
-            }
-
-            return res.json(response);
-        }
-
-        // Obtener todas las listas públicas del usuario
-        const publicLists = await MovieList.find({
-            userId,
-            isPublic: true
-        }).sort({ createdAt: 1 });
-
-        // Preparar respuesta con metadatos
-        let response = {
-            lists: [],
-            isPremium: targetIsPremium,
-            totalLists: publicLists.length,
-            hiddenLists: 0
-        };
-
-        // Aplicar límite si el usuario objetivo no es premium
-        if (!targetIsPremium) {
-            response.lists = publicLists.slice(0, LISTS_LIMIT);
-            response.hiddenLists = Math.max(0, publicLists.length - LISTS_LIMIT);
+        if (targetIsPremium) {
+            // Dueño del perfil ES PREMIUM: mostrar todas sus listas públicas
+            listsToReturn = await MovieList.find({ userId, isPublic: true }).sort({ createdAt: 1 });
+            totalListsForVisitor = listsToReturn.length;
         } else {
-            response.lists = publicLists;
+            // Dueño del perfil NO ES PREMIUM:
+            // 1. Obtener las primeras LISTS_LIMIT listas creadas por este usuario (públicas o privadas)
+            const firstCreatedListsOverall = await MovieList.find({ userId })
+                .sort({ createdAt: 1 }) // Las más antiguas primero
+                .limit(LISTS_LIMIT);
+
+            // 2. De estas (máximo) 5 primeras listas creadas, filtrar y devolver solo las que son públicas
+            listsToReturn = firstCreatedListsOverall.filter(list => list.isPublic);
+            totalListsForVisitor = listsToReturn.length; // El contador es el número de estas listas públicas visibles
         }
-        
-        res.json(response);
+
+        res.json({
+            lists: listsToReturn, // Las listas que el visitante verá
+            totalLists: totalListsForVisitor, // El número para el contador que verá el visitante
+            isPremium: targetIsPremium, // Estado premium del dueño del perfil
+            username: userToShow.username,
+            profileImageUrl: userToShow.profileImageUrl,
+            // No es necesario enviar hiddenLists aquí, ya que es la perspectiva de un visitante.
+        });
+
     } catch (error) {
-        console.error('Error al obtener listas del usuario:', error);
+        console.error('Error al obtener listas públicas del usuario:', error);
         res.status(500).json({
-            message: 'Error al obtener listas del usuario',
+            message: 'Error interno del servidor al obtener listas públicas.',
             error: error.message
         });
     }
 };
+
 
 // Añadir película a una lista
 exports.addMovieToList = async (req, res) => {
@@ -231,34 +209,28 @@ exports.addMovieToList = async (req, res) => {
 };
 
 
-
 exports.getListById = async (req, res) => {
     try {
         const { listId } = req.params;
-        const userId = req.user.id;
+        const userId = req.user ? req.user.id : null; // Manejar si el usuario no está autenticado
 
         // Buscar la lista por ID
-        const list = await MovieList.findById(listId);
+        const list = await MovieList.findById(listId).populate('userId', 'username avatar'); // Populate para obtener datos del creador
 
         if (!list) {
             return res.status(404).json({ message: 'Lista no encontrada' });
         }
 
-        // Verificar si el usuario tiene permiso para ver la lista
-        // El usuario puede ver la lista si:
-        // 1. Es el propietario de la lista, o
-        // 2. La lista es pública
+        const isOwner = userId && list.userId._id.toString() === userId;
 
-        // Verificar si es el propietario
-        const isOwner = list.userId.toString() === userId;
-
-        if (!isOwner && !list.isPublic) {
+        if (!list.isPublic && !isOwner) {
             // Si no es propietario y la lista no es pública
-            return res.status(403).json({ message: 'No tienes permiso para ver esta lista' });
+            return res.status(403).json({ message: 'No tienes permiso para ver esta lista. Es privada.' });
         }
 
-        // Devolver la lista
-        res.json(list);
+        // Devolver la lista (y si el que la solicita es el dueño)
+        res.json({ list, isOwner });
+
     } catch (error) {
         console.error('Error al obtener la lista:', error);
         res.status(500).json({
@@ -290,18 +262,38 @@ exports.updateList = async (req, res) => {
         if (list.userId.toString() !== userId) {
             return res.status(403).json({ message: 'No tienes permiso para modificar esta lista' });
         }
+        
+        const oldIsPublic = list.isPublic;
 
         // Actualizar campos
         list.title = title;
         list.description = description || '';
         list.isPublic = isPublic !== undefined ? isPublic : list.isPublic;
-        if (coverImage !== undefined) {
+        if (coverImage !== undefined) { // Permite enviar null para borrarla o una nueva URL
             list.coverImage = coverImage;
         }
         list.updatedAt = new Date();
 
         // Guardar cambios
         await list.save();
+        
+        // Registrar actividad si la lista se hace pública o si ya era pública y se actualiza
+        if (list.isPublic) {
+            if (!oldIsPublic) { // Si se acaba de hacer pública
+                 await activityService.registerActivity({
+                    userId,
+                    actionType: 'created_public_list', // O un nuevo tipo 'made_list_public'
+                    movieList: { listId: list._id, title: list.title, coverImage: list.coverImage }
+                });
+            } else { // Si ya era pública y se actualiza (podría ser opcional)
+                 await activityService.registerActivity({
+                    userId,
+                    actionType: 'updated_public_list', 
+                    movieList: { listId: list._id, title: list.title, coverImage: list.coverImage }
+                });
+            }
+        }
+
 
         res.json({
             message: 'Lista actualizada correctamente',
@@ -336,6 +328,7 @@ exports.deleteList = async (req, res) => {
 
         // Eliminar la lista
         await MovieList.findByIdAndDelete(listId);
+        // Aquí podrías querer eliminar la actividad asociada si es necesario
 
         res.json({
             message: 'Lista eliminada correctamente'
@@ -353,7 +346,9 @@ exports.deleteList = async (req, res) => {
 exports.removeMovieFromList = async (req, res) => {
     try {
         const { listId } = req.params;
-        const { movieId } = req.body;
+        // El movieId vendrá en el cuerpo de la solicitud para DELETE, o como parámetro de ruta si prefieres.
+        // Asumiendo que viene en el cuerpo:
+        const { movieId } = req.body; 
         const userId = req.user.id;
 
         if (!movieId) {

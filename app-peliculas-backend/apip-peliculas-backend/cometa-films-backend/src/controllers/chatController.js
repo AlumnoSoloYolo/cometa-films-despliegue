@@ -48,34 +48,34 @@ exports.getChatMessages = async (req, res) => {
         console.log(`Mensajes encontrados (Metodo 1): ${messagesByChat.length}`);
 
         // 3. METODO 2: Buscar TODOS los mensajes (para debug)
-        console.log('METODO 2: Buscando TODOS los mensajes...');
-        const allMessages = await Message.find({})
-            .populate('sender', 'username avatar')
-            .sort({ createdAt: -1 })
-            .limit(20)
-            .lean();
+        // console.log('METODO 2: Buscando TODOS los mensajes...');
+        // const allMessages = await Message.find({})
+        //     .populate('sender', 'username avatar')
+        //     .sort({ createdAt: -1 })
+        //     .limit(20)
+        //     .lean();
 
-        console.log(`Total de mensajes en el sistema: ${allMessages.length}`);
+        // console.log(`Total de mensajes en el sistema: ${allMessages.length}`);
         
-        if (allMessages.length > 0) {
-            console.log('Muestra de mensajes:');
-            allMessages.slice(0, 5).forEach((msg, idx) => {
-                console.log(`  ${idx + 1}. ID: ${msg._id}, Chat: ${msg.chat || 'SIN CHAT'}, Texto: ${msg.text || '[Pelicula]'}, Sender: ${msg.sender?.username || 'Sin sender'}`);
-            });
-        }
+        // if (allMessages.length > 0) {
+        //     console.log('Muestra de mensajes:');
+        //     allMessages.slice(0, 5).forEach((msg, idx) => {
+        //         console.log(`  ${idx + 1}. ID: ${msg._id}, Chat: ${msg.chat || 'SIN CHAT'}, Texto: ${msg.text || '[Pelicula]'}, Sender: ${msg.sender?.username || 'Sin sender'}`);
+        //     });
+        // }
 
         // 4. METODO 3: Buscar mensajes por participantes
-        console.log('METODO 3: Buscando mensajes por participantes...');
-        const participantIds = chat.participants;
-        const messagesBySender = await Message.find({
-            sender: { $in: participantIds }
-        })
-        .populate('sender', 'username avatar')
-        .sort({ createdAt: -1 })
-        .limit(50)
-        .lean();
+        // console.log('METODO 3: Buscando mensajes por participantes...');
+        // const participantIds = chat.participants;
+        // const messagesBySender = await Message.find({
+        //     sender: { $in: participantIds }
+        // })
+        // .populate('sender', 'username avatar')
+        // .sort({ createdAt: -1 })
+        // .limit(50)
+        // .lean();
 
-        console.log(`Mensajes por participantes: ${messagesBySender.length}`);
+        // console.log(`Mensajes por participantes: ${messagesBySender.length}`);
 
         // 5. Decidir que mensajes devolver
         let messagesToReturn = [];
