@@ -126,22 +126,21 @@
     }
 
     @if (peliculas.length > 0) {
-    <div class="row mx-5 my-2 p-3 row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-        @for(pelicula of peliculas; track pelicula.id) {
+    <div class="container-fluid" style="max-width: var(--breakpoint-xl);">
+        <div class="row mx-5 my-2 p-3 row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            @for(pelicula of peliculas; track pelicula.id) {
 
-        <div class="col p-2">
-
-            <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
-
+            <div class="col p-2">
+                <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+            </div>
+            }
         </div>
-        }
     </div>
     } @else if (!cargando) {
     <div class="text-center py-5">
         <p class="mb-0">No se encontraron resultados</p>
     </div>
     }
-
 
     @if (cargando && paginaActual > 1) {
     <div class="text-center py-3">

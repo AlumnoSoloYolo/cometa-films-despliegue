@@ -1,0 +1,180 @@
+:root {
+  /* === COLORES PRIMARIOS === */
+  --color-primary: #6B77E5;
+  --color-primary-light: #8a94ed;
+  --color-primary-dark: #5a66d4;
+  --color-accent: #d314d3; /* rgb(211, 20, 211) */
+  --color-accent-light: #ff14ff;
+  --color-accent-dark: #b511b5;
+  
+  /* === COLORES SECUNDARIOS === */
+  --color-secondary: #14e0e0;
+  --color-secondary-light: #00ffff;
+  --color-secondary-dark: #0eb8e8;
+  
+  /* === COLORES DE ESTADO === */
+  --color-success: #00ffb0;
+  --color-warning: #ffc107;
+  --color-error: #ff4444;
+  --color-info: #2196f3;
+  
+  /* === COLORES DE TEXTO === */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-disabled: rgba(255, 255, 255, 0.3);
+  
+  /* === FONDOS === */
+  --bg-body: #101919;
+  --bg-header: rgb(16, 25, 25);
+  --bg-footer: rgb(16, 25, 25);
+  --bg-surface: rgba(30, 35, 40, 0.95);
+  --bg-surface-light: rgba(255, 255, 255, 0.05);
+  --bg-card: rgba(10, 10, 10, 0.8);
+  --bg-overlay: rgba(0, 0, 0, 0.85);
+  --bg-glass: rgba(13, 17, 23, 0.95);
+  --bg-input: rgba(255, 255, 255, 0.1);
+  --bg-input-focus: rgba(255, 255, 255, 0.15);
+  --bg-modal: rgba(10, 10, 10, 0.9);
+  
+  /* === GRADIENTES === */
+  --gradient-primary: linear-gradient(45deg, var(--color-primary), var(--color-primary-light));
+  --gradient-accent: linear-gradient(45deg, var(--color-accent), var(--color-accent-light));
+  --gradient-cyber: linear-gradient(45deg, #ff00ff, #00ffff);
+  --gradient-premium: linear-gradient(45deg, #ff00ff, #00ffff);
+  --gradient-border: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
+  --gradient-success: linear-gradient(45deg, #64DD17, #00E676);
+  
+  /* === BORDES === */
+  --border-width: 1px;
+  --border-width-thick: 2px;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color-light: rgba(255, 255, 255, 0.2);
+  --border-color-accent: rgba(211, 20, 211, 0.3);
+  --border-color-primary: rgba(107, 119, 229, 0.3);
+  
+  /* === RADIO DE BORDES === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 15px;
+  --radius-2xl: 20px;
+  --radius-3xl: 30px;
+  --radius-full: 50%;
+  
+  /* === ESPACIADO FLUIDO (Solo contenedores y layouts) === */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+  
+  /* === ESPACIADO FLUIDO PARA CONTENEDORES === */
+  --container-padding: min(2rem, 5vw);
+  --section-spacing: min(4rem, 8vw);
+  --card-gap: min(1.5rem, 4vw);
+  
+  /* === TIPOGRAFÍA === */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* === TAMAÑOS DE FUENTE BASE (REM) === */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.1rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.8rem;
+  --font-size-4xl: 2rem;
+  --font-size-5xl: 2.5rem;
+  
+  /* === TAMAÑOS FLUIDOS PARA TÍTULOS GRANDES === */
+  --font-size-hero: clamp(2rem, 5vw, 4rem);
+  --font-size-section: clamp(1.5rem, 4vw, 2.5rem);
+  
+  /* === ALTURAS DE LÍNEA === */
+  --line-height-tight: 1.3;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+  
+  /* === SOMBRAS === */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 10px 25px rgba(0, 0, 0, 0.3);
+  --shadow-cyber: 0 0 10px rgba(211, 20, 211, 0.3);
+  --shadow-glow: 0 0 15px rgba(211, 20, 211, 0.5);
+  --shadow-primary: 0 4px 12px rgba(107, 119, 229, 0.3);
+  --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);
+  
+  /* === TRANSICIONES === */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  /* === Z-INDEX === */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  
+  /* === AVATARES === */
+  --avatar-xs: 30px;
+  --avatar-sm: 36px;
+  --avatar-md: 40px;
+  --avatar-lg: 50px;
+  --avatar-xl: 60px;
+  --avatar-2xl: 120px;
+  
+  /* === BOTONES === */
+  --button-height-sm: 32px;
+  --button-height-md: 40px;
+  --button-height-lg: 48px;
+  --button-padding-sm: 0.25rem 0.75rem;
+  --button-padding-md: 0.5rem 1rem;
+  --button-padding-lg: 0.75rem 1.5rem;
+  
+  /* === INPUTS === */
+  --input-height-sm: 32px;
+  --input-height-md: 40px;
+  --input-height-lg: 48px;
+  --input-padding: 0.8rem;
+  
+  /* === CONTENEDORES FLUIDOS === */
+  --container-padding: min(2rem, 5vw);    /* Padding lateral fluido */
+  --section-gap: min(3rem, 8vw);          /* Gap entre secciones */
+  --card-gap: min(1.5rem, 4vw);           /* Gap entre cards */
+  --header-height: 80px;
+  --sidebar-width: 350px;
+  --sidebar-min-width: 300px;
+  --chat-container-max-height: 800px;
+  --modal-max-width: 500px;
+  --movie-card-aspect-ratio: 2/3;
+  --movie-card-hover-scale: 1.05;
+  
+  /* === BREAKPOINTS (para referencia) === */
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1400px;
+  
+  /* === EFECTOS ESPECIALES === */
+  --backdrop-blur: blur(10px);
+  --backdrop-blur-heavy: blur(20px);
+  
+  /* === OPACIDADES === */
+  --opacity-disabled: 0.6;
+  --opacity-hover: 0.8;
+  --opacity-active: 0.9;
+}

@@ -45,7 +45,17 @@
                 </nav>
 
            
-                <div class="user-actions">
+                <div class="user-actions ms-4">
+
+                    @if (shouldShowPremiumButton()) {
+                    <div class="premium-promo">
+                        <a routerLink="/premium" class="premium-btn" (click)="navigateTo('/premium')">
+                            <i class="bi bi-star-fill"></i>
+                            <span>Hazte Premium</span>
+                        </a>
+                    </div>
+                    }
+
             
                     <form [formGroup]="searchForm" (ngSubmit)="buscar()" class="search-form">
                         <div class="search-wrapper">
@@ -57,23 +67,14 @@
                         </div>
                     </form>
 
-                    <!-- CAMBIADO: Usar shouldShowPremiumButton() en lugar de !isPremiumUser -->
-                    @if (shouldShowPremiumButton()) {
-                    <div class="premium-promo">
-                        <a routerLink="/premium" class="premium-btn" (click)="navigateTo('/premium')">
-                            <i class="bi bi-star-fill"></i>
-                            <span>Hazte Premium</span>
-                        </a>
-                    </div>
-                    }
-
+                 
                  
                     <div class="dropdown user-dropdown">
                         <button class="profile-toggle dropdown-toggle" type="button" id="userDropdown"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <img [src]="getUserAvatarPath()" alt="Avatar de usuario" class="avatar-img">
                             <span class="username">{{ getUsername() }}</span>
-                            <i class="bi bi-chevron-down dropdown-arrow"></i>
+                            <!-- <i class="bi bi-chevron-down dropdown-arrow"></i> -->
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li>
