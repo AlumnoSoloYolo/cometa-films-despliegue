@@ -1,3 +1,8 @@
+export interface ListResponse {
+    list: MovieList;
+    isOwner: boolean;
+}
+
 export interface MovieInList {
     movieId: string;
     addedAt: Date;

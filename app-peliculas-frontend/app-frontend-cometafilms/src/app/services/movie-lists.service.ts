@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environments';
-import { MovieList, ListsResponse } from '../models/movie-list.model';
+import { MovieList, ListsResponse, ListResponse } from '../models/movie-list.model';
 
 @Injectable({
   providedIn: 'root'
@@ -45,12 +45,12 @@ export class MovieListsService {
   }
 
   // Obtener una lista específica por ID
-  getListById(listId: string): Observable<MovieList> {
-    return this.http.get<MovieList>(
-      `${this.apiUrl}/lists/${listId}`,
-      this.getHeaders()
-    );
-  }
+ getListById(listId: string): Observable<ListResponse> {
+  return this.http.get<ListResponse>(
+    `${this.apiUrl}/lists/${listId}`,
+    this.getHeaders()
+  );
+}
 
   // Añadir película a una lista
   addMovieToList(listId: string, movieId: string): Observable<any> {

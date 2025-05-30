@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MovieListsService } from '../../services/movie-lists.service';
 import { PeliculasService } from '../../services/peliculas.service';
 import { AuthService } from '../../services/auth.service';
@@ -10,10 +10,15 @@ import { MovieList } from '../../models/movie-list.model';
 import { PeliculaCardComponent } from '../pelicula-card/pelicula-card.component';
 import { LikeButtonComponent } from '../like-button/like-button.component';
 
+export interface ListResponse {
+  list: MovieList;
+  isOwner: boolean;
+}
+
 @Component({
   selector: 'app-lista-detalles',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, PeliculaCardComponent, LikeButtonComponent],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, PeliculaCardComponent, LikeButtonComponent, FormsModule],
   templateUrl: './lista-detalles.component.html',
   styleUrls: ['./lista-detalles.component.css']
 })
@@ -30,6 +35,13 @@ export class ListaDetallesComponent implements OnInit {
   selectedFile: File | null = null;
   coverImagePreview: string | null = null;
   currentUser: any;
+  mostrarModalBusqueda: boolean = false;
+  busquedaQuery: string = '';
+  peliculasBusqueda: any[] = [];
+  cargandoBusqueda: boolean = false;
+  paginaActual: number = 1;
+  hayMasPaginas: boolean = true;
+  busquedaRealizada: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -66,56 +78,91 @@ export class ListaDetallesComponent implements OnInit {
     });
   }
 
-  cargarLista(listId: string): void {
-    this.isLoading = true;
-    this.movieListsService.getListById(listId).subscribe({
-      next: (data) => {
-        this.lista = data;
-        this.isOwnList = this.currentUser && this.lista.userId === this.currentUser.id;
-        this.cargarPeliculasDeLista();
-        this.obtenerNombreCreador();
-        this.initEditForm();
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error al cargar la lista:', error);
-        this.isLoading = false;
-      }
-    });
-  }
-
-  cargarPeliculasDeLista(): void {
-    if (!this.lista || this.lista.movies.length === 0) {
-      return;
-    }
-
-    // Cargar los detalles de cada película
-    this.peliculasLista = [];
-    this.lista.movies.forEach(movie => {
-      this.peliculasService.getDetallesPelicula(movie.movieId).subscribe({
-        next: (pelicula) => {
-          this.peliculasLista.push(pelicula);
-        },
-        error: (error) => {
-          console.error(`Error al cargar detalles de película ${movie.movieId}:`, error);
+cargarLista(listId: string): void {
+  this.isLoading = true;
+  this.movieListsService.getListById(listId).subscribe({
+    next: (response: any) => {
+      if (response.list) {
+        this.lista = response.list;
+        this.isOwnList = response.isOwner;
+      } else {
+        this.lista = response;
+        if (this.currentUser && this.lista) {
+          const userId = this.lista.userId as any;
+          const listaUserId = typeof userId === 'object' && userId._id 
+            ? userId._id 
+            : String(userId);
+          this.isOwnList = listaUserId === String(this.currentUser.id);
+        } else {
+          this.isOwnList = false;
         }
-      });
-    });
+      }
+      
+      this.cargarPeliculasDeLista();
+      this.obtenerNombreCreador();
+      this.initEditForm();
+      this.isLoading = false;
+    },
+    error: (error) => {
+      console.error('Error al cargar la lista:', error);
+      this.isLoading = false;
+    }
+  });
+}
+
+cargarPeliculasDeLista(): void {
+  if (!this.lista || !this.lista.movies || this.lista.movies.length === 0) {
+    this.peliculasLista = [];
+    return;
   }
 
-  obtenerNombreCreador(): void {
-    if (!this.lista) return;
-
-    this.userSocialService.getUserProfile(this.lista.userId).subscribe({
-      next: (user) => {
-        this.creadorLista = user.username;
+  this.peliculasLista = [];
+  this.lista.movies.forEach(movie => {
+    this.peliculasService.getDetallesPelicula(movie.movieId).subscribe({
+      next: (pelicula) => {
+        this.peliculasLista.push(pelicula);
       },
       error: (error) => {
-        console.error('Error al obtener información del creador:', error);
-        this.creadorLista = 'Usuario desconocido';
+        console.error(`Error al cargar película ${movie.movieId}:`, error);
       }
     });
+  });
+}
+
+obtenerNombreCreador(): void {
+  if (!this.lista?.userId) {
+    this.creadorLista = 'Usuario desconocido';
+    return;
   }
+
+  const userIdString = this.userIdString;
+
+  this.userSocialService.getUserProfile(userIdString).subscribe({
+    next: (user) => {
+      this.creadorLista = user.username  || 'Sin nombre';
+    },
+    error: (error) => {
+      console.error('Error al obtener información del creador:', error);
+      this.creadorLista = 'Usuario desconocido';
+    }
+  });
+}
+
+get userIdString(): string {
+  if (!this.lista?.userId) return '';
+  
+  const userId = this.lista.userId as any;
+  
+  if (typeof userId === 'object' && userId._id) {
+    return userId._id;
+  } else if (typeof userId === 'object' && userId.$oid) {
+    return userId.$oid;
+  } else {
+    return String(userId);
+  }
+}
+
+
 
   buscarPeliculas(): void {
     if (this.searchForm.invalid) return;
@@ -256,8 +303,6 @@ export class ListaDetallesComponent implements OnInit {
     };
 
     // Actualizar la lista
-    // Note: For this to work, you would need to implement an updateList method in the MovieListsService
-    // This endpoint doesn't exist in your current service, so it would need to be added
     this.movieListsService.updateList(this.lista._id, listaData).subscribe({
       next: (response) => {
         this.lista = response.list;
@@ -270,6 +315,89 @@ export class ListaDetallesComponent implements OnInit {
       }
     });
   }
+
+
+  // Método para abrir el modal
+  abrirModalBusqueda(): void {
+    this.mostrarModalBusqueda = true;
+    this.busquedaQuery = '';
+    this.peliculasBusqueda = [];
+    this.paginaActual = 1;
+    this.hayMasPaginas = true;
+    this.busquedaRealizada = false;
+  }
+
+  // Método para cerrar el modal
+  cerrarModalBusqueda(): void {
+    this.mostrarModalBusqueda = false;
+    this.peliculasBusqueda = [];
+    this.busquedaQuery = '';
+    this.busquedaRealizada = false;
+  }
+
+  // Método para buscar películas
+  buscarPeliculasModal(): void {
+    if (!this.busquedaQuery.trim() || this.busquedaQuery.length < 2) return;
+    
+    this.cargandoBusqueda = true;
+    this.paginaActual = 1;
+    this.peliculasBusqueda = [];
+    this.busquedaRealizada = true;
+    
+    this.peliculasService.busquedaAvanzadaPeliculas({ 
+      query: this.busquedaQuery,
+      page: this.paginaActual 
+    }).subscribe({
+      next: (data) => {
+        this.peliculasBusqueda = data.results;
+        this.hayMasPaginas = this.paginaActual < data.total_pages;
+        this.cargandoBusqueda = false;
+      },
+      error: (error) => {
+        console.error('Error en la búsqueda:', error);
+        this.cargandoBusqueda = false;
+      }
+    });
+  }
+
+  // Método para cargar más películas (scroll infinito)
+  cargarMasPeliculas(): void {
+    if (!this.hayMasPaginas || this.cargandoBusqueda) return;
+    
+    this.cargandoBusqueda = true;
+    this.paginaActual++;
+    
+    this.peliculasService.busquedaAvanzadaPeliculas({ 
+      query: this.busquedaQuery,
+      page: this.paginaActual 
+    }).subscribe({
+      next: (data) => {
+        this.peliculasBusqueda = [...this.peliculasBusqueda, ...data.results];
+        this.hayMasPaginas = this.paginaActual < data.total_pages;
+        this.cargandoBusqueda = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar más películas:', error);
+        this.cargandoBusqueda = false;
+      }
+    });
+  }
+
+  // Método para detectar scroll al final
+  onScroll(event: any): void {
+    const element = event.target;
+    if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+      this.cargarMasPeliculas();
+    }
+  }
+
+  // Método para añadir película desde el modal
+  agregarPeliculaModal(pelicula: any): void {
+    if (this.estaEnLista(pelicula.id)) return;
+    
+    this.agregarPelicula(pelicula.id);
+  }
+
 
   eliminarLista(): void {
     if (!this.lista) return;

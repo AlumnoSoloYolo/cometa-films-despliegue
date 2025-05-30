@@ -48,8 +48,7 @@
                             }
                         </div>
                         <div class="lista-metadata">
-                            <span class="lista-creator">Por <a [routerLink]="['/usuarios', lista.userId]">{{
-                                    creadorLista }}</a></span>
+                            <span class="lista-creator">Por <a [routerLink]="['/usuarios', userIdString]">{{ creadorLista }}</a></span>
                             <span class="lista-date">{{ lista.createdAt | date:'mediumDate' }}</span>
                             <span class="privacy-badge" [class.private]="!lista.isPublic">
                                 <i class="bi" [ngClass]="lista.isPublic ? 'bi-globe' : 'bi-lock'"></i>
@@ -72,41 +71,11 @@
     <div class="container mt-4">
         @if (isOwnList) {
         <div class="search-container mb-4">
-            <form [formGroup]="searchForm" (ngSubmit)="buscarPeliculas()" class="d-flex gap-1">
-
-                <input type="text" class="form-control search-input" formControlName="query"
-                    placeholder="Buscar películas para añadir a la lista...">
-                <button class="btn btn-primary" type="submit">
-                    <i class="bi bi-search"></i>
-                </button>
-            </form>
+            <button class="btn btn-primary btn-lg w-100" (click)="abrirModalBusqueda()">
+                <i class="bi bi-search me-2"></i>
+                Buscar películas para añadir
+            </button>
         </div>
-
-        @if (resultadosBusqueda.length > 0) {
-        <div class="search-results mb-4">
-            <h3 class="section-title">Resultados de búsqueda</h3>
-            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3">
-                @for (pelicula of resultadosBusqueda; track pelicula.id) {
-                <div class="col">
-                    <div class="search-movie-card">
-                        <img [src]="'https://image.tmdb.org/t/p/w200' + pelicula.poster_path" [alt]="pelicula.title"
-                            class="movie-poster">
-                        <div class="movie-info">
-                            <h5 class="movie-title">{{ pelicula.title }}</h5>
-                            <p class="movie-year">{{ pelicula.release_date | date:'yyyy' }}</p>
-                        </div>
-                        <button class="btn btn-add" (click)="agregarPelicula(pelicula.id)"
-                            [disabled]="estaEnLista(pelicula.id)">
-                            <i class="bi"
-                                [ngClass]="estaEnLista(pelicula.id) ? 'bi-check2-circle' : 'bi-plus-circle'"></i>
-                            {{ estaEnLista(pelicula.id) ? 'Añadida' : 'Añadir' }}
-                        </button>
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
-        }
         }
 
         <div class="lista-movies">
@@ -211,3 +180,115 @@
     </div>
     }
 </div>
+
+<!-- Modal de búsqueda -->
+@if (mostrarModalBusqueda) {
+<div class="modal-overlay" (click)="cerrarModalBusqueda()"></div>
+<div class="search-modal">
+    <div class="modal-header">
+        <h3>
+            <i class="bi bi-search me-2"></i>
+            Buscar películas
+        </h3>
+        <button class="btn-close" (click)="cerrarModalBusqueda()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    
+    <div class="modal-search-bar">
+        <div class="search-input-group">
+            <input 
+                type="text" 
+                class="form-control search-input"
+                [(ngModel)]="busquedaQuery"
+                (keyup.enter)="buscarPeliculasModal()"
+                placeholder="Buscar por título de película..."
+                autofocus>
+            <button 
+                class="btn btn-primary search-btn" 
+                (click)="buscarPeliculasModal()"
+                [disabled]="busquedaQuery.length < 2">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="modal-content" (scroll)="onScroll($event)">
+        @if (cargandoBusqueda && peliculasBusqueda.length === 0) {
+            <div class="loading-state">
+                <div class="spinner-border text-primary"></div>
+                <p>Buscando películas...</p>
+            </div>
+        }
+        
+        @if (peliculasBusqueda.length > 0) {
+            <div class="movies-grid">
+                @for (pelicula of peliculasBusqueda; track pelicula.id) {
+                    <div class="movie-card" [class.added]="estaEnLista(pelicula.id)">
+                        <div class="movie-poster-container">
+                            <img 
+                                [src]="pelicula.poster_path ? 'https://image.tmdb.org/t/p/w300' + pelicula.poster_path : 'assets/no-poster.jpg'"
+                                [alt]="pelicula.title"
+                                class="movie-poster"
+                                loading="lazy">
+                            <div class="movie-overlay">
+                                <button 
+                                    class="btn-add-movie"
+                                    (click)="agregarPeliculaModal(pelicula)"
+                                    [disabled]="estaEnLista(pelicula.id)">
+                                    <i class="bi" 
+                                       [ngClass]="estaEnLista(pelicula.id) ? 'bi-check-circle-fill' : 'bi-plus-circle'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="movie-info">
+                            <h4 class="movie-title">{{ pelicula.title }}</h4>
+                            <div class="movie-details">
+                                <span class="movie-year">{{ pelicula.release_date | date:'yyyy' }}</span>
+                                @if (pelicula.vote_average > 0) {
+                                    <span class="movie-rating">
+                                        <i class="bi bi-star-fill"></i>
+                                        {{ pelicula.vote_average | number:'1.1-1' }}
+                                    </span>
+                                }
+                            </div>
+                            @if (pelicula.overview) {
+                                <p class="movie-overview">{{ pelicula.overview | slice:0:120 }}...</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            @if (cargandoBusqueda) {
+                <div class="loading-more">
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                    <span>Cargando más...</span>
+                </div>
+            }
+            
+            @if (!hayMasPaginas && !cargandoBusqueda) {
+                <div class="end-results">
+                    <p>No hay más resultados</p>
+                </div>
+            }
+        }
+        
+        @if (peliculasBusqueda.length === 0 && !cargandoBusqueda && busquedaRealizada) {
+            <div class="no-results">
+                <i class="bi bi-film"></i>
+                <h4>No se encontraron películas</h4>
+                <p>Intenta con otro término de búsqueda</p>
+            </div>
+        }
+        
+        @if (!busquedaRealizada) {
+            <div class="search-placeholder">
+                <i class="bi bi-search"></i>
+                <h4>Busca películas</h4>
+                <p>Escribe el nombre de una película y presiona buscar</p>
+            </div>
+        }
+    </div>
+</div>
+}
