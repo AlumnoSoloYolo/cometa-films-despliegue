@@ -1,10 +1,4 @@
 <div class="users-page">
-    <!-- Header de la página -->
-    <!-- <div class="page-header">
-        <h1 class="page-title">Comunidad</h1>
-     
-    </div> -->
-
     <!-- Sección de búsqueda mejorada -->
     <div class="search-section">
         <div class="search-container">
@@ -102,7 +96,7 @@
             <div class="users-list">
                 @for (usuario of usuarios; track usuario._id) {
                     <div class="user-item">
-                        <!-- Avatar con indicador online (futuro) -->
+                        <!-- Avatar -->
                         <div class="user-avatar-container">
                             <img 
                                 [src]="getAvatarPath(usuario.avatar)" 
@@ -110,18 +104,14 @@
                                 class="user-avatar"
                                 [routerLink]="['/usuarios', usuario._id]"
                             >
-                            <!-- Indicador online para el futuro -->
-                            <!-- <div class="online-indicator" *ngIf="usuario.isOnline"></div> -->
                         </div>
 
                         <!-- Información del usuario -->
                         <div class="user-info" [routerLink]="['/usuarios', usuario._id]">
-                            <!-- Header con nombre -->
                             <div class="user-header">
                                 <h3 class="username">{{ usuario.username }}</h3>
                             </div>
 
-                            <!-- Estadísticas del usuario -->
                             <div class="user-stats">
                                 <div class="stat-item" title="Películas vistas">
                                     <span class="stat-number">{{ usuario.pelisVistasCount || 0 }}</span>
@@ -136,11 +126,9 @@
                                     <span class="stat-label">Pendientes</span>
                                 </div>
                             </div>
-
-                            <!-- Sin bio por ahora -->
                         </div>
 
-                        <!-- Acciones de seguimiento -->
+                        <!-- Acciones de seguimiento - Versión mejorada para Chrome -->
                         <div class="follow-actions">
                             <button 
                                 class="follow-btn"
@@ -149,27 +137,25 @@
                                     'following': followStatus[usuario._id] === 'following',
                                     'requested': followStatus[usuario._id] === 'requested'
                                 }"
+                                [disabled]="processingFollow[usuario._id]"
                                 (click)="toggleFollow(usuario, $event)"
                                 (mouseenter)="setHovering(usuario._id, true)"
                                 (mouseleave)="setHovering(usuario._id, false)"
                                 type="button"
+                                [attr.data-user-id]="usuario._id"
+                                [attr.data-status]="followStatus[usuario._id]"
                             >
-                                <i class="bi" [ngClass]="{
-                                    'bi-person-plus-fill': !followStatus[usuario._id] || followStatus[usuario._id] === 'none',
-                                    'bi-person-dash-fill': followStatus[usuario._id] === 'following' && isHovering[usuario._id],
-                                    'bi-check-lg': followStatus[usuario._id] === 'following' && !isHovering[usuario._id],
-                                    'bi-x-circle-fill': followStatus[usuario._id] === 'requested' && isHovering[usuario._id],
-                                    'bi-hourglass-split': followStatus[usuario._id] === 'requested' && !isHovering[usuario._id]
-                                }"></i>
-                                <span>
-                                    @if (followStatus[usuario._id] === 'following') {
-                                        {{ isHovering[usuario._id] ? 'Dejar de seguir' : 'Siguiendo' }}
-                                    } @else if (followStatus[usuario._id] === 'requested') {
-                                        {{ isHovering[usuario._id] ? 'Cancelar' : 'Solicitado' }}
-                                    } @else {
-                                        Seguir
-                                    }
-                                </span>
+                                <!-- Versión simplificada que evita acumulación de texto -->
+                                @if (processingFollow[usuario._id]) {
+                                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <span>Procesando...</span>
+                                } @else {
+                                    <!-- Usar métodos separados para evitar problemas de renderizado -->
+                                    <i class="bi" [ngClass]="getButtonIcon(usuario._id)"></i>
+                                    <span [attr.data-text]="getButtonText(usuario._id)">{{ getButtonText(usuario._id) }}</span>
+                                }
                             </button>
                         </div>
                     </div>

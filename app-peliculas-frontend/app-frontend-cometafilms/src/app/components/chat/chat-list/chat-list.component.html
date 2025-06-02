@@ -1,135 +1,145 @@
-    <div class="chat-list-container">
-      <!-- Header -->
-      <div class="chat-header">
-        <h2>
-          <i class="bi bi-chat-dots me-2"></i>
-          Mensajes
-        </h2>
-        <button class="btn-new-chat" (click)="showNewChatModal = true">
-          <i class="bi bi-plus-lg"></i>
+<div class="chat-list">
+  <!-- Header -->
+  <div class="chat-list__header">
+    <h2 class="chat-list__title">
+      <i class="bi bi-chat-dots"></i>
+      Mensajes
+    </h2>
+    <button class="chat-list__new-chat-btn" (click)="showNewChatModal = true">
+      <i class="bi bi-plus-lg"></i>
+    </button>
+  </div>
+
+  <!-- Lista de chats -->
+  <div class="chat-list__container">
+    @if (loading) {
+      <div class="chat-list__loading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    }
+
+    @if (!loading && chats.length === 0) {
+      <div class="chat-list__empty">
+        <i class="bi bi-chat-square-text"></i>
+        <p>No tienes conversaciones</p>
+        <p class="sub-text">Inicia una nueva conversación</p>
+        <button class="btn-primary" (click)="showNewChatModal = true">
+          Nueva conversación
         </button>
       </div>
+    }
 
-      <!-- Lista de chats -->
-      <div class="chats-container">
-        @if (loading) {
-          <div class="loading-container">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Cargando...</span>
-            </div>
-          </div>
-        }
-
-        @if (!loading && chats.length === 0) {
-          <div class="empty-chats">
-            <i class="bi bi-chat-square-text"></i>
-            <p>No tienes conversaciones</p>
-            <p class="sub-text">Inicia una nueva conversación</p>
-            <button class="btn-primary" (click)="showNewChatModal = true">
-              Nueva conversación
-            </button>
-          </div>
-        }
-
-        @if (!loading && chats.length > 0) {
-          <div class="chat-items">
-            @for (chat of chats; track chat._id) {
-              <div 
-                class="chat-item" 
-                [class.active]="selectedChatId === chat._id"
-                (click)="selectChat(chat._id)"
+    @if (!loading && chats.length > 0) {
+      <div class="chat-list__items">
+        @for (chat of chats; track chat._id) {
+          <div 
+            class="chat-list__item" 
+            [class.chat-list__item--active]="selectedChatId === chat._id"
+            (click)="selectChat(chat._id)"
+          >
+            <div class="chat-list__avatar-container">
+              <img 
+                [src]="getAvatarPath(chat.otherParticipant.avatar)" 
+                [alt]="chat.otherParticipant.username"
+                class="chat-list__avatar"
               >
-                <div class="chat-avatar">
-                  <img 
-                    [src]="getAvatarPath(chat.otherParticipant.avatar)" 
-                    [alt]="chat.otherParticipant.username"
-                    class="avatar-img"
-                  >
-                  @if (chat.unreadCount > 0) {
-                    <span class="unread-badge" [class.pulse-trigger]="chat.shouldAnimate">{{ chat.unreadCount }}</span>
-                  }
-                </div>
-                
-                <div class="chat-content">
-                  <div class="chat-header-info">
-                    <h6 class="username">{{ chat.otherParticipant.username }}</h6>
-                    <span class="time">{{ formatTime(chat.lastActivity) }}</span>
-                  </div>
-                  
-                  <div class="last-message">
-                    @if (chat.lastMessage) {
-                      @if (chat.lastMessage.messageType === 'text') {
-                        <span class="message-text" [class.own-message]="isOwnMessage(chat.lastMessage)">
-                          {{ getLastMessagePreview(chat.lastMessage) }}
-                        </span>
-                      } @else if (chat.lastMessage.messageType === 'movie') {
-                        <span class="movie-message">
-                          <i class="bi bi-film me-1"></i>
-                          {{ chat.lastMessage.movieData?.title }}
-                        </span>
-                      }
-                    } @else {
-                      <span class="no-messages">Nueva conversación</span>
-                    }
-                  </div>
-                </div>
+              @if (chat.unreadCount > 0) {
+                <span 
+                  class="chat-list__unread-badge" 
+                  [class.chat-list__unread-badge--pulse]="chat.shouldAnimate"
+                >
+                  {{ chat.unreadCount }}
+                </span>
+              }
+            </div>
+            
+            <div class="chat-list__content">
+              <div class="chat-list__header-info">
+                <h6 class="chat-list__username">{{ chat.otherParticipant.username }}</h6>
+                <span class="chat-list__time">{{ formatTime(chat.lastActivity) }}</span>
               </div>
-            }
+              
+              <div class="chat-list__last-message">
+                @if (chat.lastMessage) {
+                  @if (chat.lastMessage.messageType === 'text') {
+                    <span 
+                      class="chat-list__message-text"
+                      [class.chat-list__message-text--own]="isOwnMessage(chat.lastMessage)"
+                    >
+                      {{ getLastMessagePreview(chat.lastMessage) }}
+                    </span>
+                  } @else if (chat.lastMessage.messageType === 'movie') {
+                    <span class="chat-list__message-text--movie">
+                      <i class="bi bi-film"></i>
+                      {{ chat.lastMessage.movieData?.title }}
+                    </span>
+                  }
+                } @else {
+                  <span class="chat-list__no-messages">Nueva conversación</span>
+                }
+              </div>
+            </div>
           </div>
         }
       </div>
+    }
+  </div>
 
-      <!-- Modal para nueva conversación -->
-      @if (showNewChatModal) {
-        <div class="modal-overlay" (click)="showNewChatModal = false"></div>
-        <div class="modal-container">
-          <div class="cyber-form">
-            <div class="modal-header">
-              <h3>Nueva conversación</h3>
-              <button class="close-btn" (click)="showNewChatModal = false">
-                <i class="bi bi-x"></i>
-              </button>
-            </div>
-            
-            <div class="search-section">
-              <div class="search-input-container">
-                <i class="bi bi-search"></i>
-                <input 
-                  type="text" 
-                  placeholder="Buscar usuarios..."
-                  [(ngModel)]="searchQuery"
-                  (input)="searchUsers()"
-                  class="search-input"
+  <!-- Modal para nueva conversación -->
+  @if (showNewChatModal) {
+    <div class="chat-list__modal-overlay" (click)="showNewChatModal = false"></div>
+    <div class="chat-list__modal-container">
+      <div class="chat-list__modal">
+        <div class="chat-list__modal-header">
+          <h3 class="chat-list__modal-title">Nueva conversación</h3>
+          <button class="chat-list__modal-close" (click)="showNewChatModal = false">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        
+        <div class="chat-list__search-container">
+          <i class="bi bi-search chat-list__search-icon"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar usuarios..."
+            [(ngModel)]="searchQuery"
+            (input)="searchUsers()"
+            class="chat-list__search-input"
+          >
+        </div>
+
+        @if (searchingUsers) {
+          <div class="chat-list__searching">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+            <span>Buscando...</span>
+          </div>
+        }
+
+        @if (searchResults.length > 0) {
+          <div class="chat-list__user-results">
+            @for (user of searchResults; track user._id) {
+              <div class="chat-list__user-item" (click)="startChatWithUser(user._id)">
+                <img 
+                  [src]="getAvatarPath(user.avatar)" 
+                  [alt]="user.username" 
+                  class="chat-list__user-avatar"
                 >
-              </div>
-            </div>
-
-            @if (searchingUsers) {
-              <div class="searching">
-                <div class="spinner-border spinner-border-sm" role="status"></div>
-                <span class="ms-2">Buscando...</span>
-              </div>
-            }
-
-            @if (searchResults.length > 0) {
-              <div class="search-results">
-                @for (user of searchResults; track user._id) {
-                  <div class="user-result" (click)="startChatWithUser(user._id)">
-                    <img [src]="getAvatarPath(user.avatar)" [alt]="user.username" class="user-avatar">
-                    <span class="username">{{ user.username }}</span>
-                    <i class="bi bi-arrow-right ms-auto"></i>
-                  </div>
-                }
-              </div>
-            }
-
-            @if (!searchingUsers && searchQuery && searchResults.length === 0) {
-              <div class="no-results">
-                <i class="bi bi-person-x"></i>
-                <p>No se encontraron usuarios</p>
+                <span class="chat-list__user-name">{{ user.username }}</span>
+                <i class="bi bi-arrow-right chat-list__user-arrow"></i>
               </div>
             }
           </div>
-        </div>
-      }
+        }
+
+        @if (!searchingUsers && searchQuery && searchResults.length === 0) {
+          <div class="chat-list__no-results">
+            <i class="bi bi-person-x"></i>
+            <p>No se encontraron usuarios</p>
+          </div>
+        }
+      </div>
     </div>
+  }
+</div>

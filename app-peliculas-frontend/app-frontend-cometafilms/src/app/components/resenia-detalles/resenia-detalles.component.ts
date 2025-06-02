@@ -43,8 +43,6 @@ export class ReseniaDetallesComponent implements OnInit {
   isFollowing: boolean = false;
   isHovering: boolean = false;
   mostrarFormularioEdicion: boolean = false;
-
-  // Nuevas propiedades para seguimiento
   followStatus: 'none' | 'requested' | 'following' = 'none';
   requestId: string | null = null;
 
@@ -92,7 +90,6 @@ export class ReseniaDetallesComponent implements OnInit {
 
         if (this.currentUser) {
           this.checkFollowingStatus();
-          // También verificar el estado con el nuevo método
           this.checkFollowStatus();
         }
 
@@ -131,7 +128,7 @@ export class ReseniaDetallesComponent implements OnInit {
     });
   }
 
-  // Método original de comprobación de seguimiento (mantener para compatibilidad)
+  // Método original de comprobación de seguimiento
   checkFollowingStatus(): void {
     if (!this.review || !this.review.userId || !this.currentUser) {
       console.log('No se puede verificar estado: datos incompletos');

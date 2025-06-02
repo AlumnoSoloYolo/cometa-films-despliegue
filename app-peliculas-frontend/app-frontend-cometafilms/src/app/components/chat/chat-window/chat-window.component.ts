@@ -49,9 +49,20 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   ) {}
 
   ngOnInit(): void {
+    // Escuchar cambios en los parámetros de la ruta
     this.route.params.subscribe(params => {
       const chatId = params['id'];
       if (chatId) {
+        // IMPORTANTE: Limpiamos mensajes anteriores y marcamos como cargando
+        this.messages = [];
+        this.loading = true;
+        this.loadingMessages = true;
+        
+        // Salir del chat room anterior si existe
+        if (this.currentChatId && this.currentChatId !== chatId) {
+          this.socketService.leaveChat(this.currentChatId);
+        }
+        
         this.currentChatId = chatId;
         console.log('Iniciando carga para chat:', chatId);
         this.loadChatAndMessages(chatId);
@@ -120,8 +131,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     
     const sub = this.chatService.getChatMessages(chatId).subscribe({
       next: (response) => {
+        // Verificar que seguimos en el mismo chat (para evitar cargar mensajes para un chat al que ya no estamos)
+        if (this.currentChatId !== chatId) {
+          console.log('Los mensajes recibidos ya no corresponden al chat actual');
+          return;
+        }
+        
         console.log('Mensajes obtenidos:', response.messages.length);
-        console.log('Mensajes:', response.messages);
         
         this.messages = response.messages || [];
         this.loadingMessages = false;
@@ -131,6 +147,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
         if (this.messages.length > 0 && !this.chat) {
           this.createBasicChatInfo(chatId);
         }
+        
+        // Marcar mensajes como leídos
+        this.markMessagesAsRead(chatId);
       },
       error: (error) => {
         console.error('Error al cargar mensajes:', error);
@@ -175,12 +194,15 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
         console.log('Nuevo mensaje recibido:', message);
         this.messages.push(message.message);
         this.shouldScrollToBottom = true;
+        
+        // Marcar como leído automáticamente
+        this.markMessagesAsRead(this.currentChatId);
       }
     });
     this.subscriptions.push(newMessageSub);
 
     const typingSub = this.socketService.userTyping$.subscribe(typing => {
-      if (typing && typing.userId !== this.getCurrentUserId()) {
+      if (typing && typing.userId !== this.getCurrentUserId() && typing.chatId === this.currentChatId) {
         this.isTyping = typing.isTyping;
         if (this.isTyping) {
           setTimeout(() => {
@@ -353,41 +375,42 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   toggleArchiveChat(): void {
-  if (!this.currentChatId) return;
-  
-  const action = this.chat?.isArchived ? 'desarchivar' : 'archivar';
-  
-  if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} esta conversación?`)) return;
+    if (!this.currentChatId) return;
+    
+    const action = this.chat?.isArchived ? 'desarchivar' : 'archivar';
+    
+    if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} esta conversación?`)) return;
 
-  const sub = this.chatService.toggleArchiveChat(this.currentChatId).subscribe({
-    next: () => {
-      if (this.chat) {
-        this.chat.isArchived = !this.chat.isArchived;
+    const sub = this.chatService.toggleArchiveChat(this.currentChatId).subscribe({
+      next: () => {
+        if (this.chat) {
+          this.chat.isArchived = !this.chat.isArchived;
+        }
+      },
+      error: (error) => {
+        console.error(`Error al ${action} chat:`, error);
+        alert(`Error al ${action} la conversación.`);
       }
-    },
-    error: (error) => {
-      console.error(`Error al ${action} chat:`, error);
-      alert(`Error al ${action} la conversación.`);
-    }
-  });
-  this.subscriptions.push(sub);
-}
+    });
+    this.subscriptions.push(sub);
+  }
 
-clearChatForUser(): void {
-  if (!this.currentChatId || !confirm('¿Limpiar todo el historial del chat? (Solo para ti)')) return;
+  clearChatForUser(): void {
+    if (!this.currentChatId || !confirm('¿Limpiar todo el historial del chat? (Solo para ti)')) return;
 
-  const sub = this.chatService.clearChatForUser(this.currentChatId).subscribe({
-    next: () => {
-      this.messages = [];
-      alert('Chat limpiado correctamente');
-    },
-    error: (error) => {
-      console.error('Error al limpiar chat:', error);
-      alert('Error al limpiar el chat.');
-    }
-  });
-  this.subscriptions.push(sub);
-}
+    const sub = this.chatService.clearChatForUser(this.currentChatId).subscribe({
+      next: () => {
+        this.messages = [];
+        alert('Chat limpiado correctamente');
+      },
+      error: (error) => {
+        console.error('Error al limpiar chat:', error);
+        alert('Error al limpiar el chat.');
+      }
+    });
+    this.subscriptions.push(sub);
+  }
+
   goToMovie(tmdbId?: string): void {
     if (tmdbId) {
       this.router.navigate(['/pelicula', tmdbId]);
@@ -429,5 +452,12 @@ clearChatForUser(): void {
 
   formatMessageTime(date: Date | string): string {
     return this.chatService.formatFullTime(date);
+  }
+  
+  markMessagesAsRead(chatId: string): void {
+    this.chatService.markMessagesAsRead(chatId).subscribe({
+      next: () => console.log('Mensajes marcados como leídos'),
+      error: (error) => console.error('Error al marcar como leídos:', error)
+    });
   }
 }

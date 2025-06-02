@@ -20,6 +20,10 @@
             <div class="error-message">
                 {{ getErrorMessage('username') }}
             </div>
+            }@else{
+                <div class="error-message">
+              
+            </div>
             }
         </div>
 
@@ -30,6 +34,10 @@
             @if (formulario.email.touched) {
             <div class="error-message">
                 {{ getErrorMessage('email') }}
+            </div>
+            }@else{
+                <div class="error-message">
+              
             </div>
             }
         </div>
@@ -42,6 +50,10 @@
             <div class="error-message">
                 {{ getErrorMessage('password') }}
             </div>
+            }@else{
+                <div class="error-message">
+              
+            </div>
             }
         </div>
 
@@ -52,6 +64,10 @@
             @if (formulario.confirmPassword.touched) {
             <div class="error-message">
                 {{ getErrorMessage('confirmPassword') }}
+            </div>
+            }@else{
+                <div class="error-message">
+              
             </div>
             }
         </div>

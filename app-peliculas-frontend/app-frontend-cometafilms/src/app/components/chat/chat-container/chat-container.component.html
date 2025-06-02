@@ -1,18 +1,17 @@
-   <div class="chat-app-container">
-      <div class="chat-sidebar">
-        <app-chat-list></app-chat-list>
-      </div>
-      
-      <div class="chat-main">
-        <router-outlet></router-outlet>
-        
-   
-        <div class="chat-placeholder" *ngIf="!hasActiveChat()">
-          <div class="placeholder-content">
-            <i class="bi bi-chat-square-heart"></i>
-            <h3>Selecciona una conversación</h3>
-            <p>Elige una conversación de la lista o inicia una nueva</p>
-          </div>
-        </div>
+<div class="chat-container chat-container--cyber">
+  <div class="chat-container__sidebar">
+    <app-chat-list></app-chat-list>
+  </div>
+  
+  <div class="chat-container__main">
+    <router-outlet></router-outlet>
+    
+    <div class="chat-container__placeholder" *ngIf="!hasActiveChat()">
+      <div class="chat-container__placeholder-content">
+        <i class="bi bi-chat-square-heart chat-container__placeholder-icon"></i>
+        <h3 class="chat-container__placeholder-title">Selecciona una conversación</h3>
+        <p class="chat-container__placeholder-text">Elige una conversación de la lista o inicia una nueva</p>
       </div>
     </div>
+  </div>
+</div>

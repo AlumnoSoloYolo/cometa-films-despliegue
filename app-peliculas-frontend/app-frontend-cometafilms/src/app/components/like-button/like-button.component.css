@@ -1,222 +1,308 @@
+/* Componente Botón de Like Refactorizado - BEM */
+
+/* Contenedor principal */
 .like-container {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Botón de like */
+.like-button {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  padding: 0.3rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.like-button:hover {
+  background-color: rgba(var(--color-pink-primary-rgb), 0.1);
+  color: var(--color-pink-primary);
+  transform: scale(1.1);
+}
+
+.like-button.liked {
+  color: var(--color-pink-primary);
+}
+
+.like-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.like-button .bi {
+  font-size: 1.1rem;
+}
+
+/* Contador de likes */
+.like-count {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  position: relative;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.like-count:hover {
+  color: var(--color-text-primary);
+  background-color: rgba(var(--color-surface-secondary-rgb), 0.1);
+}
+
+.like-count:active {
+  transform: scale(0.95);
+}
+
+/* Animaciones del corazón */
+@keyframes float-heart {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(0) rotate(0deg);
   }
-  
-  .like-button {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    padding: 0.3rem;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  20% {
+    opacity: 1;
+    transform: scale(1.4) translateY(-10px) rotate(-5deg);
   }
-  
-  .like-button:hover {
-    background-color: rgba(255, 20, 147, 0.1);
-    color: #FF1493;
-    transform: scale(1.1);
+  40% {
+    transform: scale(1.2) translateY(-30px) rotate(5deg);
   }
-  
-  .like-button.liked {
-    color: #FF1493;
+  70% {
+    transform: scale(1) translateY(-60px) rotate(0deg);
+    opacity: 0.9;
   }
-  
-  .like-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-90px) rotate(-10deg);
   }
-  
-  .like-count {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-    position: relative;
-    padding: 2px 6px;
-    border-radius: 10px;
+}
+
+@keyframes broken-heart {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(0) rotate(0deg);
   }
-  
-  .like-count:hover {
-    color: #fff;
-    background-color: rgba(255, 255, 255, 0.1);
+  20% {
+    opacity: 1;
+    transform: scale(1.3) translateY(-5px) rotate(-5deg);
   }
-  
-  .like-count:active {
-    transform: scale(0.95);
+  50% {
+    transform: scale(1.1) translateY(-15px) rotate(5deg);
   }
-  
-  /* Estilos del modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
+  80% {
+    transform: scale(1) translateY(5px) rotate(-5deg);
+    opacity: 0.8;
   }
-  
-  .likes-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 400px;
-    z-index: 1001;
-    animation: fadeIn 0.3s ease;
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(15px) rotate(10deg);
   }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translate(-50%, -48%); }
-    to { opacity: 1; transform: translate(-50%, -50%); }
-  }
-  
-  .modal-content {
-    background: rgba(10, 10, 10, 0.8);
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    position: relative;
-  }
-  
-  .modal-content::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 15px;
-    padding: 2px;
-    background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0.6;
-    z-index: -1;
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .modal-header h3 {
-    margin: 0;
-    color: #fff;
-    font-size: 1.2rem;
-  }
-  
-  .close-btn {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-  }
-  
-  .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-  }
-  
-  .modal-body {
-    padding: 1.5rem;
-    max-height: 60vh;
-    overflow-y: auto;
-  }
-  
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    padding: 2rem;
-  }
-  
-  .error-message {
-    color: #ff6b6b;
-    text-align: center;
-    padding: 1rem;
-  }
-  
-  .empty-likes {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.6);
-    padding: 2rem 0;
-  }
-  
-  .users-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .user-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    margin-bottom: 0.5rem;
-  }
-  
-  .user-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  
-  .user-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: 1rem;
-    border: 2px solid rgba(211, 20, 211, 0.5);
-  }
-  
-  .user-info {
-    flex: 1;
-  }
-  
-  .username {
-    color: #fff;
-    font-weight: 500;
-  }
-  
-  /* Estilos para scrollbar */
-  .modal-body::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .modal-body::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-  }
-  
-  .modal-body::-webkit-scrollbar-thumb {
-    background: rgba(211, 20, 211, 0.5);
-    border-radius: 10px;
-  }
-  
-  .modal-body::-webkit-scrollbar-thumb:hover {
-    background: rgba(211, 20, 211, 0.7);
-  }
+}
+
+.heart-animation {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3.5rem; /* MÁS GRANDE */
+  animation: float-heart 1s ease-out forwards;
+  pointer-events: none;
+}
+
+.heart-animation .bi-heart-fill {
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.25));
+}
+
+.broken-heart-animation {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3.5rem;
+  animation: broken-heart 1s ease-out forwards;
+  pointer-events: none;
+}
+.broken-heart-animation .bi-heart-break-fill {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.3));
+}
+
+/* === MODAL DE LIKES === */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(var(--color-surface-overlay-rgb), 0.7);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-index-modal-overlay);
+}
+
+.likes-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 400px;
+  z-index: var(--z-index-modal);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: var(--color-surface-primary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-elevated);
+  position: relative;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: var(--border-radius-lg);
+  padding: 2px;
+  background: var(--gradient-primary);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+}
+
+.close-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  max-height: 60vh;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+/* Custom scrollbar */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(var(--color-surface-secondary-rgb), 0.05);
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(var(--color-accent-tertiary-rgb), 0.5);
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--color-accent-tertiary-rgb), 0.7);
+}
+
+/* Estados del modal */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-xl);
+}
+
+.error-message {
+  color: var(--color-error);
+  text-align: center;
+  padding: var(--spacing-md);
+}
+
+.empty-likes {
+  text-align: center;
+  color: var(--color-text-tertiary);
+  padding: var(--spacing-xl) 0;
+}
+
+/* Lista de usuarios */
+.users-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-bottom: var(--spacing-xs);
+}
+
+.user-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: var(--spacing-md);
+  border: 2px solid rgba(var(--color-accent-secondary-rgb), 0.5);
+}
+
+.user-info {
+  flex: 1;
+}
+
+.username {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}

@@ -315,35 +315,31 @@
   position: fixed;
   bottom: var(--spacing-xl);
   right: var(--spacing-xl);
-  z-index: 999;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-full);
+  z-index: var(--z-fixed);
+  width: 60px;
+  height: 60px;
+  border-radius: 100% !important;
   cursor: pointer;
-  background: var(--gradient-primary);
+  background-color: #6B77E5;
   border: none;
-  color: var(--text-primary);
+  color: white;
   opacity: 0;
-  transition: var(--transition-normal);
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-lg);
+  transition: all 0.3s ease;
 }
 
 .scroll-top-btn.visible {
   opacity: 1;
-  transform: scale(1);
 }
 
 .scroll-top-btn:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: var(--shadow-cyber);
+  background-color: #8a94ed;
+  transform: translateY(-2px);
+    transform: scale(1.1) translateY(-2px);
+  box-shadow: var(--shadow-glow);
 }
 
-.scroll-top-btn i {
-  font-size: var(--font-size-lg);
+.fa-rocket{
+  font-size: 2rem;
   transform: rotate(-45deg);
 }
 

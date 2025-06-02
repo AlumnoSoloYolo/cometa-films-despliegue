@@ -45,14 +45,14 @@
                     </div>
                 }
                 
-                <!-- Estadísticas del usuario -->
+                    <!-- Estadísticas del usuario -->
                 <div class="user-stats">
                     <div class="stat-item" (click)="abrirModalSeguidores()" role="button" tabindex="0">
-                        <span class="stat-count">{{ seguidoresCount }}</span>
+                        <span class="stat-count" [attr.data-count]="seguidoresCount">{{ seguidoresCount || 0 }}</span>
                         <span class="stat-label">seguidores</span>
                     </div>
                     <div class="stat-item" (click)="abrirModalSeguidos()" role="button" tabindex="0">
-                        <span class="stat-count">{{ seguidosCount }}</span>
+                        <span class="stat-count" [attr.data-count]="seguidosCount">{{ seguidosCount || 0 }}</span>
                         <span class="stat-label">seguidos</span>
                     </div>
                 </div>
@@ -204,7 +204,7 @@
                         Perfil privado
                     </label>
                 </div>
-                <small class="form-text text-muted d-block mt-1">
+                <small class="form-text text-white d-block mt-1">
                     Si activas esta opción, otros usuarios necesitarán seguirte para ver tus listas y actividad.
                 </small>
             </div>
@@ -325,8 +325,8 @@
                                         <i class="bi bi-star-fill text-warning me-1"></i>
                                         <span class="rating-value">{{ review.rating }}</span><span class="rating-total">/10</span>
                                     </div>
-                                    <p class="review-comment clamp-lines">{{ review.comment }}</p>
-                                    <div class="review-date text-muted"><small>{{ review.createdAt | date:'short' }}</small></div>
+                                    <p class="review-comment clamp-lines">{{ review.comment | slice:0:100 }}...</p>
+                                    <div class="review-date text-white"><small>{{ review.createdAt | date:'short' }}</small></div>
                                 </div>
                             </div>
                             }
@@ -344,16 +344,10 @@
 
         <div class="movie-section">
             <div class="section-header">
-                <div class="section-title-container">
-                    <h2 class="section-title" id="listas-personales-usuario">Listas Personales</h2>
-                    <span class="count-badge">
-                        @if (isOwnProfile && !isPremium) {
-                            {{ listas.length }}
-                        } @else {
-                            {{ totalListas }}
-                        }
-                    </span>
-                </div>
+          <div class="section-title-container">
+                <h2 class="section-title" id="listas-personales-usuario">Listas Personales</h2>
+                <span class="count-badge" [attr.data-count]="totalListas">{{ totalListas || 0 }}</span>
+            </div>
                 <div class="section-navigation">
                     @if (isOwnProfile) {
                     <button class="btn-nav btn-add-list" (click)="mostrarFormularioCreacionLista()" title="Crear nueva lista">
@@ -383,7 +377,7 @@
                     @if (isOwnProfile || !userProfile.perfilPrivado || isFollowing) {
                         @if (listas.length === 0) {
                         <div class="empty-content-message">
-                            <i class="bi bi-list-stars display-4 text-muted"></i>
+                            <i class="bi bi-list-stars display-4 text-white"></i>
                             <p class="mt-2">
                                 @if (isOwnProfile) {
                                     Aún no has creado ninguna lista.
@@ -471,8 +465,8 @@
                         Hacer esta lista pública
                     </label>
                 </div>
-                <small class="form-text text-muted d-block mt-1">
-                    Si es pública, cualquiera podrá verla. Si es privada, solo tú (y quizás tus seguidores en el futuro, si se implementa).
+                <small class="form-text text-white d-block mt-1">
+                    Si es pública, cualquiera podrá verla. Si es privada, solo tú.
                 </small>
             </div>
             <div class="form-actions">

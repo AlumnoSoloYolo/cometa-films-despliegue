@@ -14,7 +14,9 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 16px; /* Base font size */
+  font-size: 16px;
+   height: 100%;
+  margin: 0;
 }
 
 body {
@@ -28,6 +30,22 @@ body {
   line-height: var(--line-height-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+   height: 100%;
+    margin: 0;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Asegura que el contenedor ocupe al menos toda la altura de la ventana */
+}
+
+.site-content {
+  flex: 1; /* Hace que el contenido principal ocupe todo el espacio disponible, empujando el footer hacia abajo */
+}
+
+header, footer {
+  flex-shrink: 0; /* Evita que el header y el footer se encojan */
 }
 
 /* === ELEMENTOS BASE === */

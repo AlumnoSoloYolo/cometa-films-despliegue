@@ -1,4 +1,3 @@
-
 /* Contenedor principal */
 .users-page {
   min-height: 100vh;
@@ -219,7 +218,7 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* Botón de seguir mejorado */
+/* Botón de seguir mejorado - CON FIX PARA CHROME */
 .follow-actions {
   margin-left: var(--spacing-md);
   flex-shrink: 0;
@@ -240,6 +239,23 @@
   min-width: 100px;
   justify-content: center;
   text-decoration: none;
+  
+  /* FIX ESPECÍFICO PARA CHROME - Evitar bugs de renderizado */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  isolation: isolate;
+}
+
+.follow-btn span {
+  /* Evitar acumulación de texto en Chrome */
+  display: inline-block;
+  white-space: nowrap;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Estados del botón seguir */
@@ -249,7 +265,7 @@
 }
 
 .follow-btn.follow:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) translateZ(0);
   box-shadow: var(--shadow-primary);
 }
 
@@ -263,6 +279,7 @@
   background: rgba(255, 68, 68, 0.1);
   border-color: var(--color-error);
   color: var(--color-error);
+  transform: translateZ(0);
 }
 
 .follow-btn.requested {
@@ -275,12 +292,30 @@
   background: rgba(255, 68, 68, 0.1);
   border-color: var(--color-error);
   color: var(--color-error);
+  transform: translateZ(0);
 }
 
 .follow-btn:disabled {
   opacity: var(--opacity-disabled);
   cursor: not-allowed;
-  transform: none !important;
+  transform: translateZ(0) !important;
+}
+
+/* FIX ESPECÍFICO PARA CHROME - Detectar y aplicar */
+@supports (-webkit-appearance: none) {
+  .follow-btn {
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
+  }
+  
+  .follow-btn:hover {
+    -webkit-transform: translateZ(0) scale(1);
+  }
+  
+  .follow-btn span {
+    -webkit-transform: translateZ(0);
+  }
 }
 
 /* Estados de carga y vacío */

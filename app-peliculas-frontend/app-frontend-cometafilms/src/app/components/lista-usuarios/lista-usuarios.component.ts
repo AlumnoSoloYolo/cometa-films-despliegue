@@ -1,12 +1,11 @@
 // src/app/components/lista-usuarios/lista-usuarios.component.ts
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { UserSocialService } from '../../services/social.service';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { User, UserResponse } from '../../models/user.model';
-
 
 @Component({
   selector: 'app-usuarios-lista',
@@ -26,14 +25,17 @@ export class UsuariosListaComponent implements OnInit {
   searchForm: FormGroup;
   mostrarBotonSubir = false;
 
-  // Nuevas propiedades para seguimiento
+  // Propiedades para seguimiento
   followStatus: { [userId: string]: 'none' | 'requested' | 'following' } = {};
   requestIds: { [userId: string]: string } = {};
   isHovering: { [userId: string]: boolean } = {};
+  processingFollow: { [userId: string]: boolean } = {};
 
   constructor(
     private userSocialService: UserSocialService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
     this.searchForm = this.fb.group({
       username: [
@@ -41,7 +43,7 @@ export class UsuariosListaComponent implements OnInit {
         [
           Validators.minLength(3),
           Validators.maxLength(30),
-          Validators.pattern(/^[a-zA-Z0-9_-]*$/) // Solo letras, números, guiones y guiones bajos
+          Validators.pattern(/^[a-zA-Z0-9_-]*$/)
         ]
       ]
     });
@@ -56,7 +58,6 @@ export class UsuariosListaComponent implements OnInit {
   ngOnInit(): void {
     this.cargarUsuarios();
 
-    // Configurar búsqueda con debounce
     this.searchForm.get('username')?.valueChanges
       .pipe(
         debounceTime(300),
@@ -72,23 +73,47 @@ export class UsuariosListaComponent implements OnInit {
   }
 
   resetearBusqueda(): void {
-    this.paginaActual = 1;
-    this.usuarios = [];
+    this.ngZone.run(() => {
+      this.searchForm.get('username')?.setValue('', { emitEvent: false });
+      this.paginaActual = 1;
+      this.usuarios = [];
+      this.followStatus = {};
+      this.requestIds = {};
+      this.isHovering = {};
+      this.processingFollow = {};
+      this.cdr.detectChanges();
+    });
     this.cargarUsuarios();
   }
 
-  // Método para verificar estado de seguimiento de todos los usuarios
   checkFollowStatus(usuarios: User[]): void {
     usuarios.forEach(usuario => {
+      // Inicializar estados
+      if (!(usuario._id in this.followStatus)) {
+        this.ngZone.run(() => {
+          this.followStatus[usuario._id] = 'none';
+          this.isHovering[usuario._id] = false;
+          this.processingFollow[usuario._id] = false;
+          this.cdr.detectChanges();
+        });
+      }
+
       this.userSocialService.getFollowStatus(usuario._id).subscribe({
         next: (response: any) => {
-          this.followStatus[usuario._id] = response.status;
-          if (response.requestId) {
-            this.requestIds[usuario._id] = response.requestId;
-          }
+          this.ngZone.run(() => {
+            this.followStatus[usuario._id] = response.status || 'none';
+            if (response.requestId) {
+              this.requestIds[usuario._id] = response.requestId;
+            }
+            this.cdr.detectChanges();
+          });
         },
         error: (error) => {
           console.error(`Error al verificar estado de seguimiento para ${usuario.username}:`, error);
+          this.ngZone.run(() => {
+            this.followStatus[usuario._id] = 'none';
+            this.cdr.detectChanges();
+          });
         }
       });
     });
@@ -113,7 +138,6 @@ export class UsuariosListaComponent implements OnInit {
         this.hayMasPaginas = response.pagination.hasMore;
         this.cargando = false;
 
-        // Verificar estado de seguimiento de los nuevos usuarios
         this.checkFollowStatus(response.users);
       },
       error: (error: any) => {
@@ -131,10 +155,18 @@ export class UsuariosListaComponent implements OnInit {
     this.userSocialService.searchUsers(termino).subscribe({
       next: (usuarios: User[]) => {
         this.usuarios = usuarios;
-        this.hayMasPaginas = false; // Desactivar scroll infinito en modo búsqueda
+        this.hayMasPaginas = false;
         this.cargando = false;
-
-        // Verificar estado de seguimiento para resultados de búsqueda
+        
+        // Limpiar estados previos
+        this.ngZone.run(() => {
+          this.followStatus = {};
+          this.requestIds = {};
+          this.isHovering = {};
+          this.processingFollow = {};
+          this.cdr.detectChanges();
+        });
+        
         this.checkFollowStatus(usuarios);
       },
       error: (error: any) => {
@@ -145,60 +177,139 @@ export class UsuariosListaComponent implements OnInit {
     });
   }
 
-  // Método para manejar el hover
   setHovering(userId: string, isHovering: boolean): void {
-    this.isHovering[userId] = isHovering;
+    if (!this.processingFollow[userId]) {
+      this.ngZone.run(() => {
+        this.isHovering[userId] = isHovering;
+        this.cdr.detectChanges();
+      });
+    }
   }
 
-  // Método toggleFollow actualizado
+  getButtonText(userId: string): string {
+    const status = this.followStatus[userId] || 'none';
+    const hovering = this.isHovering[userId] || false;
+    const processing = this.processingFollow[userId] || false;
+
+    if (processing) {
+      return 'Procesando...';
+    }
+
+    switch (status) {
+      case 'following':
+        return hovering ? 'Dejar de seguir' : 'Siguiendo';
+      case 'requested':
+        return hovering ? 'Cancelar' : 'Solicitado';
+      default:
+        return 'Seguir';
+    }
+  }
+
+  getButtonIcon(userId: string): string {
+    const status = this.followStatus[userId] || 'none';
+    const hovering = this.isHovering[userId] || false;
+    const processing = this.processingFollow[userId] || false;
+
+    if (processing) {
+      return 'bi-hourglass-split';
+    }
+
+    switch (status) {
+      case 'following':
+        return hovering ? 'bi-person-dash-fill' : 'bi-check-lg';
+      case 'requested':
+        return hovering ? 'bi-x-circle-fill' : 'bi-hourglass-split';
+      default:
+        return 'bi-person-plus-fill';
+    }
+  }
+
   toggleFollow(usuario: User, event: Event): void {
     event.stopPropagation();
+    event.preventDefault();
+    
     const userId = usuario._id;
 
-    // Si ya está siguiendo, dejar de seguir
-    if (this.followStatus[userId] === 'following') {
+    if (this.processingFollow[userId]) {
+      return;
+    }
+
+    // Iniciar procesamiento y limpiar hover
+    this.ngZone.run(() => {
+      this.processingFollow[userId] = true;
+      this.isHovering[userId] = false;
+      this.cdr.detectChanges();
+    });
+
+    const currentStatus = this.followStatus[userId];
+
+    if (currentStatus === 'following') {
       this.userSocialService.unfollowUser(userId).subscribe({
         next: () => {
-          this.followStatus[userId] = 'none';
-          usuario.isFollowing = false;
+          this.ngZone.run(() => {
+            this.followStatus[userId] = 'none';
+            this.processingFollow[userId] = false;
+            this.isHovering[userId] = false;
+            if (this.requestIds[userId]) {
+              delete this.requestIds[userId];
+            }
+            this.cdr.detectChanges();
+          });
         },
         error: (error) => {
           console.error('Error al dejar de seguir:', error);
+          this.ngZone.run(() => {
+            this.processingFollow[userId] = false;
+            this.isHovering[userId] = false;
+            this.cdr.detectChanges();
+          });
         }
       });
-      return;
-    }
-
-    // Si hay una solicitud pendiente, cancelarla
-    if (this.followStatus[userId] === 'requested' && this.requestIds[userId]) {
+    } else if (currentStatus === 'requested' && this.requestIds[userId]) {
       this.userSocialService.cancelFollowRequest(this.requestIds[userId]).subscribe({
         next: () => {
-          this.followStatus[userId] = 'none';
-          delete this.requestIds[userId];
+          this.ngZone.run(() => {
+            this.followStatus[userId] = 'none';
+            delete this.requestIds[userId];
+            this.processingFollow[userId] = false;
+            this.isHovering[userId] = false;
+            this.cdr.detectChanges();
+          });
         },
         error: (error) => {
           console.error('Error al cancelar solicitud:', error);
+          this.ngZone.run(() => {
+            this.processingFollow[userId] = false;
+            this.isHovering[userId] = false;
+            this.cdr.detectChanges();
+          });
         }
       });
-      return;
+    } else {
+      this.userSocialService.followUser(userId).subscribe({
+        next: (response: any) => {
+          this.ngZone.run(() => {
+            this.followStatus[userId] = response.status || 'requested';
+            if (response.requestId) {
+              this.requestIds[userId] = response.requestId;
+            }
+            this.processingFollow[userId] = false;
+            this.isHovering[userId] = false;
+            this.cdr.detectChanges();
+          });
+        },
+        error: (error) => {
+          console.error('Error al seguir usuario:', error);
+          this.ngZone.run(() => {
+            this.processingFollow[userId] = false;
+            this.isHovering[userId] = false;
+            this.cdr.detectChanges();
+          });
+          const errorMessage = error.error?.message || 'No se pudo completar la acción';
+          alert(`Error: ${errorMessage}`);
+        }
+      });
     }
-
-    // En cualquier otro caso, intentar seguir
-    this.userSocialService.followUser(userId).subscribe({
-      next: (response: any) => {
-        this.followStatus[userId] = response.status;
-        if (response.requestId) {
-          this.requestIds[userId] = response.requestId;
-        }
-        if (response.status === 'following') {
-          usuario.isFollowing = true;
-        }
-      },
-      error: (error) => {
-        console.error('Error al seguir usuario:', error);
-        alert(`Error: ${error.error?.message || 'No se pudo completar la acción'}`);
-      }
-    });
   }
 
   @HostListener('window:scroll')

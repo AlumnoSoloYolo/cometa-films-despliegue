@@ -496,7 +496,6 @@
   border-radius: var(--radius-xl);
   padding: 2px;
   background: var(--gradient-border);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0.6;
@@ -508,8 +507,10 @@
 }
 
 .review-header {
-  display: flex;
-  align-items: flex-start;
+   display: flex; 
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
 }
@@ -555,9 +556,9 @@
   line-height: var(--line-height-normal);
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
 }
 
 .review-date {
@@ -573,8 +574,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--bg-overlay);
-  backdrop-filter: var(--backdrop-blur);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
   z-index: var(--z-modal-backdrop);
 }
 
@@ -589,30 +590,30 @@
 }
 
 .cyber-form {
-  background: var(--bg-modal);
-  padding: var(--spacing-2xl);
-  border-radius: var(--radius-xl);
-  position: relative;
-  z-index: 1;
-  color: var(--text-primary);
-  backdrop-filter: var(--backdrop-blur);
+    background: rgba(10, 10, 10, 0.8);
+    padding: 2rem;
+    border-radius: 15px;
+    position: relative;
+    z-index: 1;
+    color: white;
+    backdrop-filter: blur(10px);
 }
 
 .cyber-form::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: var(--radius-xl);
-  padding: 2px;
-  background: var(--gradient-border);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.6;
-  z-index: -1;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 15px;
+    padding: 2px;
+    background: linear-gradient(45deg, rgb(14, 64, 64), rgb(211, 20, 211));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.6;
+    z-index: -1;
 }
 
 .form-title {
@@ -1213,4 +1214,131 @@
   .movie-section {
     padding: var(--spacing-lg);
   }
+}
+
+
+/* === FIX ESPECÍFICO PARA CHROME === */
+/* Forzar redibujado de contadores y elementos que no se actualizan en Chrome */
+
+.stat-count,
+.count-badge,
+.seguidores-count,
+.seguidos-count {
+  /* Forzar nuevo contexto de apilamiento para Chrome */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: contents;
+  isolation: isolate;
+}
+
+/* Forzar redibujado usando el atributo data-count */
+.stat-count[data-count],
+.count-badge[data-count] {
+  position: relative;
+}
+
+.stat-count[data-count]::before,
+.count-badge[data-count]::before {
+  content: attr(data-count);
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+  transform: translateX(-9999px);
+}
+
+/* Fix para botones de seguir en perfil */
+.btn-follow-compact {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  isolation: isolate;
+}
+
+.btn-follow-compact span {
+  display: inline-block;
+  white-space: nowrap;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Específico para Chrome - detectar y aplicar fix */
+@supports (-webkit-appearance: none) {
+  .stat-count,
+  .count-badge {
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
+  }
+  
+  .btn-follow-compact {
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
+  }
+  
+  .btn-follow-compact:hover {
+    -webkit-transform: translateZ(0) scale(1);
+  }
+  
+  .btn-follow-compact span {
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Forzar redibujado de stats */
+  .user-stats .stat-item {
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Forzar redibujado de badges de conteo */
+  .section-title-container .count-badge {
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Fix específico para los atributos data-count en Chrome */
+  .stat-count[data-count],
+  .count-badge[data-count] {
+    -webkit-animation: chrome-counter-fix 0.01s;
+  }
+}
+
+@keyframes chrome-counter-fix {
+  0% { opacity: 0.99; }
+  100% { opacity: 1; }
+}
+
+@-webkit-keyframes chrome-counter-fix {
+  0% { opacity: 0.99; }
+  100% { opacity: 1; }
+}
+
+/* Forzar repaint en hover para Chrome */
+.stat-item:hover {
+  transform: translateY(-2px) translateZ(0);
+}
+
+.count-badge:hover {
+  transform: translateZ(0) scale(1);
+}
+
+/* Asegurar que los números se redibujjen correctamente */
+.stat-count::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.count-badge::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
 }

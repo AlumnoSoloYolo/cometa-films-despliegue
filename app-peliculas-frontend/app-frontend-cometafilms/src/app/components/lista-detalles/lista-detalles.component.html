@@ -1,294 +1,334 @@
-<div class="lista-container">
-    @if (isLoading) {
-    <div class="loading-spinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
+<div class="lista">
+  <!-- Estado de carga -->
+  @if (isLoading) {
+    <div class="lista__loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
     </div>
-    } @else if (lista) {
-    <div class="lista-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-4">
-                    @if (lista.coverImage) {
-                    <div class="lista-cover">
-                        <img [src]="lista.coverImage" [alt]="lista.title" class="cover-image">
-                    </div>
-                    } @else {
-                    <div class="lista-cover-placeholder">
-                        <i class="bi bi-collection"></i>
-                    </div>
-                    }
-                </div>
-                <div class="col-md-8">
-                    <div class="lista-info">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h1 class="lista-title">{{ lista.title }}</h1>
-
-                            <app-like-button [contentType]="'list'" [contentId]="lista._id">
-                            </app-like-button>
-
-                            @if (isOwnList) {
-                            <div class="dropdown">
-                                <button class="btn btn-options" type="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="#"
-                                            (click)="$event.preventDefault(); editarLista()">
-                                            <i class="bi bi-pencil me-2"></i>Editar lista
-                                        </a></li>
-                                    <li><a class="dropdown-item text-danger" href="#"
-                                            (click)="$event.preventDefault(); eliminarLista()">
-                                            <i class="bi bi-trash me-2"></i>Eliminar lista
-                                        </a></li>
-                                </ul>
-                            </div>
-                            }
-                        </div>
-                        <div class="lista-metadata">
-                            <span class="lista-creator">Por <a [routerLink]="['/usuarios', userIdString]">{{ creadorLista }}</a></span>
-                            <span class="lista-date">{{ lista.createdAt | date:'mediumDate' }}</span>
-                            <span class="privacy-badge" [class.private]="!lista.isPublic">
-                                <i class="bi" [ngClass]="lista.isPublic ? 'bi-globe' : 'bi-lock'"></i>
-                                {{ lista.isPublic ? 'Pública' : 'Privada' }}
-                            </span>
-                        </div>
-                        <p class="lista-description">{{ lista.description || 'Sin descripción' }}</p>
-                        <div class="lista-stats">
-                            <span class="stats-item">
-                                <i class="bi bi-film"></i>
-                                {{ lista.movies.length }} películas
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container mt-4">
-        @if (isOwnList) {
-        <div class="search-container mb-4">
-            <button class="btn btn-primary btn-lg w-100" (click)="abrirModalBusqueda()">
-                <i class="bi bi-search me-2"></i>
-                Buscar películas para añadir
-            </button>
-        </div>
-        }
-
-        <div class="lista-movies">
-            <h3 class="section-title">Películas en la lista</h3>
-            @if (peliculasLista.length === 0) {
-            <div class="empty-list">
-                <i class="bi bi-film"></i>
-                <p>Esta lista aún no tiene películas</p>
-                @if (isOwnList) {
-                <p>Usa el buscador para añadir películas a tu lista</p>
-                }
-            </div>
+  } @else if (lista) {
+    <!-- Header de la lista -->
+    <div class="lista__header lista__header--glass">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-4">
+            @if (lista.coverImage) {
+              <div class="lista__cover">
+                <img [src]="lista.coverImage" [alt]="lista.title" class="lista__cover-img">
+              </div>
             } @else {
-            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
-                @for (pelicula of peliculasLista; track pelicula.id) {
-                <div class="col">
-                    <div class="movie-item">
-                        <app-pelicula-card [pelicula]="pelicula" [showActionButtons]="false"></app-pelicula-card>
-                        @if (isOwnList) {
-                        <button class="btn btn-remove" (click)="quitarPelicula(pelicula.id)">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
-                        }
-                    </div>
-                </div>
-                }
-            </div>
+              <div class="lista__cover-placeholder">
+                <i class="bi bi-collection lista__cover-placeholder-icon"></i>
+              </div>
             }
+          </div>
+          <div class="col-md-8">
+            <div class="lista__info">
+              <div class="lista__title-row">
+                <h1 class="lista__title">{{ lista.title }}</h1>
+  
+                <app-like-button [contentType]="'list'" [contentId]="lista._id">
+                </app-like-button>
+  
+                @if (isOwnList) {
+                  <div class="dropdown">
+                    <button class="lista__options-btn" type="button" data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end lista__dropdown-menu">
+                      <li>
+                        <a class="lista__dropdown-item" href="#" (click)="$event.preventDefault(); editarLista()">
+                          <i class="bi bi-pencil"></i>
+                          Editar lista
+                        </a>
+                      </li>
+                      <li>
+                        <a class="lista__dropdown-item lista__dropdown-item--danger" href="#"
+                          (click)="$event.preventDefault(); eliminarLista()">
+                          <i class="bi bi-trash"></i>
+                          Eliminar lista
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                }
+              </div>
+  
+              <div class="lista__metadata">
+                <span class="lista__creator">
+                  Por <a [routerLink]="['/usuarios', userIdString]" class="lista__creator-link">{{ creadorLista }}</a>
+                </span>
+                <span class="lista__date">
+                  <i class="bi bi-calendar3"></i>
+                  {{ lista.createdAt | date:'mediumDate' }}
+                </span>
+                <span class="lista__privacy-badge" [class.lista__privacy-badge--private]="!lista.isPublic">
+                  <i class="bi" [ngClass]="lista.isPublic ? 'bi-globe' : 'bi-lock'"></i>
+                  {{ lista.isPublic ? 'Pública' : 'Privada' }}
+                </span>
+              </div>
+  
+              <p class="lista__description">{{ lista.description || 'Sin descripción' }}</p>
+              
+              <div class="lista__stats">
+                <span class="lista__stats-item">
+                  <i class="bi bi-film lista__stats-icon"></i>
+                  {{ lista.movies.length }} películas
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-
+  
+    <div class="container mt-4">
+      <!-- Sección de búsqueda (solo para propietarios) -->
+      @if (isOwnList) {
+        <div class="lista__search-container">
+          <button class="lista__search-btn" (click)="abrirModalBusqueda()">
+            <i class="bi bi-search lista__search-btn-icon"></i>
+            Buscar películas para añadir
+          </button>
+        </div>
+      }
+  
+      <!-- Sección de películas -->
+      <div class="lista__movies-section">
+        <h3 class="lista__section-title">Películas en la lista</h3>
+        
+        @if (peliculasLista.length === 0) {
+          <div class="lista__empty">
+            <i class="bi bi-film lista__empty-icon"></i>
+            <p class="lista__empty-text">Esta lista aún no tiene películas</p>
+            @if (isOwnList) {
+              <p class="lista__empty-subtext">Usa el buscador para añadir películas a tu lista</p>
+            }
+          </div>
+        } @else {
+          <div class="lista__movie-grid">
+            @for (pelicula of peliculasLista; track pelicula.id) {
+              <div class="lista__movie-item">
+                <app-pelicula-card [pelicula]="pelicula" [showActionButtons]="false"></app-pelicula-card>
+                @if (isOwnList) {
+                  <button class="lista__remove-btn" (click)="quitarPelicula(pelicula.id)">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  
     <!-- Modal para editar lista -->
     @if (mostrarFormularioEdicion) {
-    <div class="modal-overlay"></div>
-    <div class="modal-container">
-        <form [formGroup]="listaForm" (ngSubmit)="guardarCambiosLista()" class="cyber-form">
-            <h3 class="form-title">Editar lista</h3>
-
-            <div class="form-group">
-                <label for="title">Título *</label>
-                <input id="title" type="text" formControlName="title" class="form-control"
-                    [class.is-invalid]="hasFormError('title', listaForm)" placeholder="Nombre de la lista">
-                @if (hasFormError('title', listaForm)) {
-                <div class="error-message">
-                    {{ getFormErrorMessage('title', listaForm) }}
-                </div>
-                }
-            </div>
-
-            <div class="form-group">
-                <label for="description">Descripción</label>
-                <textarea id="description" formControlName="description" class="form-control" rows="3"
-                    placeholder="Describe tu lista (opcional)"></textarea>
-                <div class="character-count">
-                    {{ listaForm.get('description')?.value?.length || 0 }}/500
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Portada (opcional)</label>
-                <div class="custom-file mb-3">
-                    <input type="file" class="custom-file-input" id="coverImage" (change)="onFileSelected($event)"
-                        accept="image/*">
-                    <label class="custom-file-label" for="coverImage">
-                        {{ selectedFile ? selectedFile.name : 'Seleccionar imagen...' }}
-                    </label>
-                </div>
-                @if (coverImagePreview) {
-                <div class="image-preview mb-3">
-                    <img [src]="coverImagePreview" alt="Preview" class="img-fluid">
-                </div>
-                }
-            </div>
-
-            <div class="form-group">
-                <div class="custom-checkbox">
-                    <label>
-                        <input type="checkbox" formControlName="isPublic">
-                        <span class="checkbox-label">Lista pública</span>
-                    </label>
-                </div>
-                <small class="form-text text-muted">
-                    Si la lista es privada, solo tú podrás verla.
-                </small>
-            </div>
-
-            <div class="form-actions">
-                <button type="button" class="btn-cancel" (click)="cancelarEdicion()">
-                    Cancelar
-                </button>
-                <button type="submit" class="btn-save" [disabled]="listaForm.invalid">
-                    Guardar cambios
-                </button>
-            </div>
-        </form>
-    </div>
-    }
-    } @else {
-    <div class="error-message">
-        <p>No se encontró la lista especificada o no tienes permisos para verla.</p>
-        <button class="btn btn-primary" (click)="volver()">Volver</button>
-    </div>
-    }
-</div>
-
-<!-- Modal de búsqueda -->
-@if (mostrarModalBusqueda) {
-<div class="modal-overlay" (click)="cerrarModalBusqueda()"></div>
-<div class="search-modal">
-    <div class="modal-header">
-        <h3>
-            <i class="bi bi-search me-2"></i>
-            Buscar películas
-        </h3>
-        <button class="btn-close" (click)="cerrarModalBusqueda()">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    </div>
-    
-    <div class="modal-search-bar">
-        <div class="search-input-group">
+      <div class="lista__modal-overlay"></div>
+      <div class="lista__modal-container">
+        <form [formGroup]="listaForm" (ngSubmit)="guardarCambiosLista()" class="lista__form">
+          <h3 class="lista__form-title">Editar lista</h3>
+  
+          <div class="lista__form-group">
+            <label for="title" class="lista__form-label">Título *</label>
             <input 
-                type="text" 
-                class="form-control search-input"
-                [(ngModel)]="busquedaQuery"
-                (keyup.enter)="buscarPeliculasModal()"
-                placeholder="Buscar por título de película..."
-                autofocus>
-            <button 
-                class="btn btn-primary search-btn" 
-                (click)="buscarPeliculasModal()"
-                [disabled]="busquedaQuery.length < 2">
-                <i class="bi bi-search"></i>
+              id="title" 
+              type="text" 
+              formControlName="title" 
+              class="lista__form-control"
+              [class.lista__form-control--invalid]="hasFormError('title', listaForm)" 
+              placeholder="Nombre de la lista"
+            >
+            @if (hasFormError('title', listaForm)) {
+              <div class="lista__form-error">
+                {{ getFormErrorMessage('title', listaForm) }}
+              </div>
+            }
+          </div>
+  
+          <div class="lista__form-group">
+            <label for="description" class="lista__form-label">Descripción</label>
+            <textarea 
+              id="description" 
+              formControlName="description" 
+              class="lista__form-control lista__form-textarea" 
+              rows="3"
+              placeholder="Describe tu lista (opcional)"
+            ></textarea>
+            <div class="lista__character-count">
+              {{ listaForm.get('description')?.value?.length || 0 }}/500
+            </div>
+          </div>
+  
+          <div class="lista__form-group">
+            <label class="lista__form-label">Portada (opcional)</label>
+            <div class="mb-3">
+              <input 
+                type="file" 
+                class="lista__file-input" 
+                id="coverImage" 
+                (change)="onFileSelected($event)"
+                accept="image/*"
+              >
+              <label class="lista__file-label" for="coverImage">
+                {{ selectedFile ? selectedFile.name : 'Seleccionar imagen...' }}
+              </label>
+            </div>
+            @if (coverImagePreview) {
+              <div class="lista__image-preview">
+                <img [src]="coverImagePreview" alt="Vista previa" class="img-fluid">
+              </div>
+            }
+          </div>
+  
+          <div class="lista__form-group">
+            <div class="lista__checkbox">
+              <label class="lista__checkbox-label">
+                <input type="checkbox" formControlName="isPublic" class="lista__checkbox-input">
+                <span class="lista__checkbox-text">Lista pública</span>
+              </label>
+            </div>
+            <small class="lista__form-help">
+              Si la lista es privada, solo tú podrás verla.
+            </small>
+          </div>
+  
+          <div class="lista__form-actions">
+            <button type="button" class="lista__btn-cancel" (click)="cancelarEdicion()">
+              Cancelar
             </button>
-        </div>
+            <button type="submit" class="lista__btn-save" [disabled]="listaForm.invalid">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+  } @else {
+    <!-- Mensaje de error -->
+    <div class="lista__error">
+      <p class="lista__error-text">No se encontró la lista especificada o no tienes permisos para verla.</p>
+      <button class="lista__error-btn" (click)="volver()">Volver</button>
+    </div>
+  }
+</div>
+
+<!-- Modal de búsqueda de películas -->
+@if (mostrarModalBusqueda) {
+  <div class="movie-search__overlay" (click)="cerrarModalBusqueda()"></div>
+  <div class="movie-search__modal">
+    <div class="movie-search__header">
+      <h3 class="movie-search__title">
+        <i class="bi bi-search me-2"></i>
+        Buscar películas
+      </h3>
+      <button class="movie-search__close" (click)="cerrarModalBusqueda()">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
     
-    <div class="modal-content" (scroll)="onScroll($event)">
-        @if (cargandoBusqueda && peliculasBusqueda.length === 0) {
-            <div class="loading-state">
-                <div class="spinner-border text-primary"></div>
-                <p>Buscando películas...</p>
-            </div>
-        }
-        
-        @if (peliculasBusqueda.length > 0) {
-            <div class="movies-grid">
-                @for (pelicula of peliculasBusqueda; track pelicula.id) {
-                    <div class="movie-card" [class.added]="estaEnLista(pelicula.id)">
-                        <div class="movie-poster-container">
-                            <img 
-                                [src]="pelicula.poster_path ? 'https://image.tmdb.org/t/p/w300' + pelicula.poster_path : 'assets/no-poster.jpg'"
-                                [alt]="pelicula.title"
-                                class="movie-poster"
-                                loading="lazy">
-                            <div class="movie-overlay">
-                                <button 
-                                    class="btn-add-movie"
-                                    (click)="agregarPeliculaModal(pelicula)"
-                                    [disabled]="estaEnLista(pelicula.id)">
-                                    <i class="bi" 
-                                       [ngClass]="estaEnLista(pelicula.id) ? 'bi-check-circle-fill' : 'bi-plus-circle'"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="movie-info">
-                            <h4 class="movie-title">{{ pelicula.title }}</h4>
-                            <div class="movie-details">
-                                <span class="movie-year">{{ pelicula.release_date | date:'yyyy' }}</span>
-                                @if (pelicula.vote_average > 0) {
-                                    <span class="movie-rating">
-                                        <i class="bi bi-star-fill"></i>
-                                        {{ pelicula.vote_average | number:'1.1-1' }}
-                                    </span>
-                                }
-                            </div>
-                            @if (pelicula.overview) {
-                                <p class="movie-overview">{{ pelicula.overview | slice:0:120 }}...</p>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-            
-            @if (cargandoBusqueda) {
-                <div class="loading-more">
-                    <div class="spinner-border spinner-border-sm text-primary"></div>
-                    <span>Cargando más...</span>
-                </div>
-            }
-            
-            @if (!hayMasPaginas && !cargandoBusqueda) {
-                <div class="end-results">
-                    <p>No hay más resultados</p>
-                </div>
-            }
-        }
-        
-        @if (peliculasBusqueda.length === 0 && !cargandoBusqueda && busquedaRealizada) {
-            <div class="no-results">
-                <i class="bi bi-film"></i>
-                <h4>No se encontraron películas</h4>
-                <p>Intenta con otro término de búsqueda</p>
-            </div>
-        }
-        
-        @if (!busquedaRealizada) {
-            <div class="search-placeholder">
-                <i class="bi bi-search"></i>
-                <h4>Busca películas</h4>
-                <p>Escribe el nombre de una película y presiona buscar</p>
-            </div>
-        }
+    <div class="movie-search__search-bar">
+      <div class="movie-search__input-group">
+        <input 
+          type="text" 
+          class="movie-search__input"
+          [(ngModel)]="busquedaQuery"
+          (keyup.enter)="buscarPeliculasModal()"
+          placeholder="Buscar por título de película..."
+          autofocus>
+        <button 
+          class="movie-search__button" 
+          (click)="buscarPeliculasModal()"
+          [disabled]="busquedaQuery.length < 2">
+          <i class="bi bi-search me-1"></i>
+          Buscar
+        </button>
+      </div>
     </div>
-</div>
+    
+    <div class="movie-search__content" (scroll)="onScroll($event)">
+      <!-- Estado de carga inicial -->
+      @if (cargandoBusqueda && peliculasBusqueda.length === 0) {
+        <div class="movie-search__loading">
+          <div class="spinner-border text-primary"></div>
+          <p class="movie-search__text">Buscando películas...</p>
+        </div>
+      }
+      
+      <!-- Grid de resultados -->
+      @if (peliculasBusqueda.length > 0) {
+        <div class="movie-search__grid">
+          @for (pelicula of peliculasBusqueda; track pelicula.id) {
+            <div class="movie-card" [class.movie-card--added]="estaEnLista(pelicula.id)">
+              <div class="movie-card__poster-container">
+                <img 
+                  [src]="pelicula.poster_path ? 'https://image.tmdb.org/t/p/w300' + pelicula.poster_path : 'assets/no-poster.jpg'"
+                  [alt]="pelicula.title"
+                  class="movie-card__poster"
+                  loading="lazy">
+                <div class="movie-card__overlay">
+                  <button 
+                    class="movie-card__add-btn"
+                    (click)="agregarPeliculaModal(pelicula)"
+                    [disabled]="estaEnLista(pelicula.id)">
+                    <i class="bi" 
+                       [ngClass]="estaEnLista(pelicula.id) ? 'bi-check-circle-fill' : 'bi-plus-circle'"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="movie-card__info">
+                <h4 class="movie-card__title">{{ pelicula.title }}</h4>
+                <div class="movie-card__details">
+                  <span class="movie-card__year">{{ pelicula.release_date | date:'yyyy' }}</span>
+                  @if (pelicula.vote_average > 0) {
+                    <span class="movie-card__rating">
+                      <i class="bi bi-star-fill"></i>
+                      {{ pelicula.vote_average | number:'1.1-1' }}
+                    </span>
+                  }
+                </div>
+                @if (pelicula.overview) {
+                  <p class="movie-card__overview">{{ pelicula.overview | slice:0:120 }}...</p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        
+        <!-- Cargando más resultados -->
+        @if (cargandoBusqueda) {
+          <div class="movie-search__loading-more">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            <span>Cargando más...</span>
+          </div>
+        }
+        
+        <!-- Fin de resultados -->
+        @if (!hayMasPaginas && !cargandoBusqueda) {
+          <div class="movie-search__end-results">
+            <p>No hay más resultados</p>
+          </div>
+        }
+      }
+      
+      <!-- Sin resultados -->
+      @if (peliculasBusqueda.length === 0 && !cargandoBusqueda && busquedaRealizada) {
+        <div class="movie-search__no-results">
+          <i class="bi bi-film movie-search__icon"></i>
+          <h4 class="movie-search__title">No se encontraron películas</h4>
+          <p class="movie-search__text">Intenta con otro término de búsqueda</p>
+        </div>
+      }
+      
+      <!-- Placeholder inicial -->
+      @if (!busquedaRealizada) {
+        <div class="movie-search__placeholder">
+          <i class="bi bi-search movie-search__icon"></i>
+          <h4 class="movie-search__title">Busca películas</h4>
+          <p class="movie-search__text">Escribe el nombre de una película y presiona buscar</p>
+        </div>
+      }
+    </div>
+  </div>
 }
