@@ -1,125 +1,139 @@
-<!-- resenia-detalles.component.html -->
-<div class="resenia-container">
+<div class="review-details">
     @if (isLoading) {
-    <div class="loading-spinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
+    <div class="review-details__loading">
+        <div class="review-details__spinner" role="status" aria-label="Cargando"></div>
+        <span>Cargando reseña...</span>
     </div>
     } @else if (review && movieDetails) {
-    <div class="resenia-header">
-        <button class="btn-volver" (click)="volverAPelicula()">
-            <i class="bi bi-arrow-left"></i> Ver película
-        </button>
-
-        <div class="movie-info">
-            <img [src]="'https://image.tmdb.org/t/p/w200' + movieDetails.poster_path" [alt]="movieDetails.title"
-                class="movie-poster">
-            <div class="movie-details">
-                <h2>{{ movieDetails.title }}</h2>
-                <p>{{ movieDetails.release_date | date:'yyyy' }}</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="resenia-content">
-        <div class="user-info">
-            <img [src]="getAvatarPath(review.avatar)" alt="Avatar" class="user-avatar">
-            <div class="user-details">
-                <h3>{{ review.username }}</h3>
-                <span class="fecha">{{ review.createdAt | date:'longDate' }}</span>
-            </div>
-
-            @if (isCurrentUserReview()) {
-            <div class="dropdown">
-                <button class="btn btn-light btn-sm rounded-circle" type="button" id="settingsDropdown"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-gear"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
-                    <li><a class="dropdown-item" href="#" (click)="$event.preventDefault(); editarReview()">
-                            <i class="bi bi-pencil me-2"></i>Editar reseña
-                        </a></li>
-                    <li><a class="dropdown-item" href="#" (click)="$event.preventDefault(); eliminarReview()">
-                            <i class="bi bi-trash me-2"></i>Eliminar reseña
-                        </a></li>
-                </ul>
-            </div>
-            }
-
-            @if (shouldShowFollowButton()) {
-            <button class="btn-follow" [ngClass]="{
-                  'following': followStatus === 'following',
-                  'requested': followStatus === 'requested'
-                }" (click)="toggleFollow($event)" (mouseenter)="isHovering = true" (mouseleave)="isHovering = false">
-                <i class="bi" [ngClass]="
-                    followStatus === 'following' ? 'bi-person-dash-fill' : 
-                    (followStatus === 'requested' ? 'bi-x-circle' : 'bi-person-plus-fill')
-                  "></i>
-                @if (followStatus === 'following') {
-                <span>{{ isHovering ? 'Dejar de seguir' : 'Siguiendo' }}</span>
-                } @else if (followStatus === 'requested') {
-                <span>{{ isHovering ? 'Cancelar solicitud' : 'Solicitado' }}</span>
-                } @else {
-                <span>Seguir</span>
-                }
+    <div class="review-details__container">
+        <div class="review-details__header">
+            <button class="review-details__back-button" (click)="volverAPelicula()" type="button"
+                aria-label="Volver a la película">
+                <i class="bi bi-arrow-left"></i>
+                Ver película
             </button>
-            }
 
+            <div class="review-details__movie">
+                <img [src]="'https://image.tmdb.org/t/p/w300' + movieDetails.poster_path"
+                    [alt]="'Póster de ' + movieDetails.title" class="review-details__movie-poster" loading="lazy">
 
-
-
-
-
-            <div class="rating">
-                <i class="bi bi-star-fill"></i> {{ review.rating }}/10
+                <div class="review-details__movie-info">
+                    <h1 class="review-details__movie-title">{{ movieDetails.title }}</h1>
+                    <p class="review-details__movie-year">{{ movieDetails.release_date | date:'yyyy' }}</p>
+                </div>
             </div>
         </div>
 
+        <div class="review-details__content">
+            <div class="review-details__user">
+                <img [src]="getAvatarPath(review.avatar)" [alt]="'Avatar de ' + review.username"
+                    class="review-details__avatar" loading="lazy">
 
+                <div class="review-details__user-info">
+                    <h2 class="review-details__username">{{ review.username }}</h2>
+                    <time class="review-details__date" [dateTime]="review.createdAt">
+                        {{ review.createdAt | date:'longDate' }}
+                    </time>
+                </div>
 
-        <div class="comment">
-            <p>{{ review.comment }}</p>
-        </div>
+                <div class="review-details__actions">
+                    @if (isCurrentUserReview()) {
+                    <div class="review-details__settings">
+                        <button class="review-details__settings-button" type="button" id="settingsDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Opciones de reseña">
+                            <i class="bi bi-gear"></i>
+                        </button>
 
-        <div class="d-flex align-items-center">
-            <app-like-button [contentType]="'review'" [contentId]="review._id">
-            </app-like-button>
-        </div>
+                        <ul class="dropdown-menu dropdown-menu-end review-details__dropdown-menu"
+                            aria-labelledby="settingsDropdown">
+                            <li>
+                                <a class="dropdown-item review-details__dropdown-item" href="#"
+                                    (click)="$event.preventDefault(); editarReview()">
+                                    <i class="bi bi-pencil"></i>
+                                    Editar reseña
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item review-details__dropdown-item" href="#"
+                                    (click)="$event.preventDefault(); eliminarReview()">
+                                    <i class="bi bi-trash"></i>
+                                    Eliminar reseña
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    }
 
-    </div>
-
-
-    @if (mostrarFormularioEdicion) {
-    <div class="modal-overlay"></div>
-    <div class="modal-container">
-        <form [formGroup]="reviewForm" (ngSubmit)="guardarEdicionReview()" class="cyber-form">
-            <h3 class="mb-3">Editar reseña</h3>
-
-            <div class="form-group">
-                <label>Puntuación</label>
-                <div class="rating-container">
-                    @for (star of [1,2,3,4,5,6,7,8,9,10]; track star) {
-                    <button type="button" (click)="setRating(star)"
-                        [class.active]="star <= reviewForm.get('rating')?.value" class="rating-star">
-                        ★
+                    @if (shouldShowFollowButton()) {
+                    <button class="review-details__follow" [ngClass]="{
+                                    'review-details__follow--following': followStatus === 'following',
+                                    'review-details__follow--requested': followStatus === 'requested',
+                                    'review-details__follow--default': followStatus === 'none'
+                                }" type="button">
+                        <i class="bi" [ngClass]="
+                                    followStatus === 'following' ? 'bi-person-dash-fill' : 
+                                    (followStatus === 'requested' ? 'bi-x-circle' : 'bi-person-plus-fill')
+                                  "></i>
+                        @if (followStatus === 'following') {
+                        <span>{{ isHovering ? 'Dejar de seguir' : 'Siguiendo' }}</span>
+                        } @else if (followStatus === 'requested') {
+                        <span>{{ isHovering ? 'Cancelar solicitud' : 'Solicitado' }}</span>
+                        } @else {
+                        <span>Seguir</span>
+                        }
                     </button>
                     }
-                    <span class="ms-2">{{ reviewForm.get('rating')?.value || 0 }}/10</span>
+
+                    <div class="review-details__rating">
+                        <i class="bi bi-star-fill"></i>
+                        {{ review.rating }}/10
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Comentario</label>
-                <textarea formControlName="comment" rows="4"
-                    placeholder="Escribe tu opinión sobre la película..."></textarea>
+            <div class="review-details__text">
+                {{ review.comment }}
             </div>
 
-            <div class="button-container">
-                <button type="submit" class="btn btn-primary m-1" [disabled]="!reviewForm.valid">
-                    Actualizar
+            <div class="review-details__like-section">
+                <app-like-button [contentType]="'review'" [contentId]="review._id"></app-like-button>
+            </div>
+        </div>
+    </div>
+
+    @if (mostrarFormularioEdicion) {
+    <div class="review-details__modal-overlay"></div>
+    <div class="review-details__modal-container">
+        <form [formGroup]="reviewForm" (ngSubmit)="guardarEdicionReview()" class="review-details__edit-form">
+            <h2 class="review-details__edit-title">Editar reseña</h2>
+
+            <div class="review-details__form-group">
+                <label class="review-details__form-label">Puntuación</label>
+                <div class="review-details__rating-container">
+                    @for (star of [1,2,3,4,5,6,7,8,9,10]; track star) {
+                    <button type="button" (click)="setRating(star)"
+                        [class.review-details__rating-star--active]="star <= reviewForm.get('rating')?.value"
+                        class="review-details__rating-star" [attr.aria-label]="'Puntuación ' + star + ' de 10'">
+                        ★
+                    </button>
+                    }
+                    <span class="review-details__rating-value">{{ reviewForm.get('rating')?.value || 0 }}/10</span>
+                </div>
+            </div>
+
+            <div class="review-details__form-group">
+                <label class="review-details__form-label" for="reviewComment">Comentario</label>
+                <textarea id="reviewComment" formControlName="comment" rows="6"
+                    placeholder="Escribe tu opinión sobre la película..." class="review-details__textarea"></textarea>
+            </div>
+
+            <div class="review-details__form-actions">
+                <button type="submit" class="review-details__form-button review-details__form-button--primary"
+                    [disabled]="!reviewForm.valid">
+                    Actualizar reseña
                 </button>
-                <button type="button" class="btn btn-secondary m-1" (click)="cancelarEdicion()">
+                <button type="button" class="review-details__form-button review-details__form-button--secondary"
+                    (click)="cancelarEdicion()">
                     Cancelar
                 </button>
             </div>
@@ -127,79 +141,95 @@
     </div>
     }
 
-    <!-- Sección de comentarios -->
-    <div class="comments-section">
-        <h3>Comentarios</h3>
+    <div class="review-details__comments">
+        <h2 class="review-details__comments-title">Comentarios</h2>
 
-        <!-- Formulario para comentar -->
-        <div id="commentForm" class="comment-form">
+        <div class="review-details__comment-form">
             @if (replyingTo) {
-            <div class="reply-info">
-                <p>Respondiendo a <strong>{{ replyingTo.username }}</strong></p>
-                <button type="button" class="btn-cancel" (click)="cancelAction()">Cancelar</button>
+            <div class="review-details__comment-info">
+                <p class="review-details__comment-info-text">
+                    Respondiendo a <strong>{{ replyingTo.username }}</strong>
+                </p>
+                <button type="button" class="review-details__comment-cancel" (click)="cancelAction()">
+                    Cancelar
+                </button>
             </div>
             } @else if (editingComment) {
-            <div class="edit-info">
-                <p>Editando tu comentario</p>
-                <button type="button" class="btn-cancel" (click)="cancelAction()">Cancelar</button>
+            <div class="review-details__comment-info">
+                <p class="review-details__comment-info-text">Editando tu comentario</p>
+                <button type="button" class="review-details__comment-cancel" (click)="cancelAction()">
+                    Cancelar
+                </button>
             </div>
             }
 
             <form [formGroup]="commentForm" (ngSubmit)="submitComment()">
-                <div class="form-group">
+                <div class="review-details__comment-textarea-container">
                     <textarea formControlName="text"
                         [placeholder]="editingComment ? 'Editar comentario...' : (replyingTo ? 'Escribe tu respuesta...' : 'Escribe un comentario...')"
-                        rows="3" maxlength="500" class="comment-textarea"></textarea>
-                    <div class="character-count">{{ commentForm.get('text')?.value?.length || 0 }}/500</div>
+                        rows="4" maxlength="500" class="review-details__comment-textarea"
+                        [attr.aria-label]="editingComment ? 'Editar comentario' : (replyingTo ? 'Responder comentario' : 'Nuevo comentario')"></textarea>
+                    <div class="review-details__comment-character-count">
+                        {{ commentForm.get('text')?.value?.length || 0 }}/500
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button type="submit" [disabled]="commentForm.invalid" class="btn-comment">
+
+                <div class="review-details__comment-actions">
+                    <button type="submit" [disabled]="commentForm.invalid" class="review-details__comment-submit">
                         {{ editingComment ? 'Guardar cambios' : (replyingTo ? 'Responder' : 'Comentar') }}
                     </button>
                 </div>
             </form>
         </div>
 
-        <!-- Lista de comentarios -->
         @if (organizedComments.length === 0) {
-        <div class="no-comments">
+        <div class="review-details__no-comments">
             <p>No hay comentarios todavía. ¡Sé el primero en comentar!</p>
         </div>
         } @else {
-        <div class="comments-list">
+        <div class="review-details__comments-list">
             @for (comment of organizedComments; track comment._id) {
-            <div class="comment-card">
-                <div class="comment-header">
-                    <img [src]="getAvatarPath(comment.avatar)" alt="Avatar" class="comment-avatar">
-                    <div class="comment-info">
-                        <h4 class="comment-username">{{ comment.username }}</h4>
-                        <p class="comment-text">{{ comment.text }}</p>
-                        <div class="comment-actions">
-                            <span class="comment-date">
-                                {{ comment.createdAt | date:'medium' }}
+            <article class="review-details__comment">
+                <div class="review-details__comment-header">
+                    <img [src]="getAvatarPath(comment.avatar)" [alt]="'Avatar de ' + comment.username"
+                        class="review-details__comment-avatar" loading="lazy">
+
+                    <div class="review-details__comment-content">
+                        <h3 class="review-details__comment-username">{{ comment.username }}</h3>
+                        <p class="review-details__comment-text">{{ comment.text }}</p>
+
+                        <div class="review-details__comment-footer">
+                            <div class="review-details__comment-date">
+                                <time [dateTime]="comment.createdAt">
+                                    {{ comment.createdAt | date:'medium' }}
+                                </time>
                                 @if (comment.isEdited) {
-                                <span class="edited-badge">editado</span>
+                                <span class="review-details__comment-edited">editado</span>
                                 }
-                            </span>
-                            <div class="action-buttons">
+                            </div>
 
-                                <div class="d-flex align-items-center">
-                                    <app-like-button [contentType]="'comment'" [contentId]="comment._id!">
-                                    </app-like-button>
-                                </div>
+                            <div class="review-details__comment-actions">
+                                <app-like-button [contentType]="'comment'" [contentId]="comment._id!"></app-like-button>
 
-
-                                <button class="btn-action" (click)="replyToComment(comment)">
-                                    <i class="bi bi-reply"></i> Responder
+                                <button class="review-details__comment-action" (click)="replyToComment(comment)"
+                                    type="button">
+                                    <i class="bi bi-reply"></i>
+                                    Responder
                                 </button>
+
                                 @if (canEditComment(comment)) {
-                                <button class="btn-action" (click)="editComment(comment)">
-                                    <i class="bi bi-pencil"></i> Editar
+                                <button class="review-details__comment-action" (click)="editComment(comment)"
+                                    type="button">
+                                    <i class="bi bi-pencil"></i>
+                                    Editar
                                 </button>
                                 }
+
                                 @if (canDeleteComment(comment)) {
-                                <button class="btn-action btn-delete" (click)="deleteComment(comment._id!)">
-                                    <i class="bi bi-trash"></i> Eliminar
+                                <button class="review-details__comment-action review-details__comment-action--delete"
+                                    (click)="deleteComment(comment._id!)" type="button">
+                                    <i class="bi bi-trash"></i>
+                                    Eliminar
                                 </button>
                                 }
                             </div>
@@ -207,59 +237,73 @@
                     </div>
                 </div>
 
-                <!-- Respuestas al comentario -->
                 @if (comment.replies && comment.replies.length > 0) {
-                <div class="replies-container">
+                <div class="review-details__replies">
                     @for (reply of comment.replies; track reply._id) {
-                    <div class="reply-card">
-                        <div class="comment-header">
-                            <img [src]="getAvatarPath(reply.avatar)" alt="Avatar" class="comment-avatar">
-                            <div class="comment-info">
-                                <h4 class="comment-username">{{ reply.username }}</h4>
-                                <p class="comment-text">{{ reply.text }}</p>
-                                <div class="comment-actions">
-                                    <span class="comment-date">
-                                        {{ reply.createdAt | date:'medium' }}
-                                        @if (reply.isEdited) {
-                                        <span class="edited-badge">editado</span>
-                                        }
-                                    </span>
+                    <article class="review-details__reply">
+                        <div class="review-details__comment-header">
+                            <img [src]="getAvatarPath(reply.avatar)" [alt]="'Avatar de ' + reply.username"
+                                class="review-details__comment-avatar" loading="lazy">
 
-                                    <div class="action-buttons">
-                                        <div class="d-flex align-items-center">
-                                            <app-like-button [contentType]="'comment'" [contentId]="reply._id!">
-                                            </app-like-button>
-                                        </div>
-                                        <button class="btn-action" (click)="replyToComment(comment)">
-                                            <i class="bi bi-reply"></i> Responder
+                            <div class="review-details__comment-content">
+                                <h4 class="review-details__comment-username">{{ reply.username }}</h4>
+                                <p class="review-details__comment-text">{{ reply.text }}</p>
+
+                                <div class="review-details__comment-footer">
+                                    <div class="review-details__comment-date">
+                                        <time [dateTime]="reply.createdAt">
+                                            {{ reply.createdAt | date:'medium' }}
+                                        </time>
+                                        @if (reply.isEdited) {
+                                        <span class="review-details__comment-edited">editado</span>
+                                        }
+                                    </div>
+
+                                    <div class="review-details__comment-actions">
+                                        <app-like-button [contentType]="'comment'"
+                                            [contentId]="reply._id!"></app-like-button>
+
+                                        <button class="review-details__comment-action" (click)="replyToComment(comment)"
+                                            type="button">
+                                            <i class="bi bi-reply"></i>
+                                            Responder
                                         </button>
+
                                         @if (canEditComment(reply)) {
-                                        <button class="btn-action" (click)="editComment(reply)">
-                                            <i class="bi bi-pencil"></i> Editar
+                                        <button class="review-details__comment-action" (click)="editComment(reply)"
+                                            type="button">
+                                            <i class="bi bi-pencil"></i>
+                                            Editar
                                         </button>
                                         }
+
                                         @if (canDeleteComment(reply)) {
-                                        <button class="btn-action btn-delete" (click)="deleteComment(reply._id!)">
-                                            <i class="bi bi-trash"></i> Eliminar
+                                        <button
+                                            class="review-details__comment-action review-details__comment-action--delete"
+                                            (click)="deleteComment(reply._id!)" type="button">
+                                            <i class="bi bi-trash"></i>
+                                            Eliminar
                                         </button>
                                         }
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </article>
                     }
                 </div>
                 }
-            </div>
+            </article>
             }
         </div>
         }
     </div>
     } @else {
-    <div class="error-message">
-        <h3>No se encontró la reseña</h3>
-        <button class="btn-primary" (click)="volverAPelicula()">Volver</button>
+    <div class="review-details__error">
+        <h2 class="review-details__error-title">No se encontró la reseña</h2>
+        <button class="review-details__error-button" (click)="volverAPelicula()" type="button">
+            Volver a la película
+        </button>
     </div>
     }
 </div>

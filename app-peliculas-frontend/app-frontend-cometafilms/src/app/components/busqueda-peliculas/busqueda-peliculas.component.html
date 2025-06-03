@@ -119,8 +119,8 @@
     <!-- Resultados -->
     @if (cargando) {
     <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
+        <div class="spinner-border text-cometa-primary" role="status">
+            <span class="visually-hidden">Cargando peliculas...</span>
         </div>
     </div>
     }
@@ -131,7 +131,12 @@
             @for(pelicula of peliculas; track pelicula.id) {
 
             <div class="col p-2">
-                <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                <app-pelicula-card [pelicula]="pelicula" [userProfileData]="userProfile" [skipProfileLoad]="true"
+                    [showActionButtons]="isAuthenticated" (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                    (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                    (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                    (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                </app-pelicula-card>
             </div>
             }
         </div>

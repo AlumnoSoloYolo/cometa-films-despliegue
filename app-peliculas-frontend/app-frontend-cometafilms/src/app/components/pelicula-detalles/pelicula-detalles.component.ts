@@ -13,7 +13,6 @@ import { MovieList } from '../../models/movie-list.model';
 import { LikeButtonComponent } from '../like-button/like-button.component';
 import { ShareButtonComponent } from '../share-button/share-button.component';
 
-
 @Component({
   selector: 'app-pelicula-detalles',
   standalone: true,
@@ -41,6 +40,9 @@ export class PeliculaDetallesComponent implements OnInit {
   isPendiente: boolean = false;
   isVista: boolean = false;
 
+  // Variables para optimización de perfil
+  userProfile: any = null;
+  isAuthenticated = false;
 
   mostrarModalListas = false;
   misListas: MovieList[] = [];
@@ -61,17 +63,20 @@ export class PeliculaDetallesComponent implements OnInit {
     private movieListsService: MovieListsService
   ) {
 
-
     this.authService.currentUser.subscribe(user => {
       this.currentUser = user;
-    });
+      this.isAuthenticated = !!user;
 
+      // Cargar perfil una sola vez si está autenticado
+      if (this.isAuthenticated && !this.userProfile) {
+        this.loadUserProfile();
+      }
+    });
 
     this.reviewForm = this.fb.group({
       rating: [0, [Validators.required, Validators.min(1), Validators.max(10)]],
       comment: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(4000)]]
     });
-
 
     this.nuevaListaForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(100)]],
@@ -79,7 +84,6 @@ export class PeliculaDetallesComponent implements OnInit {
       isPublic: [true],
       coverImage: [null]
     });
-
 
     window.scrollTo({
       top: -100,
@@ -91,6 +95,8 @@ export class PeliculaDetallesComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       const id = params['id'];
+      console.log('Parámetros de la ruta:', params);
+      console.log('ID extraído:', id);
       this.verificarEstadoPelicula(id)
       this.cargarDetallesPelicula(id);
       this.cargarReviews(id);
@@ -100,19 +106,39 @@ export class PeliculaDetallesComponent implements OnInit {
         behavior: 'smooth'
       });
     });
-
-
-
   }
 
-
   verificarEstadoPelicula(movieId: string): void {
+    // Si ya tenemos el perfil cargado, lo usamos directamente
+    if (this.userProfile) {
+      this.isPendiente = this.userProfile.pelisPendientes.some((peli: any) => peli.movieId === movieId);
+      this.isVista = this.userProfile.pelisVistas.some((peli: any) => peli.movieId === movieId);
+      return;
+    }
+
+    // Si no, cargamos el perfil (fallback)
     this.userMovieService.getUserPerfil().subscribe({
       next: (perfil) => {
+        this.userProfile = perfil;
         this.isPendiente = perfil.pelisPendientes.some((peli: any) => peli.movieId === movieId);
         this.isVista = perfil.pelisVistas.some((peli: any) => peli.movieId === movieId);
       },
       error: (error) => console.error('Error al obtener perfil:', error)
+    });
+  }
+
+  // Nuevo método para cargar el perfil una sola vez
+  private loadUserProfile(): void {
+    console.log('📡 Cargando perfil de usuario en PeliculaDetalles...');
+    this.userMovieService.getUserPerfil().subscribe({
+      next: (perfil) => {
+        this.userProfile = perfil;
+        console.log('✅ Perfil cargado, será reutilizado por las películas similares');
+      },
+      error: (error) => {
+        console.error('Error al cargar perfil:', error);
+        this.userProfile = null;
+      }
     });
   }
 
@@ -156,18 +182,30 @@ export class PeliculaDetallesComponent implements OnInit {
     }
   }
 
-
   isCurrentUserReview(review: any): boolean {
     return this.currentUser?.id === review.userId;
   }
 
   cargarDetallesPelicula(id: string): void {
-    this.pelisService.getDetallesPelicula(id).subscribe({
+    console.log('ID recibido:', id);
+    console.log('Llamando a la API con ID:', id);
+
+    // CAMBIADO: Usamos el nuevo método de detalles completos
+    this.pelisService.getDetallesCompletaPelicula(id).subscribe({
       next: (data) => {
+        console.log('Datos COMPLETOS recibidos de la API:', data);
+        console.log('¿Tiene credits?:', !!data.credits);
+        console.log('¿Tiene similar?:', !!data.similar);
+        console.log('¿Tiene videos?:', !!data.videos);
+
         this.pelicula = data;
-        const trailerKey = this.getTrailerClave(this.pelicula.videos.results);
-        if (trailerKey) {
-          this.trailerUrl = this.getVideoUrl(trailerKey);
+
+        // Verificar que existan videos antes de buscar el trailer
+        if (this.pelicula.videos && this.pelicula.videos.results) {
+          const trailerKey = this.getTrailerClave(this.pelicula.videos.results);
+          if (trailerKey) {
+            this.trailerUrl = this.getVideoUrl(trailerKey);
+          }
         }
 
         this.cargarReviews(id);
@@ -178,9 +216,10 @@ export class PeliculaDetallesComponent implements OnInit {
     });
   }
 
-  getTrailerClave(videos: any[]): string {
+  getTrailerClave(videos: any[]): string | null {
+    if (!videos || videos.length === 0) return null;
     const trailer = videos.find(video => video.type === 'Trailer' && video.site === 'YouTube');
-    return trailer.key;
+    return trailer ? trailer.key : null;
   }
 
   getVideoUrl(key: string): SafeResourceUrl {
@@ -190,7 +229,13 @@ export class PeliculaDetallesComponent implements OnInit {
   }
 
   getDirector(): any {
-    return this.pelicula.credits.crew.find((person: any) => person.job === 'Director');
+    // Verificar que existan los datos antes de buscar
+    if (!this.pelicula?.credits?.crew) {
+      return { name: 'Información no disponible' };
+    }
+
+    const director = this.pelicula.credits.crew.find((person: any) => person.job === 'Director');
+    return director || { name: 'Director no encontrado' };
   }
 
   getAvatarPath(avatarName: string): string {
@@ -201,10 +246,10 @@ export class PeliculaDetallesComponent implements OnInit {
     const container = document.getElementById(sectionId);
     if (!container) return;
 
-    const scrollContenido = container.querySelector('.movie-scroll-content');
+    const scrollContenido = container.querySelector('.movie-scroll__content');
     if (!scrollContenido) return;
 
-    const itemAncho = scrollContenido.querySelector('.movie-scroll-item')?.clientWidth || 300;
+    const itemAncho = scrollContenido.querySelector('.movie-scroll__item')?.clientWidth || 300;
     const scrollCantidad = itemAncho * 2;
     const scrollActual = scrollContenido.scrollLeft;
 
@@ -264,26 +309,18 @@ export class PeliculaDetallesComponent implements OnInit {
     const reviewData = this.reviewForm.value;
 
     if (this.reviewUsuarioActual) {
-
       this.userMovieService.updateReview(this.pelicula.id, reviewData).subscribe({
         next: (updatedReviewResponse) => {
           console.log('Respuesta de actualización:', updatedReviewResponse);
-
-
           const updatedReview = updatedReviewResponse.review;
-
-
           const index = this.reviews.findIndex(review => review._id === updatedReview._id);
           if (index !== -1) {
             this.reviews[index] = updatedReview;
           } else {
             this.reviews.unshift(updatedReview);
           }
-
           this.cargarReviews(this.pelicula.id);
           window.location.reload()
-
-
           this.mostrarFormularioReview = false;
           this.reviewForm.reset({ rating: 0, comment: '' });
           this.reviewUsuarioActual = updatedReview;
@@ -291,15 +328,10 @@ export class PeliculaDetallesComponent implements OnInit {
         error: (error) => console.error('Error al actualizar review:', error)
       });
     } else {
-
       this.userMovieService.addReview(this.pelicula.id, reviewData).subscribe({
         next: (newReview) => {
-
-
           this.cargarReviews(this.pelicula.id);
           window.location.reload()
-
-
           this.mostrarFormularioReview = false;
           this.reviewForm.reset({ rating: 0, comment: '' });
           this.reviewUsuarioActual = newReview;
@@ -316,12 +348,10 @@ export class PeliculaDetallesComponent implements OnInit {
       return;
     }
 
-
     this.reviewForm.patchValue({
       rating: this.reviewUsuarioActual.rating,
       comment: this.reviewUsuarioActual.comment
     });
-
 
     this.mostrarFormularioReview = true;
   }
@@ -343,8 +373,6 @@ export class PeliculaDetallesComponent implements OnInit {
   }
 
   navigateReview(review: any): void {
-
-
     if (review && review.reviewId) {
       this.router.navigate(['/resenia', review.reviewId]);
     } else {
@@ -356,6 +384,32 @@ export class PeliculaDetallesComponent implements OnInit {
     return review.reviewId;
   }
 
+  // Métodos para manejar eventos de películas similares
+  onPeliculaVistaAgregada(movieId: string) {
+    if (!this.userProfile) return;
+    if (!this.userProfile.pelisVistas.some((p: any) => p.movieId === movieId)) {
+      this.userProfile.pelisVistas.push({ movieId, watchedAt: new Date() });
+    }
+    this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter((peli: any) => peli.movieId !== movieId);
+  }
+
+  onPeliculaPendienteAgregada(movieId: string) {
+    if (!this.userProfile) return;
+    if (!this.userProfile.pelisPendientes.some((p: any) => p.movieId === movieId)) {
+      this.userProfile.pelisPendientes.push({ movieId, addedAt: new Date() });
+    }
+    this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter((peli: any) => peli.movieId !== movieId);
+  }
+
+  onPeliculaVistaEliminada(movieId: string) {
+    if (!this.userProfile) return;
+    this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter((peli: any) => peli.movieId !== movieId);
+  }
+
+  onPeliculaPendienteEliminada(movieId: string) {
+    if (!this.userProfile) return;
+    this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter((peli: any) => peli.movieId !== movieId);
+  }
 
   // Métodos para manejo de listas
   abrirModalListas(event: Event): void {
@@ -542,5 +596,4 @@ export class PeliculaDetallesComponent implements OnInit {
     }
     return '';
   }
-
 }

@@ -14,15 +14,22 @@ const {
     cancelFollowRequest,
     getUserFollowers,
     getUserFollowing,
-    removeFollower
+    removeFollower,
+    getUserProfileWithCounts,
+    getUserMoviesBasic,
+    getBulkFollowStatus,
+    getAllUsersOptimized
+
 } = require('../controllers/userSocialController');
 
 // Todas las rutas requieren autenticación
 router.use(auth);
 
 // Rutas para la funcionalidad social
-router.get('/users', getAllUsers);
+router.get('/users/optimized', getAllUsersOptimized);
+router.post('/follow/status/bulk', getBulkFollowStatus);
 router.get('/users/search', searchUsers);
+router.get('/users', getAllUsers);
 router.get('/users/:userId', getUserPublicProfile);
 router.post('/follow/:userId', followUser);
 router.delete('/follow/:userId', unfollowUser);
@@ -34,5 +41,9 @@ router.delete('/follow/requests/:requestId/cancel', cancelFollowRequest);
 router.get('/users/:userId/followers', getUserFollowers);
 router.get('/users/:userId/following', getUserFollowing);
 router.delete('/follower/:followerId/remove', removeFollower);
+router.get('/users/:userId/profile-counts', getUserProfileWithCounts);
+router.get('/users/:userId/movies-basic', getUserMoviesBasic);
+
+
 
 module.exports = router;

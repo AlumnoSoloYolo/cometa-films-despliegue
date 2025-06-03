@@ -1,4 +1,4 @@
-// src/app/components/lista-usuarios/lista-usuarios.component.ts
+
 import { Component, OnInit, HostListener, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -25,11 +25,15 @@ export class UsuariosListaComponent implements OnInit {
   searchForm: FormGroup;
   mostrarBotonSubir = false;
 
-  // Propiedades para seguimiento
+  // Propiedades para seguimiento optimizadas
   followStatus: { [userId: string]: 'none' | 'requested' | 'following' } = {};
   requestIds: { [userId: string]: string } = {};
   isHovering: { [userId: string]: boolean } = {};
   processingFollow: { [userId: string]: boolean } = {};
+
+  // Control de estados de carga
+  private followStatusLoaded = false;
+  private isLoadingFollowStatus = false;
 
   constructor(
     private userSocialService: UserSocialService,
@@ -81,50 +85,103 @@ export class UsuariosListaComponent implements OnInit {
       this.requestIds = {};
       this.isHovering = {};
       this.processingFollow = {};
+      this.followStatusLoaded = false;
+      this.isLoadingFollowStatus = false;
       this.cdr.detectChanges();
     });
     this.cargarUsuarios();
   }
 
-  checkFollowStatus(usuarios: User[]): void {
+  // ✅ MÉTODO OPTIMIZADO - UNA SOLA PETICIÓN PARA TODOS LOS USUARIOS
+  checkFollowStatusBulk(usuarios: User[]): void {
+    if (this.isLoadingFollowStatus || usuarios.length === 0) return;
+
+    this.isLoadingFollowStatus = true;
+    const userIds = usuarios.map(u => u._id);
+
+    // Inicializar estados mientras se carga
     usuarios.forEach(usuario => {
-      // Inicializar estados
       if (!(usuario._id in this.followStatus)) {
         this.ngZone.run(() => {
           this.followStatus[usuario._id] = 'none';
           this.isHovering[usuario._id] = false;
           this.processingFollow[usuario._id] = false;
+        });
+      }
+    });
+
+    // UNA SOLA PETICIÓN PARA TODOS LOS USUARIOS
+    this.userSocialService.getBulkFollowStatus(userIds).subscribe({
+      next: (response: any) => {
+        this.ngZone.run(() => {
+          const statusMap = response.followStatus || {};
+
+          // Actualizar todos los estados de una vez
+          Object.keys(statusMap).forEach(userId => {
+            this.followStatus[userId] = statusMap[userId].status || 'none';
+            if (statusMap[userId].requestId) {
+              this.requestIds[userId] = statusMap[userId].requestId;
+            }
+          });
+
+          this.followStatusLoaded = true;
+          this.isLoadingFollowStatus = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (error) => {
+        console.error('Error al verificar estados de seguimiento masivo:', error);
+        this.ngZone.run(() => {
+          // En caso de error, marcar todos como 'none'
+          usuarios.forEach(usuario => {
+            this.followStatus[usuario._id] = 'none';
+          });
+          this.isLoadingFollowStatus = false;
           this.cdr.detectChanges();
         });
       }
-
-      this.userSocialService.getFollowStatus(usuario._id).subscribe({
-        next: (response: any) => {
-          this.ngZone.run(() => {
-            this.followStatus[usuario._id] = response.status || 'none';
-            if (response.requestId) {
-              this.requestIds[usuario._id] = response.requestId;
-            }
-            this.cdr.detectChanges();
-          });
-        },
-        error: (error) => {
-          console.error(`Error al verificar estado de seguimiento para ${usuario.username}:`, error);
-          this.ngZone.run(() => {
-            this.followStatus[usuario._id] = 'none';
-            this.cdr.detectChanges();
-          });
-        }
-      });
     });
   }
 
+  // ✅ CARGAR USUARIOS CON ENDPOINT OPTIMIZADO
   cargarUsuarios(pagina: number = 1): void {
     if (this.cargando) return;
 
     this.cargando = true;
     this.error = false;
 
+    // Usar el endpoint optimizado que ya incluye conteos
+    this.userSocialService.getAllUsersOptimized(pagina).subscribe({
+      next: (response: UserResponse) => {
+        const nuevosUsuarios = response.users;
+
+        if (pagina === 1) {
+          this.usuarios = nuevosUsuarios;
+        } else {
+          this.usuarios = [...this.usuarios, ...nuevosUsuarios];
+        }
+
+        this.totalPaginas = response.pagination.totalPages;
+        this.totalUsuarios = response.pagination.total;
+        this.hayMasPaginas = response.pagination.hasMore;
+        this.cargando = false;
+
+        // Verificar estados de seguimiento para los nuevos usuarios solamente
+        this.checkFollowStatusBulk(nuevosUsuarios);
+      },
+      error: (error: any) => {
+        console.error('Error al cargar usuarios:', error);
+        this.cargando = false;
+        this.error = true;
+
+        // Fallback al método original si el optimizado falla
+        this.cargarUsuariosFallback(pagina);
+      }
+    });
+  }
+
+  // Fallback al método original
+  private cargarUsuariosFallback(pagina: number = 1): void {
     this.userSocialService.getAllUsers(pagina).subscribe({
       next: (response: UserResponse) => {
         if (pagina === 1) {
@@ -138,10 +195,10 @@ export class UsuariosListaComponent implements OnInit {
         this.hayMasPaginas = response.pagination.hasMore;
         this.cargando = false;
 
-        this.checkFollowStatus(response.users);
+        this.checkFollowStatusBulk(response.users);
       },
       error: (error: any) => {
-        console.error('Error al cargar usuarios:', error);
+        console.error('Error en fallback al cargar usuarios:', error);
         this.cargando = false;
         this.error = true;
       }
@@ -157,17 +214,19 @@ export class UsuariosListaComponent implements OnInit {
         this.usuarios = usuarios;
         this.hayMasPaginas = false;
         this.cargando = false;
-        
+
         // Limpiar estados previos
         this.ngZone.run(() => {
           this.followStatus = {};
           this.requestIds = {};
           this.isHovering = {};
           this.processingFollow = {};
+          this.followStatusLoaded = false;
           this.cdr.detectChanges();
         });
-        
-        this.checkFollowStatus(usuarios);
+
+        // Verificar estados para los usuarios encontrados
+        this.checkFollowStatusBulk(usuarios);
       },
       error: (error: any) => {
         console.error('Error al buscar usuarios:', error);
@@ -195,6 +254,11 @@ export class UsuariosListaComponent implements OnInit {
       return 'Procesando...';
     }
 
+    // Mostrar estado de carga mientras se verifican los estados
+    if (!this.followStatusLoaded && this.isLoadingFollowStatus) {
+      return '...';
+    }
+
     switch (status) {
       case 'following':
         return hovering ? 'Dejar de seguir' : 'Siguiendo';
@@ -214,6 +278,11 @@ export class UsuariosListaComponent implements OnInit {
       return 'bi-hourglass-split';
     }
 
+    // Mostrar icono de carga mientras se verifican los estados
+    if (!this.followStatusLoaded && this.isLoadingFollowStatus) {
+      return 'bi-three-dots';
+    }
+
     switch (status) {
       case 'following':
         return hovering ? 'bi-person-dash-fill' : 'bi-check-lg';
@@ -227,7 +296,7 @@ export class UsuariosListaComponent implements OnInit {
   toggleFollow(usuario: User, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
-    
+
     const userId = usuario._id;
 
     if (this.processingFollow[userId]) {

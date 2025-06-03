@@ -132,8 +132,6 @@ docker exec -it cometa-backend bash
 
 # Ver estadísticas de uso
 docker stats
-🤝 Contribución
-Fork el proyecto
 Crea una rama para tu feature (git checkout -b feature/[nombre-feature])
 Commit tus cambios (git commit -m 'Add some [nombre-feature]')
 Push a la rama (git push origin feature/[nombre-feature])

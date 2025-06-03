@@ -1,12 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { PeliculasService } from '../../services/peliculas.service';
+import { UserMovieService } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { VotoColorPipe } from '../../shared/pipes/voto-color.pipe';
 import { PeliculaCardComponent } from '../pelicula-card/pelicula-card.component';
 import { RouterModule } from '@angular/router';
 import { RecomendacionesComponent } from '../recomendaciones/recomendaciones.component';
-import { AuthService } from '../../services/auth.service';
-
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -15,7 +16,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
 
   pelisPopulares: any[] = [];
   pelisEnCines: any[] = [];
@@ -24,70 +25,158 @@ export class HomeComponent implements OnInit {
   pelisMasValoradas: any[] = [];
   listaGeneros: any[] = [];
   pelisProximosEstrenos: any[] = [];
-  isPremium: boolean = true; // Temporalmente true para probar, luego se obtendrá del usuario
+  isPremium: boolean = false;
 
+  // Variables para optimización de perfil
+  userProfile: any = null;
+  isAuthenticated = false;
+  private authSubscription?: Subscription;
 
   constructor(
     private pelisService: PeliculasService,
-    private authService: AuthService) {
+    private authService: AuthService,
+    private userService: UserMovieService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
+  ) {
     window.scrollTo({
       top: -100,
       left: 0,
       behavior: 'smooth'
     });
-
-    // En el futuro, verificar si es premium
-    //  this.isPremium = this.authService.getCurrentUser()?.isPremium || false;
   }
 
   ngOnInit(): void {
+    this.initializeUserData();
+    this.loadMovieData();
+  }
+
+  ngOnDestroy() {
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
+  }
+
+  // Cargar datos del usuario UNA SOLA VEZ
+  private initializeUserData() {
+    this.authSubscription = this.authService.currentUser.subscribe(user => {
+      this.isAuthenticated = !!user;
+      this.isPremium = user?.isPremium || false;
+
+      if (this.isAuthenticated) {
+        this.loadUserProfileOnce();
+      } else {
+        this.userProfile = null;
+      }
+    });
+  }
+
+  // Cargar perfil de usuario optimizado
+  private loadUserProfileOnce() {
+    if (this.userProfile) return; // Ya está cargado
+
+    this.userService.getUserPerfil().subscribe({
+      next: (perfil) => {
+        this.ngZone.run(() => {
+          this.userProfile = perfil;
+          this.isPremium = perfil.isPremium || false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (error) => {
+        console.error('Error al cargar perfil:', error);
+        this.userProfile = null;
+      }
+    });
+  }
+
+  // Cargar todos los datos de películas
+  private loadMovieData() {
     this.populares();
     this.ahoraEncines();
     this.masValoradas();
     this.proximosEstrenos();
     this.tendenciasSemanales();
     this.generos();
-  };
+  }
 
+  // Métodos para manejar eventos de películas y actualizar el perfil local
+  onPeliculaVistaAgregada(movieId: string) {
+    if (!this.userProfile) return;
 
+    this.ngZone.run(() => {
+      if (!this.userProfile.pelisVistas.some((p: any) => p.movieId === movieId)) {
+        this.userProfile.pelisVistas.push({ movieId, watchedAt: new Date() });
+      }
+      this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onPeliculaPendienteAgregada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      if (!this.userProfile.pelisPendientes.some((p: any) => p.movieId === movieId)) {
+        this.userProfile.pelisPendientes.push({ movieId, addedAt: new Date() });
+      }
+      this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onPeliculaVistaEliminada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onPeliculaPendienteEliminada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  // Métodos originales de carga de películas
   populares(): void {
     this.pelisService.getPelisPopulares().subscribe({
       next: (response) => {
         this.pelisPopulares = response.results.slice(0, 10);
-        // console.log(this.pelisPopulares);
       },
       error: (error) => {
         console.error("Error al consultar la lista de pelis populares", error);
       }
     });
-  };
+  }
 
   ahoraEncines(): void {
     this.pelisService.getAhoraEnCines().subscribe({
       next: (response) => {
         this.pelisEnCines = response.results;
-        // console.log(this.pelisEnCines)
       },
       error: (error) => {
         console.error("Error al consultar la lista de películas en cine", error);
       }
     });
-  };
+  }
 
   masValoradas() {
     this.pelisService.getPeliculasMasValoradas()
       .subscribe({
         next: (response) => {
           this.pelisMasValoradas = response.results.slice(0, 10);
-          // console.log(this.pelisMasValoradas);
         },
         error: (error) => {
           console.error('Error al consultar las peliculas más valoradas:', error);
         }
       });
   }
-
-
 
   proximosEstrenos() {
     this.pelisService.getProximosEstrenos()
@@ -97,7 +186,6 @@ export class HomeComponent implements OnInit {
             const releaseYear = new Date(pelicula.release_date).getFullYear();
             return releaseYear >= 2025;
           });
-          // console.log(this.pelisProximosEstrenos);
         },
         error: (error) => {
           console.error('Error al cargar los próximos estrenos', error);
@@ -110,7 +198,6 @@ export class HomeComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.pelisTendenciasSemanales = response.results;
-          // console.log(this.pelisTendenciasSemanales);
         },
         error: (error) => {
           console.error('Error al cargar las tendencias semanales', error);
@@ -122,14 +209,12 @@ export class HomeComponent implements OnInit {
     this.pelisService.getGeneros().subscribe({
       next: (response) => {
         this.listaGeneros = response.genres;
-        // console.log("generos", this.listaGeneros);
       },
       error: (error) => {
         console.error("Error al consultar la lista de géneros", error)
       }
     });
-  };
-
+  }
 
   scrollSection(sectionId: string, direction: 'left' | 'right'): void {
     const container = document.getElementById(sectionId);
@@ -153,6 +238,7 @@ export class HomeComponent implements OnInit {
   }
 
   onWheel(event: WheelEvent, sectionId: string): void {
+    // Método comentado mantenido como en el original
     // const container = document.getElementById(sectionId);
     // if (!container) return;
 
@@ -169,6 +255,5 @@ export class HomeComponent implements OnInit {
     //   behavior: 'smooth'
     // }
     // );
-
   }
 }

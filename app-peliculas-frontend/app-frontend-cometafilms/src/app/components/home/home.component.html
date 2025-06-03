@@ -93,7 +93,13 @@
                 <div class=" movie-scroll-content p-3">
                     @for (pelicula of pelisMasValoradas; track pelicula.id) {
                     <div class="movie-scroll-item">
-                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                        <app-pelicula-card [pelicula]="pelicula" [userProfileData]="userProfile"
+                            [skipProfileLoad]="true" [showActionButtons]="isAuthenticated"
+                            (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                            (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                            (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                            (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                        </app-pelicula-card>
                     </div>
                     }
                 </div>
@@ -117,7 +123,13 @@
                 <div class="movie-scroll-content p-3">
                     @for (pelicula of pelisTendenciasSemanales; track pelicula.id) {
                     <div class="movie-scroll-item">
-                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                        <app-pelicula-card [pelicula]="pelicula" [userProfileData]="userProfile"
+                            [skipProfileLoad]="true" [showActionButtons]="isAuthenticated"
+                            (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                            (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                            (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                            (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                        </app-pelicula-card>
                     </div>
                     }
                 </div>
@@ -141,7 +153,13 @@
                 <div class=" movie-scroll-content p-3">
                     @for (pelicula of pelisEnCines; track pelicula.id) {
                     <div class="movie-scroll-item">
-                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                        <app-pelicula-card [pelicula]="pelicula" [userProfileData]="userProfile"
+                            [skipProfileLoad]="true" [showActionButtons]="isAuthenticated"
+                            (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                            (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                            (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                            (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                        </app-pelicula-card>
                     </div>
                     }
                 </div>
@@ -165,7 +183,13 @@
                 <div class=" movie-scroll-content p-3">
                     @for (pelicula of pelisProximosEstrenos; track pelicula.id) {
                     <div class="movie-scroll-item">
-                        <app-pelicula-card [pelicula]="pelicula"></app-pelicula-card>
+                        <app-pelicula-card [pelicula]="pelicula" [userProfileData]="userProfile"
+                            [skipProfileLoad]="true" [showActionButtons]="isAuthenticated"
+                            (peliculaVistaAgregada)="onPeliculaVistaAgregada($event)"
+                            (peliculaVistaEliminada)="onPeliculaVistaEliminada($event)"
+                            (peliculaPendienteAgregada)="onPeliculaPendienteAgregada($event)"
+                            (peliculaPendienteEliminada)="onPeliculaPendienteEliminada($event)">
+                        </app-pelicula-card>
                     </div>
                     }
                 </div>

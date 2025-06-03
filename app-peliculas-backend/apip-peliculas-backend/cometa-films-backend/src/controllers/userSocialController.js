@@ -5,7 +5,9 @@ const Watched = require('../models/watched.model');
 const Review = require('../models/review.model');
 const FollowRequest = require('../models/follow-request.model');
 const activityService = require('../services/activity.service');
+const MovieList = require('../models/movie-list.model');
 const socket = require('../socket');
+const mongoose = require('mongoose');
 
 // Obtener todos los usuarios
 exports.getAllUsers = async (req, res) => {
@@ -173,6 +175,7 @@ exports.getUserPublicProfile = async (req, res) => {
             pelisPendientes,
             pelisVistas,
             reviews,
+            perfilPrivado: user.perfilPrivado,
             stats: {
                 pelisVistasCount: pelisVistas.length,
                 pelisPendientesCount: pelisPendientes.length,
@@ -593,6 +596,322 @@ exports.removeFollower = async (req, res) => {
         console.error('Error al eliminar seguidor:', error);
         res.status(500).json({
             message: 'Error al eliminar seguidor',
+            error: error.message
+        });
+    }
+};
+
+
+
+// Nueva función optimizada para obtener perfil con conteos
+exports.getUserProfileWithCounts = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const currentUserId = req.user ? req.user.id : null;
+
+        // Una sola consulta para obtener todos los conteos
+        const [user, listsCount, followersCount, followingCount] = await Promise.all([
+            User.findById(userId).select('username avatar biografia perfilPrivado isPremium createdAt'),
+            MovieList.countDocuments({ userId, isPublic: true }),
+            Follow.countDocuments({ following: userId }),
+            Follow.countDocuments({ follower: userId })
+        ]);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Solo incluir conteos de películas si es necesario
+        const movieCounts = {
+            pendientesCount: 0,
+            vistasCount: 0,
+            reviewsCount: 0
+        };
+
+        if (!user.perfilPrivado || currentUserId === userId) {
+            const [pendientes, vistas, reviews] = await Promise.all([
+                Watchlist.countDocuments({ userId }),
+                Watched.countDocuments({ userId }),
+                Review.countDocuments({ userId })
+            ]);
+
+            movieCounts.pendientesCount = pendientes;
+            movieCounts.vistasCount = vistas;
+            movieCounts.reviewsCount = reviews;
+        }
+
+        res.json({
+            user,
+            ...movieCounts,
+            listsCount,
+            followersCount,
+            followingCount
+        });
+
+    } catch (error) {
+        console.error('Error al obtener perfil optimizado:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+// Función optimizada para obtener solo datos básicos de películas (IDs y fechas)
+exports.getUserMoviesBasic = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const currentUserId = req.user ? req.user.id : null;
+
+        // Verificar si el usuario existe
+        const user = await User.findById(userId).select('perfilPrivado');
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Verificar permisos de acceso
+        if (user.perfilPrivado && currentUserId !== userId) {
+            // Verificar si sigue al usuario
+            const isFollowing = await Follow.findOne({
+                follower: currentUserId,
+                following: userId
+            });
+
+            if (!isFollowing) {
+                return res.status(403).json({
+                    message: 'Perfil privado',
+                    hasAccess: false
+                });
+            }
+        }
+
+        // Obtener solo IDs y fechas de películas
+        const [pelisPendientes, pelisVistas, reviews] = await Promise.all([
+            Watchlist.find({ userId }).select('movieId addedAt').lean(),
+            Watched.find({ userId }).select('movieId watchedAt').lean(),
+            Review.find({ userId }).select('movieId rating comment createdAt').lean()
+        ]);
+
+        res.json({
+            pelisPendientes,
+            pelisVistas,
+            reviews,
+            hasAccess: true
+        });
+
+    } catch (error) {
+        console.error('Error al obtener datos básicos de películas:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+
+exports.getAllUsersOptimized = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        const skip = (page - 1) * limit;
+
+        console.log(`[OPTIMIZED] Cargando página ${page}, usuarios por página: ${limit}`);
+
+        // 1. Obtener usuarios básicos (excluyendo al usuario actual)
+        const users = await User.find({
+            _id: { $ne: new mongoose.Types.ObjectId(req.user.id) }
+        })
+            .select('username avatar biografia isPremium createdAt')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        console.log(`[OPTIMIZED] Usuarios encontrados: ${users.length}`);
+
+        if (users.length === 0) {
+            return res.json({
+                users: [],
+                pagination: {
+                    currentPage: page,
+                    totalPages: 0,
+                    total: 0,
+                    hasMore: false,
+                    limit
+                }
+            });
+        }
+
+        // 2. Extraer IDs para consultas de conteos
+        const userIds = users.map(u => u._id);
+        console.log(`[OPTIMIZED] IDs de usuarios: ${userIds.length}`);
+
+        // 3. Obtener conteos en paralelo con manejo de errores individual
+        const [pendientesData, vistasData, reviewsData] = await Promise.allSettled([
+            Watchlist.aggregate([
+                { $match: { userId: { $in: userIds } } },
+                { $group: { _id: '$userId', count: { $sum: 1 } } }
+            ]).catch(err => {
+                console.error('Error en conteo de pendientes:', err);
+                return [];
+            }),
+
+            Watched.aggregate([
+                { $match: { userId: { $in: userIds } } },
+                { $group: { _id: '$userId', count: { $sum: 1 } } }
+            ]).catch(err => {
+                console.error('Error en conteo de vistas:', err);
+                return [];
+            }),
+
+            Review.aggregate([
+                { $match: { userId: { $in: userIds } } },
+                { $group: { _id: '$userId', count: { $sum: 1 } } }
+            ]).catch(err => {
+                console.error('Error en conteo de reviews:', err);
+                return [];
+            })
+        ]);
+
+        // 4. Procesar resultados de forma segura
+        const pendientes = pendientesData.status === 'fulfilled' ? pendientesData.value : [];
+        const vistas = vistasData.status === 'fulfilled' ? vistasData.value : [];
+        const reviews = reviewsData.status === 'fulfilled' ? reviewsData.value : [];
+
+        console.log(`[OPTIMIZED] Conteos - Pendientes: ${pendientes.length}, Vistas: ${vistas.length}, Reviews: ${reviews.length}`);
+
+        // 5. Crear mapas para acceso rápido
+        const pendientesMap = {};
+        const vistasMap = {};
+        const reviewsMap = {};
+
+        pendientes.forEach(item => {
+            if (item && item._id) {
+                pendientesMap[item._id.toString()] = item.count || 0;
+            }
+        });
+
+        vistas.forEach(item => {
+            if (item && item._id) {
+                vistasMap[item._id.toString()] = item.count || 0;
+            }
+        });
+
+        reviews.forEach(item => {
+            if (item && item._id) {
+                reviewsMap[item._id.toString()] = item.count || 0;
+            }
+        });
+
+        // 6. Enriquecer usuarios con conteos
+        const enrichedUsers = users.map(user => {
+            const userId = user._id.toString();
+            return {
+                _id: user._id,
+                username: user.username,
+                avatar: user.avatar || 'avatar1',
+                biografia: user.biografia || '',
+                isPremium: user.isPremium || false,
+                createdAt: user.createdAt,
+                pelisPendientesCount: pendientesMap[userId] || 0,
+                pelisVistasCount: vistasMap[userId] || 0,
+                reviewsCount: reviewsMap[userId] || 0
+            };
+        });
+
+        // 7. Calcular paginación
+        const total = await User.countDocuments({
+            _id: { $ne: new mongoose.Types.ObjectId(req.user.id) }
+        });
+
+        const totalPages = Math.ceil(total / limit);
+        const hasMore = page < totalPages;
+
+        console.log(`[OPTIMIZED] Respuesta enviada - ${enrichedUsers.length} usuarios, página ${page}/${totalPages}`);
+
+        res.json({
+            users: enrichedUsers,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                total,
+                hasMore,
+                limit
+            }
+        });
+
+    } catch (error) {
+        console.error('Error completo en getAllUsersOptimized:', error);
+        console.error('Stack:', error.stack);
+        res.status(500).json({
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
+// Función para verificación masiva de seguimiento - SIMPLIFICADA
+exports.getBulkFollowStatus = async (req, res) => {
+    try {
+        const { userIds } = req.body;
+        const currentUserId = req.user.id;
+
+        console.log(`[BULK_FOLLOW] Verificando seguimiento para ${userIds?.length || 0} usuarios`);
+
+        // Validaciones básicas
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ message: 'Se requiere un array de IDs de usuarios' });
+        }
+
+        if (userIds.length > 100) {
+            return res.status(400).json({ message: 'Máximo 100 usuarios por consulta' });
+        }
+
+        // Convertir a ObjectIds si es necesario
+        const objectIds = userIds.map(id => {
+            try {
+                return new mongoose.Types.ObjectId(id);
+            } catch (err) {
+                console.error(`ID inválido: ${id}`);
+                return null;
+            }
+        }).filter(id => id !== null);
+
+        console.log(`[BULK_FOLLOW] IDs válidos: ${objectIds.length}`);
+
+        // Buscar relaciones de seguimiento existentes
+        const followRelations = await Follow.find({
+            follower: new mongoose.Types.ObjectId(currentUserId),
+            following: { $in: objectIds }
+        }).select('following').lean();
+
+        console.log(`[BULK_FOLLOW] Relaciones encontradas: ${followRelations.length}`);
+
+        // Crear mapa de estados
+        const statusMap = {};
+
+        // Inicializar todos como 'none'
+        userIds.forEach(userId => {
+            statusMap[userId] = {
+                status: 'none',
+                requestId: null
+            };
+        });
+
+        // Actualizar los que tienen relación de seguimiento
+        followRelations.forEach(relation => {
+            const followingId = relation.following.toString();
+            statusMap[followingId] = {
+                status: 'following',
+                requestId: null
+            };
+        });
+
+        console.log(`[BULK_FOLLOW] Estados calculados para ${Object.keys(statusMap).length} usuarios`);
+
+        res.json({
+            followStatus: statusMap
+        });
+
+    } catch (error) {
+        console.error('Error en getBulkFollowStatus:', error);
+        console.error('Stack:', error.stack);
+        res.status(500).json({
+            message: 'Error interno del servidor',
             error: error.message
         });
     }

@@ -127,4 +127,41 @@ export class UserSocialService {
       this.getHeaders()
     );
   }
+
+
+  getUserProfileWithCounts(userId: string): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/users/${userId}/profile-counts`,
+      this.getHeaders()
+    );
+  }
+
+  //método para obtener datos básicos de películas
+  getUserMoviesBasic(userId: string): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/users/${userId}/movies-basic`,
+      this.getHeaders()
+    );
+  }
+
+  // Método para verificación masiva
+  getBulkFollowStatus(userIds: string[]): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/follow/status/bulk`,
+      { userIds },
+      this.getHeaders()
+    );
+  }
+
+  // Método optimizado para obtener usuarios
+  getAllUsersOptimized(page: number = 1, limit: number = 12): Observable<UserResponse> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<UserResponse>(
+      `${this.apiUrl}/users/optimized`,
+      { headers: this.getHeaders().headers, params }
+    );
+  }
 }

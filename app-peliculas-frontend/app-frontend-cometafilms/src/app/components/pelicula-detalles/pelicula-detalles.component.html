@@ -1,3 +1,5 @@
+<!-- Agregamos una verificación inicial para que no se renderice nada hasta que pelicula esté cargada -->
+@if (pelicula) {
 <div class="movie-hero">
     <div class="movie-hero__backdrop">
         <img [src]="'https://image.tmdb.org/t/p/original' + pelicula.backdrop_path" [alt]="pelicula.title">
@@ -13,7 +15,7 @@
                 <h1 class="movie-hero__title">{{pelicula.title}}</h1>
                 <div class="movie-hero__director mt-4">
                     <h4 class="movie-hero__subtitle">dirigida por: </h4>
-                    <span class="movie-hero__text">{{getDirector().name}}</span>
+                    <span class="movie-hero__text">{{getDirector()?.name}}</span>
                 </div>
 
                 <div class="movie-hero__companies">
@@ -31,15 +33,14 @@
                     <span class="movie-hero__rating">
                         <i class="bi bi-star-fill me-2"></i>
                         {{ pelicula.vote_average | number:'1.1-1'}}
-                        ({{pelicula.vote_count}} votos en TMDB) 
+                        ({{pelicula.vote_count}} votos en TMDB)
                     </span>
                 </div>
 
                 <!-- Botones de acción -->
                 <div class="movie-actions">
-                    <button class="movie-actions__btn movie-actions__btn--watchlist" 
-                            [class.movie-actions__btn--active]="isPendiente"
-                            (click)="togglePendiente($event)">
+                    <button class="movie-actions__btn movie-actions__btn--watchlist"
+                        [class.movie-actions__btn--active]="isPendiente" (click)="togglePendiente($event)">
                         <i class="bi" [ngClass]="{ 
                             'bi-bookmark-plus': !isPendiente, 
                             'bi-bookmark-x-fill': isPendiente 
@@ -47,9 +48,8 @@
                         {{ isPendiente ? 'Quitar de pendientes' : 'Añadir a pendientes' }}
                     </button>
 
-                    <button class="movie-actions__btn movie-actions__btn--watched" 
-                            [class.movie-actions__btn--active]="isVista"
-                            (click)="toggleVista($event)">
+                    <button class="movie-actions__btn movie-actions__btn--watched"
+                        [class.movie-actions__btn--active]="isVista" (click)="toggleVista($event)">
                         <i class="bi" [ngClass]="{ 
                             'bi-eye': !isVista, 
                             'bi-eye-slash-fill': isVista 
@@ -57,14 +57,12 @@
                         {{ isVista ? 'Quitar de vistas' : 'Marcar como vista' }}
                     </button>
 
-                    <button class="movie-actions__btn movie-actions__btn--list" 
-                            (click)="abrirModalListas($event)">
+                    <button class="movie-actions__btn movie-actions__btn--list" (click)="abrirModalListas($event)">
                         <i class="bi bi-collection-play"></i>
                         Añadir a lista
                     </button>
 
-                    <app-share-movie-button
-                        [movie]="{
+                    <app-share-movie-button [movie]="{
                             id: pelicula.id.toString(),
                             title: pelicula.title,
                             poster_path: pelicula.poster_path,
@@ -131,10 +129,8 @@
                     <label>Puntuación</label>
                     <div class="rating-container">
                         @for(star of [1,2,3,4,5,6,7,8,9,10]; track star) {
-                        <button type="button" 
-                                (click)="setRating(star)"
-                                [class.active]="star <= reviewForm.get('rating')?.value" 
-                                class="rating-star">
+                        <button type="button" (click)="setRating(star)"
+                            [class.active]="star <= reviewForm.get('rating')?.value" class="rating-star">
                             ★
                         </button>
                         }
@@ -192,20 +188,22 @@
 
                             @if (!review.isExternal && isCurrentUserReview(review)) {
                             <div class="movie-reviews__actions">
-                                <button (click)="$event.stopPropagation(); editarReview()" class="movie-reviews__action-btn">
+                                <button (click)="$event.stopPropagation(); editarReview()"
+                                    class="movie-reviews__action-btn">
                                     <i class="fas fa-wrench"></i>
                                 </button>
-                                <button (click)="$event.stopPropagation(); eliminarReview()" class="movie-reviews__action-btn">
+                                <button (click)="$event.stopPropagation(); eliminarReview()"
+                                    class="movie-reviews__action-btn">
                                     <i class="bi bi-trash3-fill"></i>
                                 </button>
                             </div>
                             }
                         </div>
-                        
+
                         <div class="movie-reviews__content">
                             <p>{{review.comment}}</p>
                         </div>
-                        
+
                         <div class="movie-reviews__footer">
                             <span class="movie-reviews__rating">
                                 <i class="bi bi-star-fill me-2"></i>
@@ -223,16 +221,17 @@
     </section>
 
     <!-- Sección de Reparto -->
+    @if (pelicula.credits?.cast) {
     <section class="movie-section">
         <div class="section-header">
             <h2 class="section-title">Reparto</h2>
             <div class="section-navigation">
-                <button class="section-navigation__btn section-navigation__btn--prev" 
-                        (click)="scrollSection('castSection', 'left')">
+                <button class="section-navigation__btn section-navigation__btn--prev"
+                    (click)="scrollSection('castSection', 'left')">
                     <i class="bi bi-chevron-left"></i>
                 </button>
-                <button class="section-navigation__btn section-navigation__btn--next" 
-                        (click)="scrollSection('castSection', 'right')">
+                <button class="section-navigation__btn section-navigation__btn--next"
+                    (click)="scrollSection('castSection', 'right')">
                     <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
@@ -244,9 +243,8 @@
                     <div class="movie-cast-card" [routerLink]="['/persona', actor.id]">
                         <div class="movie-cast-card__content">
                             @if (actor.profile_path) {
-                            <img [src]="'https://image.tmdb.org/t/p/w200' + actor.profile_path" 
-                                 [alt]="actor.name"
-                                 class="movie-cast-card__img">
+                            <img [src]="'https://image.tmdb.org/t/p/w200' + actor.profile_path" [alt]="actor.name"
+                                class="movie-cast-card__img">
                             } @else {
                             <div class="movie-cast-card__placeholder">
                                 <i class="fas fa-user-astronaut"></i>
@@ -263,18 +261,20 @@
             </div>
         </div>
     </section>
+    }
 
     <!-- Sección de Equipo Principal -->
+    @if (pelicula.credits?.crew) {
     <section class="movie-section">
         <div class="section-header">
             <h2 class="section-title">Equipo Principal</h2>
             <div class="section-navigation">
-                <button class="section-navigation__btn section-navigation__btn--prev" 
-                        (click)="scrollSection('keyCrewSection', 'left')">
+                <button class="section-navigation__btn section-navigation__btn--prev"
+                    (click)="scrollSection('keyCrewSection', 'left')">
                     <i class="bi bi-chevron-left"></i>
                 </button>
-                <button class="section-navigation__btn section-navigation__btn--next" 
-                        (click)="scrollSection('keyCrewSection', 'right')">
+                <button class="section-navigation__btn section-navigation__btn--next"
+                    (click)="scrollSection('keyCrewSection', 'right')">
                     <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
@@ -286,9 +286,8 @@
                     <div class="movie-crew-card" [routerLink]="['/persona', person.id]">
                         <div class="movie-crew-card__content">
                             @if (person.profile_path) {
-                            <img [src]="'https://image.tmdb.org/t/p/w200' + person.profile_path" 
-                                 [alt]="person.name"
-                                 class="movie-crew-card__img">
+                            <img [src]="'https://image.tmdb.org/t/p/w200' + person.profile_path" [alt]="person.name"
+                                class="movie-crew-card__img">
                             } @else {
                             <div class="movie-crew-card__placeholder">
                                 <i class="fas fa-user-astronaut"></i>
@@ -306,18 +305,20 @@
             </div>
         </div>
     </section>
+    }
 
     <!-- Sección de Películas Similares -->
+    @if (pelicula.similar?.results) {
     <section class="movie-section">
         <div class="section-header">
             <h2 class="section-title">Películas Similares</h2>
             <div class="section-navigation">
-                <button class="section-navigation__btn section-navigation__btn--prev" 
-                        (click)="scrollSection('pelisSimilares', 'left')">
+                <button class="section-navigation__btn section-navigation__btn--prev"
+                    (click)="scrollSection('pelisSimilares', 'left')">
                     <i class="bi bi-chevron-left"></i>
                 </button>
-                <button class="section-navigation__btn section-navigation__btn--next" 
-                        (click)="scrollSection('pelisSimilares', 'right')">
+                <button class="section-navigation__btn section-navigation__btn--next"
+                    (click)="scrollSection('pelisSimilares', 'right')">
                     <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
@@ -332,6 +333,7 @@
             </div>
         </div>
     </section>
+    }
 </div>
 
 <!-- Modal de Listas -->
@@ -370,9 +372,8 @@
         <div class="lists-grid">
             @for(lista of misListas; track lista._id){
             <div class="list-item">
-                <div class="list-item__content" 
-                     [class.list-item__content--active]="peliculaEnLista(lista, pelicula.id)"
-                     (click)="togglePeliculaEnLista(lista, pelicula.id)">
+                <div class="list-item__content" [class.list-item__content--active]="peliculaEnLista(lista, pelicula.id)"
+                    (click)="togglePeliculaEnLista(lista, pelicula.id)">
                     <div class="list-item__info">
                         <h6 class="list-item__title">{{lista.title}}</h6>
                         <p class="list-item__count">{{lista.movies.length}} películas</p>
@@ -430,8 +431,8 @@
             <div class="form-group">
                 <label>Portada (opcional)</label>
                 <div class="custom-file">
-                    <input type="file" class="custom-file__input" id="coverImage" 
-                           (change)="onFileSelected($event)" accept="image/*">
+                    <input type="file" class="custom-file__input" id="coverImage" (change)="onFileSelected($event)"
+                        accept="image/*">
                     <label class="custom-file__label" for="coverImage">
                         {{ selectedFile ? selectedFile.name : 'Seleccionar imagen...' }}
                     </label>
@@ -465,6 +466,15 @@
             </div>
         </form>
         }
+    </div>
+</div>
+}
+
+} @else {
+<!-- Loading state mientras se cargan los datos -->
+<div class="loading-container">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Cargando película...</span>
     </div>
 </div>
 }

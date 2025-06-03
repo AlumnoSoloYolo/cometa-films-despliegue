@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 import { UserMovieService } from '../../services/user.service';
 import { PeliculasService } from '../../services/peliculas.service';
@@ -15,7 +16,8 @@ import { MovieListsService } from '../../services/movie-lists.service';
 import { MovieList } from '../../models/movie-list.model';
 import { ChatService } from '../../services/chat.service';
 
-interface UserProfile { 
+// INTERFACES
+interface UserProfile {
   _id?: string;
   username: string;
   email?: string;
@@ -96,6 +98,23 @@ export class PerfilComponent implements OnInit, OnDestroy {
   private currentUserSubscription: Subscription | undefined;
   private routeParamsSubscription: Subscription | undefined;
 
+  // Variables para prevenir cargas múltiples
+  private isLoading = false;
+
+  // Control de carga de películas optimizado
+  private readonly MAX_INITIAL_MOVIES = 20;
+  private loadedPendientesCount = 0;
+  private loadedVistasCount = 0;
+  private isLoadingMoreMovies = false;
+
+  // Estados de carga optimizados
+  private loadingStates = {
+    profile: false,
+    movies: false,
+    social: false,
+    lists: false
+  };
+
   constructor(
     private userMovieService: UserMovieService,
     private movieService: PeliculasService,
@@ -106,8 +125,8 @@ export class PerfilComponent implements OnInit, OnDestroy {
     private router: Router,
     private fb: FormBuilder,
     private chatService: ChatService,
-    private cdr: ChangeDetectorRef, // AGREGAR PARA FIX CHROME
-    private ngZone: NgZone // AGREGAR PARA FIX CHROME
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
     this.configForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
@@ -124,23 +143,26 @@ export class PerfilComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Prevenir múltiples cargas simultáneas
+    if (this.isLoading) return;
+    this.isLoading = true;
+
     this.routeParamsSubscription = this.route.params.subscribe(params => {
       const userIdFromRoute = params['id'];
       const currentAuthUser = this.authService.currentUserSubject.value;
 
+      this.resetComponentState();
+
       if (userIdFromRoute) {
         this.isOwnProfile = currentAuthUser?.id === userIdFromRoute;
         if (this.isOwnProfile) {
-          this.loadUserProfile();
-          this.cargarListasPropias();
+          this.loadOwnProfileOptimized();
         } else {
-          this.loadOtherUserProfile(userIdFromRoute);
-          this.cargarListasDeOtroUsuario(userIdFromRoute);
+          this.loadOtherUserProfileOptimized(userIdFromRoute);
         }
       } else {
         this.isOwnProfile = true;
-        this.loadUserProfile();
-        this.cargarListasPropias();
+        this.loadOwnProfileOptimized();
       }
     });
   }
@@ -154,115 +176,503 @@ export class PerfilComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadUserProfile() {
-    this.userMovieService.getUserPerfil().subscribe({
-      next: (userData) => {
-        // USAR ngZone PARA FORZAR DETECCIÓN DE CAMBIOS EN CHROME
+  // Reset completo del estado del componente
+  private resetComponentState() {
+    this.userProfile = null;
+    this.peliculasPendientes = [];
+    this.peliculasVistas = [];
+    this.reviews = [];
+    this.listas = [];
+    this.seguidores = [];
+    this.seguidos = [];
+    this.seguidoresCount = 0;
+    this.seguidosCount = 0;
+    this.totalListas = 0;
+    this.listasOcultas = 0;
+    this.socialDataLoaded = false;
+    this.loadedPendientesCount = 0;
+    this.loadedVistasCount = 0;
+    this.followStatus = 'none';
+    this.isFollowing = false;
+
+    Object.keys(this.loadingStates).forEach(key => {
+      this.loadingStates[key as keyof typeof this.loadingStates] = false;
+    });
+  }
+
+  // Carga optimizada del perfil propio con forkJoin
+  private loadOwnProfileOptimized() {
+    this.loadingStates.profile = true;
+
+    forkJoin({
+      profile: this.userMovieService.getUserPerfil(),
+      lists: this.movieListsService.getUserLists()
+    }).subscribe({
+      next: ({ profile, lists }) => {
         this.ngZone.run(() => {
-          this.userProfile = {
-            _id: userData._id,
-            username: userData.username,
-            email: userData.email,
-            avatar: userData.avatar || 'avatar1',
-            createdAt: new Date(userData.createdAt),
-            pelisPendientes: userData.pelisPendientes || [],
-            pelisVistas: userData.pelisVistas || [],
-            reviews: userData.reviews || [],
-            biografia: userData.biografia || '',
-            perfilPrivado: userData.perfilPrivado || false,
-            isPremium: userData.isPremium || false,
-          };
-          this.isPremium = userData.isPremium || false;
+          this.setUserProfileData(profile);
+          this.setListsData(lists);
+
+          if (profile._id) {
+            this.loadSocialDataSeparately(profile._id);
+          }
+
+          this.loadEssentialMovieData();
+          this.loadingStates.profile = false;
+          this.isLoading = false;
           this.cdr.detectChanges();
         });
+      },
+      error: (error) => {
+        this.loadingStates.profile = false;
+        this.isLoading = false;
+      }
+    });
+  }
 
-        if ((this.userProfile?.pelisPendientes ?? []).length > 0) this.loadPeliculasPendientes();
-        if ((this.userProfile?.pelisVistas ?? []).length > 0) this.loadPeliculasVistas();
-        if ((this.userProfile?.reviews ?? []).length > 0) this.loadReviews();
+  // Carga optimizada para perfiles de otros usuarios
+  private loadOtherUserProfileOptimized(userId: string) {
+    this.loadingStates.profile = true;
 
-        
-        if (userData._id && !this.socialDataLoaded) {
-          this.socialDataLoaded = true;
-          this.cargarSeguidores(userData._id);
-          this.cargarSeguidos(userData._id);
-          // Forzar actualización después de cargar datos sociales
-          setTimeout(() => this.forceViewUpdate(), 100);
+    forkJoin({
+      profileCounts: this.userSocialService.getUserProfileWithCounts(userId),
+      lists: this.movieListsService.getUserPublicLists(userId),
+      followStatus: this.userSocialService.getFollowStatus(userId),
+      social: forkJoin({
+        followers: this.userSocialService.getUserFollowers(userId),
+        following: this.userSocialService.getUserFollowing(userId)
+      })
+    }).subscribe({
+      next: ({ profileCounts, lists, followStatus, social }) => {
+        this.ngZone.run(() => {
+          this.setOptimizedUserProfileData(profileCounts);
+          this.setListsData(lists);
+          this.setFollowStatus(followStatus);
+          this.setSocialData(social);
+
+          const isPrivateProfile = this.userProfile?.perfilPrivado === true;
+          const hasAccess = !isPrivateProfile || followStatus.status === 'following';
+
+          if (hasAccess) {
+            this.loadMovieDataForOtherUser(userId);
+          }
+
+          this.loadingStates.profile = false;
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (error) => {
+        this.loadingStates.profile = false;
+        this.isLoading = false;
+        this.loadOtherUserProfileFallback(userId);
+      }
+    });
+  }
+
+  // Método de respaldo si falla la carga optimizada
+  private loadOtherUserProfileFallback(userId: string) {
+    forkJoin({
+      profile: this.userSocialService.getUserProfile(userId),
+      lists: this.movieListsService.getUserPublicLists(userId),
+      followStatus: this.userSocialService.getFollowStatus(userId),
+      social: forkJoin({
+        followers: this.userSocialService.getUserFollowers(userId),
+        following: this.userSocialService.getUserFollowing(userId)
+      })
+    }).subscribe({
+      next: ({ profile, lists, followStatus, social }) => {
+        this.ngZone.run(() => {
+          this.setUserProfileData(profile);
+          this.setListsData(lists);
+          this.setFollowStatus(followStatus);
+          this.setSocialData(social);
+
+          const isPrivateProfile = this.userProfile?.perfilPrivado === true;
+          const hasAccess = !isPrivateProfile || followStatus.status === 'following';
+
+          if (hasAccess) {
+            this.loadEssentialMovieData();
+          }
+
+          this.loadingStates.profile = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (error) => {
+        this.loadingStates.profile = false;
+      }
+    });
+  }
+
+  // Cargar datos de películas específicos para otros usuarios
+  private loadMovieDataForOtherUser(userId: string) {
+    this.userSocialService.getUserMoviesBasic(userId).subscribe({
+      next: (movieData) => {
+        if (movieData.hasAccess && this.userProfile) {
+          this.userProfile.pelisPendientes = movieData.pelisPendientes || [];
+          this.userProfile.pelisVistas = movieData.pelisVistas || [];
+          this.userProfile.reviews = movieData.reviews || [];
+          this.loadEssentialMovieData();
         }
       },
-      error: (error) => console.error('Error al cargar datos del perfil propio:', error)
+      error: (error) => {
+        this.loadEssentialMovieData();
+      }
     });
   }
 
-  loadOtherUserProfile(userId: string) {
-    this.userSocialService.getUserProfile(userId).subscribe({
-      next: (userData: any) => {
-        // USAR ngZone PARA FORZAR DETECCIÓN DE CAMBIOS EN CHROME
-        this.ngZone.run(() => {
-          this.userProfile = {
-            _id: userData._id,
-            username: userData.username,
-            avatar: userData.avatar || 'avatar1',
-            createdAt: new Date(userData.createdAt),
-            pelisPendientes: userData.pelisPendientes || [],
-            pelisVistas: userData.pelisVistas || [],
-            reviews: userData.reviews || [],
-            biografia: userData.biografia || '',
-            perfilPrivado: userData.perfilPrivado || false,
-            isPremium: userData.isPremium || false,
-          };
-          this.isPremium = userData.isPremium || false;
-          this.cdr.detectChanges();
+  // Configurar datos optimizados del backend
+  private setOptimizedUserProfileData(profileData: any) {
+    this.userProfile = {
+      _id: profileData.user._id,
+      username: profileData.user.username,
+      avatar: profileData.user.avatar || 'avatar1',
+      createdAt: new Date(profileData.user.createdAt),
+      pelisPendientes: [],
+      pelisVistas: [],
+      reviews: [],
+      biografia: profileData.user.biografia || '',
+      perfilPrivado: profileData.user.perfilPrivado !== undefined ? profileData.user.perfilPrivado : false,
+      isPremium: profileData.user.isPremium || false,
+    };
+    this.isPremium = profileData.user.isPremium || false;
+    this.seguidoresCount = profileData.followersCount || 0;
+    this.seguidosCount = profileData.followingCount || 0;
+    this.totalListas = profileData.listsCount || 0;
+  }
+
+  // Cargar solo datos esenciales de películas con lazy loading
+  private loadEssentialMovieData() {
+    if (!this.userProfile) return;
+
+    this.loadingStates.movies = true;
+
+    const pendientesToLoad = (this.userProfile.pelisPendientes || []).slice(0, this.MAX_INITIAL_MOVIES);
+    const vistasToLoad = (this.userProfile.pelisVistas || []).slice(0, this.MAX_INITIAL_MOVIES);
+    const reviewsToLoad = (this.userProfile.reviews || []).slice(0, this.MAX_INITIAL_MOVIES);
+
+    if (pendientesToLoad.length > 0) {
+      this.loadMoviesBatch(pendientesToLoad, 'pendientes');
+    }
+
+    if (vistasToLoad.length > 0) {
+      this.loadMoviesBatch(vistasToLoad, 'vistas');
+    }
+
+    if (reviewsToLoad.length > 0) {
+      this.loadReviewsWithMovieData(reviewsToLoad);
+    }
+
+    this.loadingStates.movies = false;
+  }
+
+  // Cargar lotes de películas usando cache optimizado
+  private loadMoviesBatch(moviesList: any[], type: 'pendientes' | 'vistas') {
+    if (moviesList.length === 0) return;
+
+    const movieIds = moviesList.map(peli => peli.movieId);
+
+    this.movieService.getMoviesBasicInfo(movieIds).subscribe({
+      next: (movies) => {
+        movies.forEach(movie => {
+          if (movie) {
+            if (type === 'pendientes') {
+              this.peliculasPendientes.push(movie);
+            } else {
+              this.peliculasVistas.push(movie);
+            }
+          }
         });
 
-        if ((this.userProfile?.pelisPendientes ?? []).length > 0) this.loadPeliculasPendientes();
-        if ((this.userProfile?.pelisVistas ?? []).length > 0) this.loadPeliculasVistas();
-        if ((this.userProfile?.reviews ?? []).length > 0) this.loadReviews();
+        if (type === 'pendientes') {
+          this.loadedPendientesCount = movies.length;
+        } else {
+          this.loadedVistasCount = movies.length;
+        }
 
-
-        this.checkFollowStatus(userId);
-        this.cargarSeguidores(userId);
-        this.cargarSeguidos(userId);
+        this.cdr.detectChanges();
       },
-      error: (error: any) => console.error('Error al cargar datos del usuario ajeno:', error)
+      error: (error) => console.error(`Error en lote de películas ${type}:`, error)
     });
   }
 
-  // MÉTODO PARA ACTUALIZAR COUNTS DE FORMA SEGURA EN CHROME
-  private updateCounts(newSeguidoresCount?: number, newSeguidosCount?: number, newTotalListas?: number): void {
+  // Cargar datos sociales por separado para evitar conflictos
+  private loadSocialDataSeparately(userId: string) {
+    if (this.socialDataLoaded || this.seguidoresCount > 0 || this.seguidosCount > 0) return;
+
+    this.loadingStates.social = true;
+    this.socialDataLoaded = true;
+
+    forkJoin({
+      followers: this.userSocialService.getUserFollowers(userId),
+      following: this.userSocialService.getUserFollowing(userId)
+    }).subscribe({
+      next: (social) => {
+        this.ngZone.run(() => {
+          if (this.seguidoresCount === 0 && this.seguidosCount === 0) {
+            this.seguidores = [...(social.followers?.followers || [])];
+            this.seguidos = [...(social.following?.following || [])];
+            this.seguidoresCount = this.seguidores.length;
+            this.seguidosCount = this.seguidos.length;
+          }
+
+          this.loadingStates.social = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (error) => {
+        this.loadingStates.social = false;
+      }
+    });
+  }
+
+  // Métodos helper para organizar datos
+  private setUserProfileData(userData: any) {
+    this.userProfile = {
+      _id: userData._id,
+      username: userData.username,
+      email: userData.email,
+      avatar: userData.avatar || 'avatar1',
+      createdAt: new Date(userData.createdAt),
+      pelisPendientes: userData.pelisPendientes || [],
+      pelisVistas: userData.pelisVistas || [],
+      reviews: userData.reviews || [],
+      biografia: userData.biografia || '',
+      perfilPrivado: userData.perfilPrivado !== undefined ? userData.perfilPrivado : false,
+      isPremium: userData.isPremium || false,
+    };
+    this.isPremium = userData.isPremium || false;
+  }
+
+  private setListsData(lists: any) {
+    const allLists = lists.lists || [];
+    this.isPremium = lists.isPremium || false;
+
+    if (!this.isPremium) {
+      this.listas = allLists.slice(0, this.LISTS_LIMIT_FREE_USER);
+      this.totalListas = Math.min(lists.totalLists || allLists.length, this.LISTS_LIMIT_FREE_USER);
+      this.listasOcultas = (lists.totalLists || allLists.length) - this.totalListas;
+    } else {
+      this.listas = allLists;
+      this.totalListas = lists.totalListas || allLists.length;
+      this.listasOcultas = lists.hiddenLists || 0;
+    }
+  }
+
+  private setSocialData(social: any) {
+    if (this.seguidoresCount === 0 && this.seguidosCount === 0) {
+      this.seguidores = [...(social.followers?.followers || [])];
+      this.seguidos = [...(social.following?.following || [])];
+      this.seguidoresCount = this.seguidores.length;
+      this.seguidosCount = this.seguidos.length;
+    }
+  }
+
+  private setFollowStatus(followStatus: any) {
+    this.followStatus = followStatus.status;
+    this.requestId = followStatus.requestId || null;
+    this.isFollowing = followStatus.status === 'following';
+  }
+
+  // Cargar reseñas con datos de películas optimizado
+  private loadReviewsWithMovieData(reviewsToLoad: any[]) {
+    if (reviewsToLoad.length === 0) {
+      this.reviews = [];
+      return;
+    }
+
+    this.reviews = reviewsToLoad.map(review => ({ ...review }));
+    const movieIds = [...new Set(reviewsToLoad.map(review => review.movieId))];
+
+    this.movieService.getMoviesBasicInfo(movieIds).subscribe({
+      next: (movies) => {
+        const movieMap = new Map();
+        movies.forEach(movie => {
+          if (movie) {
+            movieMap.set(movie.id.toString(), movie);
+          }
+        });
+
+        this.reviews.forEach(review => {
+          const movie = movieMap.get(review.movieId);
+          if (movie) {
+            review.movieTitle = movie.title;
+            review.moviePosterPath = movie.poster_path
+              ? `https://image.tmdb.org/t/p/w200${movie.poster_path}`
+              : undefined;
+          } else {
+            review.movieTitle = 'Película no encontrada';
+          }
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Error al cargar datos de películas para reseñas:', error)
+    });
+  }
+
+  // Actualizar contadores de películas en tiempo real
+  private updateMovieCounts(): void {
+    if (!this.userProfile) return;
+    // Los contadores se toman directamente de las propiedades del perfil que ya están actualizadas
+    this.cdr.detectChanges();
+  }
+
+  // Evento: Película agregada a vistas con sincronización completa
+  onPeliculaVistaAgregada(movieId: string) {
+    if (!this.userProfile) return;
+
     this.ngZone.run(() => {
-      if (newSeguidoresCount !== undefined) {
-        this.seguidoresCount = newSeguidoresCount;
+      if (!this.userProfile!.pelisVistas.some(p => p.movieId === movieId)) {
+        this.userProfile!.pelisVistas.push({ movieId, watchedAt: new Date() });
       }
-      if (newSeguidosCount !== undefined) {
-        this.seguidosCount = newSeguidosCount;
+
+      this.userProfile!.pelisPendientes = this.userProfile!.pelisPendientes.filter(peli => peli.movieId !== movieId);
+
+      const movieIndex = this.peliculasPendientes.findIndex(peli => peli.id?.toString() === movieId);
+      if (movieIndex !== -1) {
+        const movie = this.peliculasPendientes[movieIndex];
+        this.peliculasPendientes.splice(movieIndex, 1);
+
+        if (!this.peliculasVistas.some(peli => peli.id?.toString() === movieId)) {
+          this.peliculasVistas.unshift(movie);
+        }
       }
-      if (newTotalListas !== undefined) {
-        this.totalListas = newTotalListas;
-      }
-      this.cdr.markForCheck();
+
+      this.updateMovieCounts();
       this.cdr.detectChanges();
     });
   }
 
-  // MÉTODO PARA FORZAR ACTUALIZACIÓN COMPLETA EN CHROME
-  private forceViewUpdate(): void {
-    // Triple check para Chrome
-    setTimeout(() => {
-      this.ngZone.run(() => {
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        console.log('Forzando actualización - Counts actuales:', {
-          seguidores: this.seguidoresCount,
-          seguidos: this.seguidosCount,
-          listas: this.totalListas
+  // Evento: Película agregada a pendientes con sincronización completa
+  onPeliculaPendienteAgregada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      if (!this.userProfile!.pelisPendientes.some(p => p.movieId === movieId)) {
+        this.userProfile!.pelisPendientes.push({ movieId, addedAt: new Date() });
+      }
+
+      this.userProfile!.pelisVistas = this.userProfile!.pelisVistas.filter(peli => peli.movieId !== movieId);
+
+      const movieIndex = this.peliculasVistas.findIndex(peli => peli.id?.toString() === movieId);
+      if (movieIndex !== -1) {
+        const movie = this.peliculasVistas[movieIndex];
+        this.peliculasVistas.splice(movieIndex, 1);
+
+        if (!this.peliculasPendientes.some(peli => peli.id?.toString() === movieId)) {
+          this.peliculasPendientes.unshift(movie);
+        }
+      } else {
+        this.movieService.getDetallesPelicula(movieId).subscribe({
+          next: (movie) => {
+            if (movie && !this.peliculasPendientes.some(peli => peli.id?.toString() === movieId)) {
+              this.peliculasPendientes.unshift(movie);
+              this.cdr.detectChanges();
+            }
+          },
+          error: (error) => console.error('Error al cargar película para pendientes:', error)
         });
-      });
-    }, 50);
+      }
+
+      this.updateMovieCounts();
+      this.cdr.detectChanges();
+    });
   }
 
+  // Evento: Película eliminada de vistas
+  onPeliculaVistaEliminada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      this.userProfile!.pelisVistas = this.userProfile!.pelisVistas.filter(peli => peli.movieId !== movieId);
+      this.peliculasVistas = this.peliculasVistas.filter(peli => peli.id?.toString() !== movieId);
+      this.updateMovieCounts();
+      this.cdr.detectChanges();
+    });
+  }
+
+  // Evento: Película eliminada de pendientes
+  onPeliculaPendienteEliminada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      this.userProfile!.pelisPendientes = this.userProfile!.pelisPendientes.filter(peli => peli.movieId !== movieId);
+      this.peliculasPendientes = this.peliculasPendientes.filter(peli => peli.id?.toString() !== movieId);
+      this.updateMovieCounts();
+      this.cdr.detectChanges();
+    });
+  }
+
+  onScrollNearEnd(section: 'pendientes' | 'vistas') {
+    if (this.isLoadingMoreMovies || this.loadingStates.movies) return;
+
+    const currentCount = section === 'pendientes'
+      ? this.peliculasPendientes.length
+      : this.peliculasVistas.length;
+
+    const totalCount = section === 'pendientes'
+      ? (this.userProfile?.pelisPendientes?.length || 0)
+      : (this.userProfile?.pelisVistas?.length || 0);
+
+    if (currentCount < totalCount) {
+      this.loadMoreMovies(section, currentCount);
+    }
+  }
+
+  // Cargar más películas con lazy loading
+  private loadMoreMovies(section: 'pendientes' | 'vistas', currentCount: number) {
+    this.isLoadingMoreMovies = true;
+    const batchSize = 10;
+    const moviesList = section === 'pendientes'
+      ? this.userProfile?.pelisPendientes
+      : this.userProfile?.pelisVistas;
+
+    if (!moviesList) {
+      this.isLoadingMoreMovies = false;
+      return;
+    }
+
+    const nextBatch = moviesList.slice(currentCount, currentCount + batchSize);
+
+    const requests = nextBatch.map(peli =>
+      this.movieService.getDetallesPelicula(peli.movieId).pipe(
+        catchError(() => of(null))
+      )
+    );
+
+    forkJoin(requests).subscribe({
+      next: (movies) => {
+        movies.forEach(movie => {
+          if (movie) {
+            if (section === 'pendientes') {
+              this.peliculasPendientes.push(movie);
+            } else {
+              this.peliculasVistas.push(movie);
+            }
+          }
+        });
+        this.isLoadingMoreMovies = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.isLoadingMoreMovies = false;
+      }
+    });
+  }
+
+  // Verificar estados de carga
+  // isLoading(section?: string): boolean {
+  //   if (section) {
+  //     return this.loadingStates[section as keyof typeof this.loadingStates];
+  //   }
+  //   return Object.values(this.loadingStates).some(loading => loading);
+  // }
+
+  // Iniciar chat con usuario
   iniciarChatConUsuario(): void {
     if (!this.userProfile || !this.userProfile._id) {
-      console.error('ID de perfil de usuario no disponible para iniciar chat.');
       alert('No se pudo obtener la información del usuario para iniciar el chat.');
       return;
     }
@@ -270,14 +680,12 @@ export class PerfilComponent implements OnInit, OnDestroy {
     const currentAuthUser = this.authService.currentUserSubject.value;
 
     if (!currentAuthUser || !currentAuthUser.id) {
-      console.error('Usuario actual no autenticado.');
       alert('Debes iniciar sesión para enviar mensajes.');
       this.router.navigate(['/login']);
       return;
     }
 
     if (currentAuthUser.id === recipientId) {
-      console.warn('Intentando iniciar un chat consigo mismo.');
       return;
     }
 
@@ -286,64 +694,11 @@ export class PerfilComponent implements OnInit, OnDestroy {
         if (chat && chat._id) {
           this.router.navigate(['/chat', chat._id]);
         } else {
-          console.error('Respuesta inválida del servidor al crear/obtener el chat:', chat);
           alert('No se pudo iniciar la conversación. Inténtalo de nuevo más tarde.');
         }
       },
       error: (error) => {
-        console.error('Error al iniciar el chat:', error);
         alert('Error al iniciar la conversación: ' + (error.error?.message || 'Problema de conexión o del servidor.'));
-      }
-    });
-  }
-
-  loadPeliculasPendientes() {
-    if (!this.userProfile || !this.userProfile.pelisPendientes || this.userProfile.pelisPendientes.length === 0) {
-        this.peliculasPendientes = [];
-        return;
-    }
-    this.peliculasPendientes = [];
-    this.userProfile.pelisPendientes.forEach(peli => {
-      this.movieService.getDetallesPelicula(peli.movieId).subscribe({
-        next: (movie) => this.peliculasPendientes.push(movie),
-        error: (error) => console.error('Error al cargar detalles de película pendiente:', peli.movieId, error)
-      });
-    });
-  }
-
-  loadPeliculasVistas() {
-    if (!this.userProfile || !this.userProfile.pelisVistas || this.userProfile.pelisVistas.length === 0) {
-        this.peliculasVistas = [];
-        return;
-    }
-    this.peliculasVistas = [];
-    this.userProfile.pelisVistas.forEach(peli => {
-      this.movieService.getDetallesPelicula(peli.movieId).subscribe({
-        next: (movie) => this.peliculasVistas.push(movie),
-        error: (error) => console.error('Error al cargar detalles de película vista:', peli.movieId, error)
-      });
-    });
-  }
-
-  loadReviews() {
-    if (!this.userProfile || !this.userProfile.reviews || this.userProfile.reviews.length === 0) {
-        this.reviews = [];
-        return;
-    }
-    this.reviews = this.userProfile.reviews.map(review => ({...review}));
-
-    this.reviews.forEach(review => {
-      if (review.movieId) {
-        this.movieService.getDetallesPelicula(review.movieId).subscribe({
-          next: (movie) => {
-            review.movieTitle = movie.title;
-            review.moviePosterPath = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : undefined;
-          },
-          error: (error) => {
-            console.error('Error al cargar los detalles de la película para la reseña:', review.movieId, error);
-            review.movieTitle = 'Película no encontrada';
-          }
-        });
       }
     });
   }
@@ -359,42 +714,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
   getPendientesCount(): number { return this.userProfile?.pelisPendientes?.length || 0; }
   getVistasCount(): number { return this.userProfile?.pelisVistas?.length || 0; }
   getReviewsCount(): number { return this.userProfile?.reviews?.length || 0; }
-
-  onPeliculaVistaAgregada(movieId: string) {
-    if (this.userProfile) {
-      if (!this.userProfile.pelisVistas.some(p => p.movieId === movieId)) {
-        this.userProfile.pelisVistas.push({ movieId, watchedAt: new Date() });
-      }
-      this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter(peli => peli.movieId !== movieId);
-      this.loadPeliculasVistas();
-      this.loadPeliculasPendientes();
-    }
-  }
-
-  onPeliculaPendienteAgregada(movieId: string) {
-    if (this.userProfile) {
-       if (!this.userProfile.pelisPendientes.some(p => p.movieId === movieId)) {
-        this.userProfile.pelisPendientes.push({ movieId, addedAt: new Date() });
-      }
-      this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter(peli => peli.movieId !== movieId);
-      this.loadPeliculasVistas();
-      this.loadPeliculasPendientes();
-    }
-  }
-
-  onPeliculaVistaEliminada(movieId: string) {
-    if (this.userProfile) {
-      this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter(peli => peli.movieId !== movieId);
-      this.peliculasVistas = this.peliculasVistas.filter(peli => peli.id?.toString() !== movieId);
-    }
-  }
-
-  onPeliculaPendienteEliminada(movieId: string) {
-    if (this.userProfile) {
-      this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter(peli => peli.movieId !== movieId);
-      this.peliculasPendientes = this.peliculasPendientes.filter(peli => peli.id?.toString() !== movieId);
-    }
-  }
 
   scrollSection(sectionId: string, direction: 'left' | 'right'): void {
     const container = document.getElementById(sectionId);
@@ -414,6 +733,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Gestión de seguimiento con actualización de contadores
   toggleFollow(): void {
     const userIdToFollowOrUnfollow = this.userProfile?._id;
     if (!userIdToFollowOrUnfollow || this.isOwnProfile) return;
@@ -460,6 +780,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Verificar estado de seguimiento
   checkFollowStatus(userId: string): void {
     if (!userId || this.isOwnProfile) return;
     this.userSocialService.getFollowStatus(userId).subscribe({
@@ -475,6 +796,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Inicializar formulario de configuración
   initConfigForm(): void {
     if (!this.userProfile) return;
     this.configForm.patchValue({
@@ -488,6 +810,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
   editarPerfil(): void { this.initConfigForm(); this.mostrarFormularioEdicion = true; }
   cancelarEdicion(): void { this.mostrarFormularioEdicion = false; }
 
+  // Guardar cambios del perfil
   guardarCambiosPerfil(): void {
     if (this.configForm.invalid || !this.userProfile?._id) return;
 
@@ -517,12 +840,12 @@ export class PerfilComponent implements OnInit, OnDestroy {
         alert('Perfil actualizado correctamente');
       },
       error: (error) => {
-        console.error('Error al actualizar perfil:', error);
         alert('Error al actualizar perfil: ' + (error.error?.message || 'Error desconocido'));
       }
     });
   }
 
+  // Eliminar cuenta de usuario
   eliminarCuenta(): void {
     if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
     this.userMovieService.deleteAccount().subscribe({
@@ -532,7 +855,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         alert('Cuenta eliminada correctamente');
       },
       error: (error) => {
-        console.error('Error al eliminar cuenta:', error);
         alert('Error al eliminar cuenta: ' + (error.error?.message || 'Error desconocido'));
       }
     });
@@ -540,6 +862,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   selectAvatar(avatar: string): void { this.configForm.get('avatar')?.setValue(avatar); }
 
+  // Obtener mensaje de error de formulario
   getErrorMessage(field: string): string {
     const control = this.configForm.get(field);
     if (control?.errors) {
@@ -550,14 +873,14 @@ export class PerfilComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  // Cargar listas propias del usuario
   cargarListasPropias(): void {
     this.movieListsService.getUserLists().subscribe({
       next: (response) => {
-        // USAR ngZone PARA ACTUALIZACIÓN SEGURA EN CHROME
         this.ngZone.run(() => {
           const allLists = response.lists || [];
           this.isPremium = response.isPremium || false;
-          
+
           if (!this.isPremium) {
             this.listas = allLists.slice(0, this.LISTS_LIMIT_FREE_USER);
             this.totalListas = Math.min(response.totalLists || allLists.length, this.LISTS_LIMIT_FREE_USER);
@@ -567,26 +890,18 @@ export class PerfilComponent implements OnInit, OnDestroy {
             this.totalListas = response.totalLists || allLists.length;
             this.listasOcultas = response.hiddenLists || 0;
           }
-          
+
           this.cdr.detectChanges();
-        });
-        
-        console.log('Estado de listas:', {
-          isPremium: this.isPremium,
-          totalListasContadas: this.totalListas,
-          listasVisibles: this.listas.length,
-          listasOcultas: this.listasOcultas
         });
       },
       error: (error) => {
-        console.error('Error al cargar listas propias:', error);
-        this.updateCounts(undefined, undefined, 0);
         this.listas = [];
         this.listasOcultas = 0;
       }
     });
   }
 
+  // Cargar listas públicas de otro usuario
   cargarListasDeOtroUsuario(userId: string): void {
     this.movieListsService.getUserPublicLists(userId).subscribe({
       next: (response) => {
@@ -599,7 +914,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         });
       },
       error: (error) => {
-        console.error('Error al cargar listas de usuario:', error);
         this.listas = [];
         this.totalListas = 0;
       }
@@ -615,12 +929,13 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   cerrarFormularioLista(): void { this.mostrarFormularioLista = false; }
 
+  // Crear nueva lista con imagen de portada
   async crearLista(): Promise<void> {
     if (this.listaForm.invalid) {
-        Object.values(this.listaForm.controls).forEach(control => {
-            control.markAsTouched();
-        });
-        return;
+      Object.values(this.listaForm.controls).forEach(control => {
+        control.markAsTouched();
+      });
+      return;
     }
     const formData = this.listaForm.value;
     let coverImageBase64 = null;
@@ -628,7 +943,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
       try {
         coverImageBase64 = await this.fileToBase64(this.selectedFile);
       } catch (error) {
-        console.error('Error al convertir imagen:', error);
         alert('Error al procesar la imagen. Inténtalo con otra.');
         return;
       }
@@ -639,7 +953,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response && response.list) {
           if (this.isOwnProfile) {
-            // ACTUALIZACIÓN SEGURA PARA CHROME
             this.ngZone.run(() => {
               const newListas = [response.list, ...this.listas];
               this.totalListas = (this.totalListas || 0) + 1;
@@ -650,7 +963,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
               } else {
                 this.listas = newListas;
                 if (!this.isPremium) {
-                   this.listas = this.listas.slice(0, this.LISTS_LIMIT_FREE_USER);
+                  this.listas = this.listas.slice(0, this.LISTS_LIMIT_FREE_USER);
                 }
                 this.listasOcultas = Math.max(0, this.totalListas - this.listas.length);
               }
@@ -661,7 +974,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         this.cerrarFormularioLista();
       },
       error: (error) => {
-        console.error('Error al crear lista:', error);
         if (error.error && error.error.error === 'PREMIUM_REQUIRED') {
           alert(error.error.message);
         } else {
@@ -671,12 +983,13 @@ export class PerfilComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Manejar selección de archivo de imagen
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) {
-        this.selectedFile = null;
-        this.coverImagePreview = null;
-        return;
+      this.selectedFile = null;
+      this.coverImagePreview = null;
+      return;
     }
     const file = input.files[0];
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -694,12 +1007,14 @@ export class PerfilComponent implements OnInit, OnDestroy {
     this.previewImage(file);
   }
 
+  // Previsualizar imagen seleccionada
   previewImage(file: File): void {
     const reader = new FileReader();
     reader.onload = () => this.coverImagePreview = reader.result as string;
     reader.readAsDataURL(file);
   }
 
+  // Convertir archivo a base64
   fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -711,11 +1026,13 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   verDetalleLista(listaId: string): void { this.router.navigate(['/listas', listaId]); }
 
+  // Verificar si formulario tiene errores
   hasFormError(field: string, form: FormGroup): boolean {
     const control = form.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
   }
 
+  // Obtener mensaje de error específico del formulario
   getFormErrorMessage(field: string, form: FormGroup): string {
     const control = form.get(field);
     if (!control) return '';
@@ -727,24 +1044,19 @@ export class PerfilComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  // Cargar seguidores con protección contra sobrescritura
   cargarSeguidores(userId: string): void {
     if (!userId) return;
-    
+
     this.userSocialService.getUserFollowers(userId).subscribe({
       next: (data) => {
-        // SOLUCIÓN AGRESIVA PARA CHROME - múltiples intentos de actualización
         setTimeout(() => {
           this.ngZone.run(() => {
             if (data && data.followers) {
-              this.seguidores = [...data.followers]; // Crear nueva referencia
+              this.seguidores = [...data.followers];
               this.seguidoresCount = this.seguidores.length;
-              console.log('Seguidores cargados:', this.seguidoresCount);
-              
-              // Múltiples llamadas para asegurar actualización en Chrome
               this.cdr.markForCheck();
               this.cdr.detectChanges();
-              
-              // Forzar repaint después de un micro-delay
               setTimeout(() => {
                 this.cdr.detectChanges();
               }, 0);
@@ -753,7 +1065,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         }, 10);
       },
       error: (error) => {
-        console.error('Error al cargar seguidores:', error);
         this.ngZone.run(() => {
           if (!this.seguidores.length) {
             this.seguidores = [];
@@ -765,24 +1076,19 @@ export class PerfilComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Cargar seguidos con protección contra sobrescritura
   cargarSeguidos(userId: string): void {
     if (!userId) return;
-    
+
     this.userSocialService.getUserFollowing(userId).subscribe({
       next: (data) => {
-        // SOLUCIÓN AGRESIVA PARA CHROME - múltiples intentos de actualización
         setTimeout(() => {
           this.ngZone.run(() => {
             if (data && data.following) {
-              this.seguidos = [...data.following]; // Crear nueva referencia
+              this.seguidos = [...data.following];
               this.seguidosCount = this.seguidos.length;
-              console.log('Seguidos cargados:', this.seguidosCount);
-              
-              // Múltiples llamadas para asegurar actualización en Chrome
               this.cdr.markForCheck();
               this.cdr.detectChanges();
-              
-              // Forzar repaint después de un micro-delay
               setTimeout(() => {
                 this.cdr.detectChanges();
               }, 0);
@@ -791,7 +1097,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         }, 10);
       },
       error: (error) => {
-        console.error('Error al cargar seguidos:', error);
         this.ngZone.run(() => {
           if (!this.seguidos.length) {
             this.seguidos = [];
@@ -803,24 +1108,25 @@ export class PerfilComponent implements OnInit, OnDestroy {
     });
   }
 
-  abrirModalSeguidores(): void { 
-    this.usuariosFiltrados = [...this.seguidores]; 
-    this.mostrarModalSeguidores = true; 
-    this.filtroUsuarios = ''; 
-  }
-  
-  abrirModalSeguidos(): void { 
-    this.usuariosFiltrados = [...this.seguidos]; 
-    this.mostrarModalSeguidos = true; 
-    this.filtroUsuarios = ''; 
-  }
-  
-  cerrarModales(): void { 
-    this.mostrarModalSeguidores = false; 
-    this.mostrarModalSeguidos = false; 
-    this.filtroUsuarios = ''; 
+  abrirModalSeguidores(): void {
+    this.usuariosFiltrados = [...this.seguidores];
+    this.mostrarModalSeguidores = true;
+    this.filtroUsuarios = '';
   }
 
+  abrirModalSeguidos(): void {
+    this.usuariosFiltrados = [...this.seguidos];
+    this.mostrarModalSeguidos = true;
+    this.filtroUsuarios = '';
+  }
+
+  cerrarModales(): void {
+    this.mostrarModalSeguidores = false;
+    this.mostrarModalSeguidos = false;
+    this.filtroUsuarios = '';
+  }
+
+  // Filtrar usuarios en modales
   filtrarUsuarios(event: Event): void {
     const valor = (event.target as HTMLInputElement).value.toLowerCase();
     this.filtroUsuarios = valor;
@@ -831,6 +1137,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Dejar de seguir desde modal con actualización de contadores
   dejarDeSeguir(userIdToUnfollow: string): void {
     if (!this.isOwnProfile) return;
     this.userSocialService.unfollowUser(userIdToUnfollow).subscribe({
@@ -839,7 +1146,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
           this.seguidos = this.seguidos.filter(u => u._id !== userIdToUnfollow);
           this.usuariosFiltrados = this.usuariosFiltrados.filter(u => u._id !== userIdToUnfollow);
           this.seguidosCount = Math.max(0, (this.seguidosCount || 0) - 1);
-          
+
           if (this.userProfile?._id === userIdToUnfollow && !this.isOwnProfile) {
             this.followStatus = 'none';
             this.isFollowing = false;
@@ -851,6 +1158,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Eliminar seguidor con actualización de contadores
   eliminarSeguidor(userIdToRemove: string): void {
     if (!this.isOwnProfile) return;
     this.userSocialService.removeFollower(userIdToRemove).subscribe({
@@ -863,7 +1171,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         });
       },
       error: (error) => {
-        console.error('Error al eliminar seguidor:', error);
         alert(`Error al eliminar seguidor: ${error.error?.message || 'Ocurrió un problema.'}`);
       }
     });

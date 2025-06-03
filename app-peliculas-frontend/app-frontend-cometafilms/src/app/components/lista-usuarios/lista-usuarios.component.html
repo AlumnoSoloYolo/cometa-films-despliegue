@@ -5,22 +5,13 @@
             <form [formGroup]="searchForm">
                 <div class="search-input-wrapper">
                     <i class="bi bi-search search-icon"></i>
-                    <input 
-                        type="text" 
-                        class="search-input" 
-                        formControlName="username"
-                        placeholder="Buscar usuarios por nombre..."
-                        autocomplete="off"
-                    >
+                    <input type="text" class="search-input" formControlName="username"
+                        placeholder="Buscar usuarios por nombre..." autocomplete="off">
                     @if (searchForm.get('username')?.value) {
-                        <button 
-                            class="clear-search-btn" 
-                            (click)="resetearBusqueda()"
-                            type="button"
-                            aria-label="Limpiar búsqueda"
-                        >
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                    <button class="clear-search-btn" (click)="resetearBusqueda()" type="button"
+                        aria-label="Limpiar búsqueda">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                     }
                 </div>
             </form>
@@ -31,157 +22,132 @@
     <div class="users-container">
         <!-- Estado de carga inicial -->
         @if (cargando && usuarios.length === 0) {
-            <div class="loading-state">
-                <div class="loading-spinner">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando usuarios...</span>
-                    </div>
+        <div class="loading-state">
+            <div class="loading-spinner">
+                <div class="spinner-border text-cometa-primary" role="status">
+                    <span class="visually-hidden">Cargando usuarios...</span>
                 </div>
-                <p class="loading-text">Buscando cinéfilos increíbles...</p>
             </div>
+            <p class="loading-text">Buscando cinéfilos increíbles...</p>
+        </div>
         }
 
         <!-- Estado de error -->
         @if (error) {
-            <div class="error-state">
-                <i class="bi bi-exclamation-triangle error-state-icon"></i>
-                <h3 class="error-state-title">Oops, algo salió mal</h3>
-                <p class="error-state-description">
-                    No pudimos cargar la lista de usuarios. Por favor, inténtalo de nuevo.
-                </p>
-                <button 
-                    class="retry-btn" 
-                    (click)="resetearBusqueda()"
-                    type="button"
-                >
-                    <i class="bi bi-arrow-clockwise me-2"></i>
-                    Reintentar
-                </button>
-            </div>
+        <div class="error-state">
+            <i class="bi bi-exclamation-triangle error-state-icon"></i>
+            <h3 class="error-state-title">Oops, algo salió mal</h3>
+            <p class="error-state-description">
+                No pudimos cargar la lista de usuarios. Por favor, inténtalo de nuevo.
+            </p>
+            <button class="retry-btn" (click)="resetearBusqueda()" type="button">
+                <i class="bi bi-arrow-clockwise me-2"></i>
+                Reintentar
+            </button>
+        </div>
         }
 
         <!-- Estado vacío -->
         @if (usuarios.length === 0 && !cargando && !error) {
-            <div class="empty-state">
-                <i class="bi bi-people empty-state-icon"></i>
-                <h3 class="empty-state-title">
-                    @if (searchForm.get('username')?.value) {
-                        No encontramos usuarios
-                    } @else {
-                        Aún no hay usuarios
-                    }
-                </h3>
-                <p class="empty-state-description">
-                    @if (searchForm.get('username')?.value) {
-                        No hay usuarios que coincidan con "{{ searchForm.get('username')?.value }}". Intenta con otro término de búsqueda.
-                    } @else {
-                        Sé el primero en unirte a nuestra comunidad de cinéfilos.
-                    }
-                </p>
+        <div class="empty-state">
+            <i class="bi bi-people empty-state-icon"></i>
+            <h3 class="empty-state-title">
                 @if (searchForm.get('username')?.value) {
-                    <button 
-                        class="retry-btn" 
-                        (click)="resetearBusqueda()"
-                        type="button"
-                    >
-                        <i class="bi bi-arrow-left me-2"></i>
-                        Ver todos los usuarios
-                    </button>
+                No encontramos usuarios
+                } @else {
+                Aún no hay usuarios
                 }
-            </div>
+            </h3>
+            <p class="empty-state-description">
+                @if (searchForm.get('username')?.value) {
+                No hay usuarios que coincidan con "{{ searchForm.get('username')?.value }}". Intenta con otro término de
+                búsqueda.
+                } @else {
+                Sé el primero en unirte a nuestra comunidad de cinéfilos.
+                }
+            </p>
+            @if (searchForm.get('username')?.value) {
+            <button class="retry-btn" (click)="resetearBusqueda()" type="button">
+                <i class="bi bi-arrow-left me-2"></i>
+                Ver todos los usuarios
+            </button>
+            }
+        </div>
         }
 
         <!-- Lista de usuarios -->
         @if (usuarios.length > 0) {
-            <div class="users-list">
-                @for (usuario of usuarios; track usuario._id) {
-                    <div class="user-item">
-                        <!-- Avatar -->
-                        <div class="user-avatar-container">
-                            <img 
-                                [src]="getAvatarPath(usuario.avatar)" 
-                                [alt]="'Avatar de ' + usuario.username"
-                                class="user-avatar"
-                                [routerLink]="['/usuarios', usuario._id]"
-                            >
+        <div class="users-list">
+            @for (usuario of usuarios; track usuario._id) {
+            <div class="user-item">
+                <!-- Avatar -->
+                <div class="user-avatar-container">
+                    <img [src]="getAvatarPath(usuario.avatar)" [alt]="'Avatar de ' + usuario.username"
+                        class="user-avatar" [routerLink]="['/usuarios', usuario._id]">
+                </div>
+
+                <!-- Información del usuario -->
+                <div class="user-info" [routerLink]="['/usuarios', usuario._id]">
+                    <div class="user-header">
+                        <h3 class="username">{{ usuario.username }}</h3>
+                    </div>
+
+                    <div class="user-stats">
+                        <div class="stat-item" title="Películas vistas">
+                            <span class="stat-number">{{ usuario.pelisVistasCount || 0 }}</span>
+                            <span class="stat-label">Vistas</span>
                         </div>
-
-                        <!-- Información del usuario -->
-                        <div class="user-info" [routerLink]="['/usuarios', usuario._id]">
-                            <div class="user-header">
-                                <h3 class="username">{{ usuario.username }}</h3>
-                            </div>
-
-                            <div class="user-stats">
-                                <div class="stat-item" title="Películas vistas">
-                                    <span class="stat-number">{{ usuario.pelisVistasCount || 0 }}</span>
-                                    <span class="stat-label">Vistas</span>
-                                </div>
-                                <div class="stat-item" title="Reseñas escritas">
-                                    <span class="stat-number">{{ usuario.reviewsCount || 0 }}</span>
-                                    <span class="stat-label">Reseñas</span>
-                                </div>
-                                <div class="stat-item" title="Lista de pendientes">
-                                    <span class="stat-number">{{ usuario.pelisPendientesCount || 0 }}</span>
-                                    <span class="stat-label">Pendientes</span>
-                                </div>
-                            </div>
+                        <div class="stat-item" title="Reseñas escritas">
+                            <span class="stat-number">{{ usuario.reviewsCount || 0 }}</span>
+                            <span class="stat-label">Reseñas</span>
                         </div>
+                        <div class="stat-item" title="Lista de pendientes">
+                            <span class="stat-number">{{ usuario.pelisPendientesCount || 0 }}</span>
+                            <span class="stat-label">Pendientes</span>
+                        </div>
+                    </div>
+                </div>
 
-                        <!-- Acciones de seguimiento - Versión mejorada para Chrome -->
-                        <div class="follow-actions">
-                            <button 
-                                class="follow-btn"
-                                [ngClass]="{
+                <!-- Acciones de seguimiento - Versión mejorada para Chrome -->
+                <div class="follow-actions">
+                    <button class="follow-btn" [ngClass]="{
                                     'follow': !followStatus[usuario._id] || followStatus[usuario._id] === 'none',
                                     'following': followStatus[usuario._id] === 'following',
                                     'requested': followStatus[usuario._id] === 'requested'
-                                }"
-                                [disabled]="processingFollow[usuario._id]"
-                                (click)="toggleFollow(usuario, $event)"
-                                (mouseenter)="setHovering(usuario._id, true)"
-                                (mouseleave)="setHovering(usuario._id, false)"
-                                type="button"
-                                [attr.data-user-id]="usuario._id"
-                                [attr.data-status]="followStatus[usuario._id]"
-                            >
-                                <!-- Versión simplificada que evita acumulación de texto -->
-                                @if (processingFollow[usuario._id]) {
-                                    <div class="spinner-border spinner-border-sm me-2" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <span>Procesando...</span>
-                                } @else {
-                                    <!-- Usar métodos separados para evitar problemas de renderizado -->
-                                    <i class="bi" [ngClass]="getButtonIcon(usuario._id)"></i>
-                                    <span [attr.data-text]="getButtonText(usuario._id)">{{ getButtonText(usuario._id) }}</span>
-                                }
-                            </button>
+                                }" [disabled]="processingFollow[usuario._id]" (click)="toggleFollow(usuario, $event)"
+                        (mouseenter)="setHovering(usuario._id, true)" (mouseleave)="setHovering(usuario._id, false)"
+                        type="button" [attr.data-user-id]="usuario._id" [attr.data-status]="followStatus[usuario._id]">
+                        <!-- Versión simplificada que evita acumulación de texto -->
+                        @if (processingFollow[usuario._id]) {
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    </div>
-                }
-            </div>
-
-            <!-- Cargador de más elementos -->
-            @if (cargando && usuarios.length > 0) {
-                <div class="load-more-container">
-                    <div class="spinner-border load-more-spinner" role="status">
-                        <span class="visually-hidden">Cargando más usuarios...</span>
-                    </div>
-                    <p class="load-more-text">Cargando más usuarios...</p>
+                        <span>Procesando...</span>
+                        } @else {
+                        <!-- Usar métodos separados para evitar problemas de renderizado -->
+                        <i class="bi" [ngClass]="getButtonIcon(usuario._id)"></i>
+                        <span [attr.data-text]="getButtonText(usuario._id)">{{ getButtonText(usuario._id) }}</span>
+                        }
+                    </button>
                 </div>
+            </div>
             }
+        </div>
+
+        <!-- Cargador de más elementos -->
+        @if (cargando && usuarios.length > 0) {
+        <div class="load-more-container">
+            <div class="spinner-border load-more-spinner" role="status">
+                <span class="visually-hidden">Cargando más usuarios...</span>
+            </div>
+            <p class="load-more-text">Cargando más usuarios...</p>
+        </div>
+        }
         }
     </div>
 
     <!-- Botón de scroll to top -->
-    <button 
-        class="scroll-top-btn" 
-        [class.visible]="mostrarBotonSubir" 
-        (click)="volverArriba()"
-        type="button"
-        aria-label="Volver arriba"
-    >
-        <i class="bi bi-rocket scroll-top-icon"></i>
+    <button class="scroll-top-btn" [class.visible]="mostrarBotonSubir" (click)="volverArriba()">
+        <i class="fas fa-rocket"></i>
     </button>
 </div>

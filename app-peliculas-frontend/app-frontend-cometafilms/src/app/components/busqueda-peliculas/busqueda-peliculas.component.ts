@@ -1,22 +1,22 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { PeliculasService } from '../../services/peliculas.service';
+import { UserMovieService } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 import { PeliculaCardComponent } from '../pelicula-card/pelicula-card.component';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { AbstractControl } from '@angular/forms';
-import { ValidationErrors } from '@angular/forms';
-
+import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { Subscription } from 'rxjs';
 
 interface MovieResponse {
   results: any[];
   total_results: number;
   total_pages: number;
 }
-
 
 @Component({
   selector: 'app-busqueda-peliculas',
@@ -25,7 +25,7 @@ interface MovieResponse {
   templateUrl: './busqueda-peliculas.component.html',
   styleUrl: './busqueda-peliculas.component.css'
 })
-export class BusquedaPeliculasComponent {
+export class BusquedaPeliculasComponent implements OnInit, OnDestroy {
 
   searchForm: FormGroup;
   peliculas: any[] = [];
@@ -35,6 +35,11 @@ export class BusquedaPeliculasComponent {
   hayMasPaginas = true;
   resultadosTotales = 0;
   mostrarBotonSubir = false;
+
+  // Variables para optimización de perfil
+  userProfile: any = null;
+  isAuthenticated = false;
+  private authSubscription?: Subscription;
 
   sortOptions = [
     { value: 'popularity.desc', label: 'Popularidad (Mayor a menor)' },
@@ -50,10 +55,12 @@ export class BusquedaPeliculasComponent {
   constructor(
     private fb: FormBuilder,
     private pelisService: PeliculasService,
-    private route: ActivatedRoute
+    private userService: UserMovieService,
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
-
-
     this.searchForm = this.fb.group({
       query: ['', [
         Validators.minLength(2),
@@ -81,6 +88,93 @@ export class BusquedaPeliculasComponent {
     });
   }
 
+  ngOnInit() {
+    this.initializeUserData();
+    this.cargarDatosIniciales();
+    this.configurarBusquedaAutomatica();
+    this.cargarPeliculas();
+  }
+
+  ngOnDestroy() {
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
+  }
+
+  // Cargar datos del usuario UNA SOLA VEZ
+  private initializeUserData() {
+    this.authSubscription = this.authService.currentUser.subscribe(user => {
+      this.isAuthenticated = !!user;
+
+      if (this.isAuthenticated) {
+        this.loadUserProfileOnce();
+      } else {
+        this.userProfile = null;
+      }
+    });
+  }
+
+  // Cargar perfil de usuario optimizado
+  private loadUserProfileOnce() {
+    if (this.userProfile) return; // Ya está cargado
+
+    this.userService.getUserPerfil().subscribe({
+      next: (perfil) => {
+        this.ngZone.run(() => {
+          this.userProfile = perfil;
+          this.cdr.detectChanges();
+        });
+      },
+      error: (error) => {
+        console.error('Error al cargar perfil:', error);
+        this.userProfile = null;
+      }
+    });
+  }
+
+  // Método para manejar eventos de películas y actualizar el perfil local
+  onPeliculaVistaAgregada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      if (!this.userProfile.pelisVistas.some((p: any) => p.movieId === movieId)) {
+        this.userProfile.pelisVistas.push({ movieId, watchedAt: new Date() });
+      }
+      this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onPeliculaPendienteAgregada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      if (!this.userProfile.pelisPendientes.some((p: any) => p.movieId === movieId)) {
+        this.userProfile.pelisPendientes.push({ movieId, addedAt: new Date() });
+      }
+      this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onPeliculaVistaEliminada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      this.userProfile.pelisVistas = this.userProfile.pelisVistas.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onPeliculaPendienteEliminada(movieId: string) {
+    if (!this.userProfile) return;
+
+    this.ngZone.run(() => {
+      this.userProfile.pelisPendientes = this.userProfile.pelisPendientes.filter((peli: any) => peli.movieId !== movieId);
+      this.cdr.detectChanges();
+    });
+  }
+
   private validarMinMax(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
 
@@ -93,8 +187,6 @@ export class BusquedaPeliculasComponent {
     return null;
   }
 
-
-
   private validarRatingRange(group: FormGroup) {
     const min = group.get('minRating')?.value;
     const max = group.get('maxRating')?.value;
@@ -102,17 +194,7 @@ export class BusquedaPeliculasComponent {
       { ratingRange: true } : null;
   }
 
-
-
-  ngOnInit() {
-    this.cargarDatosIniciales();
-    this.configurarBusquedaAutomatica();
-    this.cargarPeliculas();
-  }
-
-
   private cargarDatosIniciales() {
-
     this.pelisService.getGeneros().subscribe({
       next: (response) => this.generos = response.genres,
       error: (error) => console.error('Error cargando géneros:', error)
@@ -126,7 +208,6 @@ export class BusquedaPeliculasComponent {
     });
   }
 
-
   private configurarBusquedaAutomatica() {
     this.searchForm.valueChanges.pipe(
       debounceTime(500),
@@ -138,7 +219,6 @@ export class BusquedaPeliculasComponent {
     });
   }
 
-
   buscar() {
     if (this.searchForm.invalid) return;
 
@@ -148,7 +228,6 @@ export class BusquedaPeliculasComponent {
 
     this.realizarBusqueda();
   }
-
 
   @HostListener('window:scroll')
   manejarScroll() {
@@ -162,17 +241,14 @@ export class BusquedaPeliculasComponent {
     this.mostrarBotonSubir = window.pageYOffset > 300;
   }
 
-
   private realizarBusqueda(esScrollInfinito: boolean = false) {
     const params = this.prepararParametros();
 
     this.pelisService.busquedaAvanzadaPeliculas(params).subscribe({
       next: (response: MovieResponse) => {
         if (esScrollInfinito) {
-
           this.peliculas = [...this.peliculas, ...response.results];
         } else {
-
           this.peliculas = response.results;
         }
 
@@ -186,7 +262,6 @@ export class BusquedaPeliculasComponent {
       }
     });
   }
-
 
   private prepararParametros() {
     const formValue = this.searchForm.value;
@@ -204,11 +279,9 @@ export class BusquedaPeliculasComponent {
     return params;
   }
 
-
   getErrorMessage(controlName: string): string {
     const control = this.searchForm.get(controlName);
     if (!control?.errors) return '';
-
 
     if (control.errors['required']) {
       return 'Este campo es obligatorio';
@@ -235,7 +308,6 @@ export class BusquedaPeliculasComponent {
     return '';
   }
 
-
   private cargarPeliculas() {
     this.cargando = true;
     this.paginaActual++;
@@ -259,18 +331,15 @@ export class BusquedaPeliculasComponent {
     });
   }
 
-
   hasError(controlName: string): boolean {
     const control = this.searchForm.get(controlName);
     return !!(control && control.errors && (control.dirty || control.touched));
   }
 
-
   limpiarFiltros() {
     this.searchForm.reset({ sortBy: 'popularity.desc' });
     this.buscar();
   }
-
 
   volverArriba() {
     window.scrollTo({ top: 0, behavior: 'smooth' });

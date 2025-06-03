@@ -1,20 +1,51 @@
 @if(isAuthenticated()){
 <header class="site-header">
+    <!-- Barra de notificaciones superior -->
+    @if(shouldShowNotificationBanner()) {
+    <div class="notification-banner" [class.fade-out]="bannerFadingOut">
+        <div class="container">
+            <div class="notification-content">
+                @if(pendingRequestsCount > 0 && showNotificationBanner) {
+                <div class="notification-item" (click)="navigateTo('/notificaciones')">
+                    <i class="bi bi-person-plus"></i>
+                    <span>Tienes {{ pendingRequestsCount }} {{ pendingRequestsCount === 1 ? 'solicitud pendiente' :
+                        'solicitudes pendientes' }}</span>
+                    <button class="notification-close" (click)="dismissNotificationBanner($event)">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                }
+
+                @if(unreadMessagesCount > 0 && showMessageBanner) {
+                <div class="notification-item" (click)="navigateTo('/chat')">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>Tienes {{ unreadMessagesCount }}
+                        {{ unreadMessagesCount === 1 ? 'mensaje no leído' : 'mensajes no leídos' }}</span>
+                    <button class="notification-close" (click)="dismissMessageBanner($event)">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+    }
+
     <div class="container">
         <div class="header-wrapper">
-         
+
             <a class="brand-logo" routerLink="/" (click)="isMenuOpen = false">
                 <img src="images/logo.png" alt="CometaCine Logo" class="logo-image">
             </a>
 
-        
+
             <button class="menu-toggle" [class.active]="isMenuOpen" (click)="toggleMenu()" type="button"
                 aria-label="Toggle navigation">
                 <span class="toggle-icon"></span>
             </button>
 
             <div class="nav-container" [class.open]="isMenuOpen">
-              
+
                 <nav class="main-nav">
                     <ul class="nav-links">
                         <li class="nav-item">
@@ -44,7 +75,7 @@
                     </ul>
                 </nav>
 
-           
+
                 <div class="user-actions ms-4">
 
                     @if (shouldShowPremiumButton()) {
@@ -56,7 +87,7 @@
                     </div>
                     }
 
-            
+
                     <form [formGroup]="searchForm" (ngSubmit)="buscar()" class="search-form">
                         <div class="search-wrapper">
                             <input class="search-input" type="search" formControlName="query"
@@ -67,14 +98,23 @@
                         </div>
                     </form>
 
-                 
-                 
+
+
                     <div class="dropdown user-dropdown">
                         <button class="profile-toggle dropdown-toggle" type="button" id="userDropdown"
                             data-bs-toggle="dropdown" aria-expanded="false">
-                            <img [src]="getUserAvatarPath()" alt="Avatar de usuario" class="avatar-img">
+                            <div class="avatar-container">
+                                <img [src]="getUserAvatarPath()" alt="Avatar de usuario" class="avatar-img">
+
+                                <!-- Badge circular sobre el avatar -->
+                                @if(shouldShowLogoBadge()) {
+                                <div class="avatar-notification-badge" [class.pulse]="shouldPulseBadge()"
+                                    (click)="onAvatarBadgeClick($event)" title="Ver notificaciones">
+                                    {{ getTotalNotificationCount() }}
+                                </div>
+                                }
+                            </div>
                             <span class="username">{{ getUsername() }}</span>
-                            <!-- <i class="bi bi-chevron-down dropdown-arrow"></i> -->
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li>
@@ -83,7 +123,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item notification-item" routerLink="/notificaciones"
+                                <a class="dropdown-item dropdown-item--notifications" routerLink="/notificaciones"
                                     (click)="navigateTo('/notificaciones')">
                                     <i class="bi bi-bell me-2"></i>Notificaciones
                                     @if (pendingRequestsCount > 0) {
@@ -91,18 +131,18 @@
                                     }
                                 </a>
                             </li>
-                            
+
                             <li>
-                                <a class="dropdown-item notification-item" routerLink="/chat"
+                                <a class="dropdown-item dropdown-item--chat" routerLink="/chat"
                                     (click)="navigateTo('/chat')">
                                     <i class="bi bi-chat-dots me-2"></i>Mensajes
                                     @if (unreadMessagesCount > 0) {
-                                        <span class="message-badge animated-badge">{{ unreadMessagesCount }}</span>
+                                    <span class="notify-badge animated-badge">{{ unreadMessagesCount }}</span>
                                     }
                                 </a>
                             </li>
 
-                   
+
                             @if (isPremiumUser) {
                             <li>
                                 <a class="dropdown-item" routerLink="/premium" (click)="navigateTo('/premium')">
@@ -130,7 +170,7 @@
 <header class="site-header">
     <div class="container">
         <div class="header-wrapper">
-          
+
             <a class="brand-logo" routerLink="/">
                 <img src="images/logo.png" alt="CometaCine Logo" class="logo-image">
             </a>
