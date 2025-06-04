@@ -332,3 +332,45 @@
     </div>
   </div>
 }
+
+
+@if (showDeleteConfirmModal) {
+  <div class="modal-overlay" (click)="closeDeleteModal($event)"></div>
+  <div class="confirmation-modal">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Eliminar lista
+        </h3>
+        <button class="close-btn" (click)="cancelarEliminacion()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirmation-content">
+          <div class="confirmation-icon">
+            <i class="bi bi-trash text-danger"></i>
+          </div>
+          <div class="confirmation-text">
+            <h4>¿Estás seguro?</h4>
+            <p>Esta acción eliminará permanentemente la lista <strong>"{{ lista?.title }}"</strong> y no se puede deshacer.</p>
+            <p class="text-muted">Todas las películas añadidas se perderán.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" (click)="cancelarEliminacion()">
+          <i class="bi bi-x-circle me-1"></i>
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmarEliminacion()">
+          <i class="bi bi-trash me-1"></i>
+          Eliminar lista
+        </button>
+      </div>
+    </div>
+  </div>
+}

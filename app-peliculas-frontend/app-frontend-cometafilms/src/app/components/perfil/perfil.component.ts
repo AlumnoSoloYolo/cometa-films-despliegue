@@ -89,7 +89,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
   mostrarModalSeguidos: boolean = false;
   usuariosFiltrados: any[] = [];
   filtroUsuarios: string = '';
-
   totalListas: number = 0;
   listasOcultas: number = 0;
   isPremium: boolean = false;
@@ -97,6 +96,17 @@ export class PerfilComponent implements OnInit, OnDestroy {
   readonly LISTS_LIMIT_FREE_USER = 5;
   private currentUserSubscription: Subscription | undefined;
   private routeParamsSubscription: Subscription | undefined;
+
+  showDeleteAccountModal: boolean = false;
+  deleteAccountForm: FormGroup;
+  passwordVerificationError: string = '';
+  failedAttempts: number = 0;
+  readonly MAX_FAILED_ATTEMPTS = 3;
+  isVerifyingPassword: boolean = false;
+  showSuccessModal: boolean = false;
+  successMessage: string = '';
+  countdownSeconds: number = 5;
+  private countdownInterval: any;
 
   // Variables para prevenir cargas múltiples
   private isLoading = false;
@@ -140,6 +150,11 @@ export class PerfilComponent implements OnInit, OnDestroy {
       description: ['', [Validators.maxLength(500)]],
       isPublic: [true]
     });
+
+     this.deleteAccountForm = this.fb.group({
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmText: ['', [Validators.required]]
+    });
   }
 
   ngOnInit() {
@@ -168,6 +183,11 @@ export class PerfilComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
+
     if (this.currentUserSubscription) {
       this.currentUserSubscription.unsubscribe();
     }
@@ -847,18 +867,11 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   // Eliminar cuenta de usuario
   eliminarCuenta(): void {
-    if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
-    this.userMovieService.deleteAccount().subscribe({
-      next: () => {
-        this.authService.logout();
-        this.router.navigate(['/login']);
-        alert('Cuenta eliminada correctamente');
-      },
-      error: (error) => {
-        alert('Error al eliminar cuenta: ' + (error.error?.message || 'Error desconocido'));
-      }
-    });
+
+    this.showDeleteAccountModal = true;
+    this.resetDeleteAccountForm();
   }
+
 
   selectAvatar(avatar: string): void { this.configForm.get('avatar')?.setValue(avatar); }
 
@@ -1174,5 +1187,179 @@ export class PerfilComponent implements OnInit, OnDestroy {
         alert(`Error al eliminar seguidor: ${error.error?.message || 'Ocurrió un problema.'}`);
       }
     });
+  }
+
+   // Resetear formulario de eliminación
+  private resetDeleteAccountForm(): void {
+    this.deleteAccountForm.reset({
+      password: '',
+      confirmText: ''
+    });
+    this.passwordVerificationError = '';
+    this.failedAttempts = 0;
+    this.isVerifyingPassword = false; 
+  }
+
+  // Verificar contraseña y eliminar cuenta
+  confirmarEliminacionCuenta(): void {
+    // Prevenir múltiples envíos
+    if (this.isVerifyingPassword) {
+      return;
+    }
+
+    if (this.deleteAccountForm.invalid) {
+      Object.values(this.deleteAccountForm.controls).forEach(control => {
+        control.markAsTouched();
+      });
+      return;
+    }
+
+    const formData = this.deleteAccountForm.value;
+    
+    // Verificar que el texto de confirmación sea correcto
+    if (formData.confirmText !== 'ELIMINAR MI CUENTA') {
+      this.passwordVerificationError = 'Debes escribir exactamente "ELIMINAR MI CUENTA" para continuar.';
+      return;
+    }
+
+    this.isVerifyingPassword = true;
+    this.passwordVerificationError = '';
+
+    // Verificar contraseña antes de eliminar la cuenta
+    this.authService.verifyPassword(formData.password).subscribe({
+      next: (isValid) => {
+        if (isValid) {
+          // Contraseña correcta, proceder con eliminación
+          this.proceedWithAccountDeletion();
+        } else {
+          this.handlePasswordVerificationFailure();
+        }
+      },
+      error: (error) => {
+        this.handlePasswordVerificationFailure();
+      }
+    });
+  }
+
+  // Manejar fallo en verificación de contraseña
+  private handlePasswordVerificationFailure(): void {
+    this.failedAttempts++;
+    this.isVerifyingPassword = false; // Re-habilitar el botón
+    
+    if (this.failedAttempts >= this.MAX_FAILED_ATTEMPTS) {
+      this.passwordVerificationError = `Demasiados intentos fallidos. Por seguridad, cerraremos tu sesión.`;
+      
+      // Hacer logout después de 3 segundos
+      setTimeout(() => {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      }, 3000);
+    } else {
+      const remainingAttempts = this.MAX_FAILED_ATTEMPTS - this.failedAttempts;
+      this.passwordVerificationError = `Contraseña incorrecta. Te quedan ${remainingAttempts} intento${remainingAttempts !== 1 ? 's' : ''}.`;
+    }
+  }
+
+  // Proceder con la eliminación de la cuenta
+  private proceedWithAccountDeletion(): void {
+    // Deshabilitar el botón inmediatamente para evitar múltiples clicks
+    this.isVerifyingPassword = true;
+    
+    this.userMovieService.deleteAccount().subscribe({
+      next: () => {
+        // Cerrar el modal de confirmación
+        this.showDeleteAccountModal = false;
+        
+        // Mostrar modal de éxito en lugar de alert
+        this.showSuccessMessage('Tu cuenta ha sido eliminada correctamente. Lamentamos verte partir.');
+        
+        // Hacer logout después del countdown
+        this.startLogoutCountdown();
+      },
+      error: (error) => {
+        this.passwordVerificationError = 'Error al eliminar la cuenta: ' + (error.error?.message || 'Error del servidor');
+        this.isVerifyingPassword = false; // Re-habilitar el botón en caso de error
+      }
+    });
+  }
+
+    // Mostrar mensaje de éxito con modal personalizado
+  private showSuccessMessage(message: string): void {
+    this.successMessage = message;
+    this.showSuccessModal = true;
+    this.countdownSeconds = 5;
+  }
+
+  // Iniciar countdown para logout
+  private startLogoutCountdown(): void {
+    this.countdownInterval = setInterval(() => {
+      this.countdownSeconds--;
+      
+      if (this.countdownSeconds <= 0) {
+        this.performLogout();
+      }
+    }, 1000);
+  }
+
+    // Realizar logout y redirección
+  private performLogout(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
+    
+    this.showSuccessModal = false;
+    
+    // Hacer logout primero
+    this.authService.logout();
+    
+    // Redireccionar a la página principal
+    this.router.navigate(['/'])
+      .then(() => {
+        // Opcional: Forzar recarga para limpiar completamente el estado
+        window.location.reload();
+      });
+  }
+
+    // Cerrar modal de éxito manualmente
+  closeSuccessModal(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
+    this.performLogout();
+  }
+
+  // Cancelar eliminación de cuenta
+  cancelarEliminacionCuenta(): void {
+      this.showDeleteAccountModal = false;
+      this.resetDeleteAccountForm();
+    }
+
+  // Cerrar modal haciendo click en overlay
+  closeDeleteAccountModal(event: Event): void {
+    event.stopPropagation();
+    this.cancelarEliminacionCuenta();
+  }
+
+  // Verificar errores del formulario de eliminación
+  hasDeleteAccountFormError(field: string): boolean {
+    const control = this.deleteAccountForm.get(field);
+    return !!(control && control.invalid && (control.dirty || control.touched));
+  }
+
+  // Obtener mensaje de error del formulario de eliminación
+  getDeleteAccountFormErrorMessage(field: string): string {
+    const control = this.deleteAccountForm.get(field);
+    if (!control) return '';
+
+    if (control.errors) {
+      if (control.errors['required']) {
+        if (field === 'password') return 'La contraseña es obligatoria';
+        if (field === 'confirmText') return 'Debes escribir el texto de confirmación';
+      }
+      if (control.errors['minlength']) {
+        return `La contraseña debe tener al menos ${control.errors['minlength'].requiredLength} caracteres`;
+      }
+    }
+    return '';
   }
 }

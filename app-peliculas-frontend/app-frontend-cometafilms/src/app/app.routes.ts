@@ -17,14 +17,11 @@ import { PremiumSuccessComponent } from './components/premium/premium-success/pr
 import { PremiumCancelComponent } from './components/premium/premium-cancel/premium-cancel.component';
 import { ChatContainerComponent } from './components/chat/chat-container/chat-container.component';
 import { ChatWindowComponent } from './components/chat/chat-window/chat-window.component';
+import { LandingPageComponent } from './components/landing-page/landing-page.component';
 
 export const routes: Routes = [
 
-    {
-        path: '',
-        component: HomeComponent,
-        canActivate: [AuthGuard]
-    },
+     { path: '', component: LandingPageComponent, pathMatch: 'full' },
     {
         path: 'pelicula/:id',
         component: PeliculaDetallesComponent,

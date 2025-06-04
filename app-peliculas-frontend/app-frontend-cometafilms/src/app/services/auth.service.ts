@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environments';
 
 interface AuthResponse {
@@ -164,4 +164,48 @@ export class AuthService {
             }
         }
     }
+
+
+    /* Verifica si la contraseña proporcionada es correcta para el usuario actual*/
+
+        verifyPassword(password: string): Observable<boolean> {
+        // Obtener el token de localStorage
+        const token = this.getToken();
+        
+        if (!token) {
+            console.error('No hay token de autenticación disponible');
+            return of(false);
+        }
+
+        // Crear headers con el token de autorización
+        const headers = new HttpHeaders({
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        });
+
+        return this.http.post<{valid: boolean}>(
+            `${this.apiUrl}/verify-password`, 
+            { password },
+            { headers }
+        ).pipe(
+            map(response => {
+                console.log('✅ Verificación exitosa:', response.valid);
+                return response.valid;
+            }),
+            catchError(error => {
+                
+                // Manejo específico de errores
+                if (error.status === 401) {
+                    console.error('Token inválido o expirado');
+                } else if (error.status === 400) {
+                    console.error('Datos de solicitud inválidos');
+                } else if (error.status === 500) {
+                    console.error('Error del servidor');
+                }
+                
+                return of(false);
+            })
+        );
+    }
+
 }

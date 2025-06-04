@@ -513,3 +513,154 @@
     </div>
     }
 </div>
+
+
+@if (showSuccessModal) {
+  <div class="modal-overlay success-overlay"></div>
+  <div class="success-modal">
+    <div class="modal-content success-content">
+      <div class="success-header">
+        <div class="success-icon">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <h3 class="success-title">Cuenta eliminada correctamente</h3>
+      </div>
+
+      <div class="success-body">
+        <p class="success-message">{{ successMessage }}</p>
+        <div class="countdown-container">
+          <div class="countdown-circle">
+            <span class="countdown-number">{{ countdownSeconds }}</span>
+          </div>
+          <p class="countdown-text">Redirigiendo en {{ countdownSeconds }} segundo{{ countdownSeconds !== 1 ? 's' : '' }}...</p>
+        </div>
+      </div>
+
+      <div class="success-actions">
+        <button type="button" class="btn btn-primary-success" (click)="closeSuccessModal()">
+          <i class="bi bi-house-door me-1"></i>
+          Ir al inicio ahora
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal de eliminación de cuenta ACTUALIZADO -->
+@if (showDeleteAccountModal) {
+  <div class="modal-overlay" (click)="closeDeleteAccountModal($event)"></div>
+  <div class="delete-account-modal">
+    <form [formGroup]="deleteAccountForm" (ngSubmit)="confirmarEliminacionCuenta()" class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+          Eliminar cuenta permanentemente
+        </h3>
+        <button type="button" class="close-btn" (click)="cancelarEliminacionCuenta()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="warning-section">
+          <div class="warning-icon">
+            <i class="bi bi-shield-exclamation text-danger"></i>
+          </div>
+          <div class="warning-content">
+            <h4>¡Esta acción es irreversible!</h4>
+            <p>Al eliminar tu cuenta se perderán <strong>permanentemente</strong>:</p>
+            <ul class="consequences-list">
+              <li><i class="bi bi-x-circle text-danger me-2"></i>Todas tus listas de películas</li>
+              <li><i class="bi bi-x-circle text-danger me-2"></i>Tus reseñas y comentarios</li>
+              <li><i class="bi bi-x-circle text-danger me-2"></i>Tu historial de películas vistas</li>
+              <li><i class="bi bi-x-circle text-danger me-2"></i>Todas tus conexiones sociales</li>
+              <li><i class="bi bi-x-circle text-danger me-2"></i>Tu información de perfil</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Verificación de contraseña -->
+        <div class="verification-section">
+          <h5>Verificación de seguridad</h5>
+          <p class="verification-note">Para confirmar tu identidad, introduce tu contraseña actual:</p>
+          
+          <div class="form-group">
+            <label for="deletePassword" class="form-label">
+              <i class="bi bi-lock me-2"></i>Contraseña actual *
+            </label>
+            <input 
+              id="deletePassword" 
+              type="password" 
+              formControlName="password" 
+              class="form-control"
+              [class.is-invalid]="hasDeleteAccountFormError('password')"
+              placeholder="Introduce tu contraseña actual"
+              autocomplete="current-password"
+              [disabled]="isVerifyingPassword">
+            @if (hasDeleteAccountFormError('password')) {
+              <div class="error-message">
+                {{ getDeleteAccountFormErrorMessage('password') }}
+              </div>
+            }
+          </div>
+
+          <!-- Texto de confirmación -->
+          <div class="form-group">
+            <label for="confirmText" class="form-label">
+              <i class="bi bi-type me-2"></i>Confirmación final *
+            </label>
+            <p class="confirmation-instruction">
+              Para continuar, escribe exactamente: <code>ELIMINAR MI CUENTA</code>
+            </p>
+            <input 
+              id="confirmText" 
+              type="text" 
+              formControlName="confirmText" 
+              class="form-control"
+              [class.is-invalid]="hasDeleteAccountFormError('confirmText')"
+              placeholder="ELIMINAR MI CUENTA"
+              autocomplete="off"
+              [disabled]="isVerifyingPassword">
+            @if (hasDeleteAccountFormError('confirmText')) {
+              <div class="error-message">
+                {{ getDeleteAccountFormErrorMessage('confirmText') }}
+              </div>
+            }
+          </div>
+
+          <!-- Error de verificación de contraseña -->
+          @if (passwordVerificationError) {
+            <div class="password-error-alert">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              {{ passwordVerificationError }}
+              @if (failedAttempts > 0 && failedAttempts < MAX_FAILED_ATTEMPTS) {
+                <div class="attempts-warning">
+                  <small>Intentos fallidos: {{ failedAttempts }}/{{ MAX_FAILED_ATTEMPTS }}</small>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" (click)="cancelarEliminacionCuenta()" [disabled]="isVerifyingPassword">
+          <i class="bi bi-x-circle me-1"></i>
+          Cancelar
+        </button>
+        <button 
+          type="submit" 
+          class="btn btn-danger-delete" 
+          [disabled]="deleteAccountForm.invalid || isVerifyingPassword || failedAttempts >= MAX_FAILED_ATTEMPTS">
+          @if (isVerifyingPassword) {
+            <div class="spinner-border spinner-border-sm me-2"></div>
+            Eliminando cuenta...
+          } @else {
+            <i class="bi bi-trash me-1"></i>
+            Eliminar mi cuenta
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+}

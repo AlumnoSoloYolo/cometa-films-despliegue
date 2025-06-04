@@ -1,16 +1,8 @@
-<div class="register-container">
+<div class="register-container" [class.modal-active]="showMensajeExitoso">
     <div class="titulo">
         <h1>Registro</h1>
     </div>
 
-    @if (showMensajeExitoso) {
-    <div class="overlay"></div>
-    <div [class]="registerForm.get('username')?.hasError('userExists') 
-            ? 'alert alert-danger' 
-            : 'alert alert-success'">
-        {{ mensajeExitoso }}
-    </div>
-    }
     <form [formGroup]="registerForm" (ngSubmit)="onRegister($event)">
         <div class="form-group">
             <label for="username">Usuario</label>
@@ -19,10 +11,6 @@
             @if (formulario.username.touched) {
             <div class="error-message">
                 {{ getErrorMessage('username') }}
-            </div>
-            }@else{
-                <div class="error-message">
-              
             </div>
             }
         </div>
@@ -35,10 +23,6 @@
             <div class="error-message">
                 {{ getErrorMessage('email') }}
             </div>
-            }@else{
-                <div class="error-message">
-              
-            </div>
             }
         </div>
 
@@ -50,10 +34,6 @@
             <div class="error-message">
                 {{ getErrorMessage('password') }}
             </div>
-            }@else{
-                <div class="error-message">
-              
-            </div>
             }
         </div>
 
@@ -64,10 +44,6 @@
             @if (formulario.confirmPassword.touched) {
             <div class="error-message">
                 {{ getErrorMessage('confirmPassword') }}
-            </div>
-            }@else{
-                <div class="error-message">
-              
             </div>
             }
         </div>
@@ -93,3 +69,19 @@
         </div>
     </form>
 </div>
+
+<!-- Modal de mensaje -->
+@if (showMensajeExitoso) {
+    <div class="overlay"></div>
+    <div class="alert" tabindex="0" #messageAlert>
+        @if (registerForm.get('username')?.hasError('userExists')) {
+            <!-- Modal de error -->
+            <div class="alert-error-icon">❌</div>
+            <p class="message-text">{{ mensajeExitoso }}</p>
+        } @else {
+            <!-- Modal de éxito -->
+            <div class="alert-success-icon">🎉</div>
+            <p class="message-text">{{ mensajeExitoso }}</p>
+        }
+    </div>
+}

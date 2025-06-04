@@ -42,6 +42,7 @@ export class ListaDetallesComponent implements OnInit {
   paginaActual: number = 1;
   hayMasPaginas: boolean = true;
   busquedaRealizada: boolean = false;
+  showDeleteConfirmModal: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -399,23 +400,10 @@ get userIdString(): string {
   }
 
 
-  eliminarLista(): void {
+eliminarLista(): void {
     if (!this.lista) return;
-
-    if (confirm('¿Estás seguro de que quieres eliminar esta lista? Esta acción no se puede deshacer.')) {
-      // Note: For this to work, you would need to implement a deleteList method in the MovieListsService
-      // This endpoint doesn't exist in your current service, so it would need to be added
-      this.movieListsService.deleteList(this.lista._id).subscribe({
-        next: () => {
-          alert('Lista eliminada correctamente');
-          this.router.navigate(['/perfil']);
-        },
-        error: (error) => {
-          console.error('Error al eliminar lista:', error);
-          alert('Error al eliminar la lista. Por favor, inténtalo de nuevo.');
-        }
-      });
-    }
+  
+    this.showDeleteConfirmModal = true;
   }
 
   fileToBase64(file: File): Promise<string> {
@@ -452,5 +440,36 @@ get userIdString(): string {
 
   volver(): void {
     this.router.navigate(['/perfil']);
+  }
+
+
+  // método para confirmar eliminación
+  confirmarEliminacion(): void {
+    if (!this.lista) return;
+
+    this.movieListsService.deleteList(this.lista._id).subscribe({
+      next: () => {
+        this.showDeleteConfirmModal = false;
+        // Podrías mostrar un modal de éxito aquí también si quieres
+        this.router.navigate(['/perfil']);
+      },
+      error: (error) => {
+        console.error('Error al eliminar lista:', error);
+        this.showDeleteConfirmModal = false;
+        // Aquí también podrías mostrar un modal de error personalizado
+        alert('Error al eliminar la lista. Por favor, inténtalo de nuevo.');
+      }
+    });
+  }
+
+  //  método para cancelar eliminación
+  cancelarEliminacion(): void {
+    this.showDeleteConfirmModal = false;
+  }
+
+  // Método para cerrar modal haciendo click en overlay
+  closeDeleteModal(event: Event): void {
+    event.stopPropagation();
+    this.cancelarEliminacion();
   }
 }

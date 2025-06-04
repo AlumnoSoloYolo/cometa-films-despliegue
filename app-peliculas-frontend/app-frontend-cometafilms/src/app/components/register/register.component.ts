@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -12,7 +12,7 @@ import { finalize } from 'rxjs/operators';
   templateUrl: './register.component.html',
   styleUrl: './register.component.css'
 })
-export class RegisterComponent {
+export class RegisterComponent implements AfterViewInit {
   avatars = [
     'avatar1', 'avatar2', 'avatar3', 'avatar4',
     'avatar5', 'avatar6', 'avatar7', 'avatar8'
@@ -20,6 +20,11 @@ export class RegisterComponent {
   selectedAvatar = 'avatar1';
   mensajeExitoso = "";
   showMensajeExitoso = false;
+  @ViewChild('messageAlert') messageAlert?: ElementRef;
+
+  ngAfterViewInit() {
+        
+  }
 
   registerForm = new FormGroup({
     username: new FormControl('', [
@@ -122,6 +127,11 @@ export class RegisterComponent {
           this.mensajeExitoso = `¡Registro exitoso! Bienvenid@, ${username}.`;
           this.showMensajeExitoso = true;
 
+      
+        setTimeout(() => {
+            this.messageAlert?.nativeElement?.focus();
+        }, 100);
+
           setTimeout(() => {
             this.showMensajeExitoso = false;
             this.router.navigate(['/login']);
@@ -132,6 +142,10 @@ export class RegisterComponent {
 
           this.mensajeExitoso = "Usuario y/o correo en uso"
           this.showMensajeExitoso = true;
+
+           setTimeout(() => {
+              this.messageAlert?.nativeElement?.focus();
+            }, 100);
 
           setTimeout(() => {
             this.showMensajeExitoso = false;

@@ -133,7 +133,63 @@ const loginUser = async (req, res) => {
     }
 };
 
+
+const verifyPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+        const userId = req.user.id; // Viene del middleware de autenticación
+
+        // Validaciones básicas
+        if (!password) {
+            return res.status(400).json({
+                message: 'La contraseña es requerida',
+                valid: false
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                message: 'Contraseña demasiado corta',
+                valid: false
+            });
+        }
+
+        // Buscar el usuario en la base de datos
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                message: 'Usuario no encontrado',
+                valid: false
+            });
+        }
+
+        // Verificar la contraseña usando bcrypt
+        const isValidPassword = await bcrypt.compare(password, user.password);
+
+        // Log de seguridad (opcional)
+        console.log(`Verificación de contraseña para usuario ${user.username}: ${isValidPassword ? 'ÉXITO' : 'FALLO'}`);
+
+        // Responder con el resultado de la verificación
+        res.status(200).json({
+            valid: isValidPassword,
+            message: isValidPassword 
+                ? 'Contraseña verificada correctamente' 
+                : 'Contraseña incorrecta'
+        });
+
+    } catch (error) {
+        console.error('Error en verificación de contraseña:', error);
+        
+        res.status(500).json({
+            message: 'Error interno del servidor',
+            valid: false,
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Error desconocido'
+        });
+    }
+};
+
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    verifyPassword
 };

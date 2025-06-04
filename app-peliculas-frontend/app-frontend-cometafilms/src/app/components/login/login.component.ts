@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -12,7 +12,9 @@ import { Router, RouterModule } from '@angular/router';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
+  @ViewChild('successAlert') successAlert?: ElementRef;
+  @ViewChild('errorAlert') errorAlert?: ElementRef;
   globalError: string | null = null;
   successMessage: string | null = null;
   showMessage = false;
@@ -30,6 +32,11 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router
   ) { }
+
+
+  ngAfterViewInit() {
+       
+    }
 
   getErrorMessage(field: string): string {
     const control = this.loginForm.get(field);
@@ -78,6 +85,11 @@ export class LoginComponent {
           this.successMessage = '¡Bienvenid@!';
           this.showMessage = true;
 
+         // Focus en el mensaje después de un pequeño delay
+          setTimeout(() => {
+              this.successAlert?.nativeElement?.focus();
+          }, 100);
+
 
           setTimeout(() => {
             this.showMessage = false;
@@ -102,6 +114,11 @@ export class LoginComponent {
           }
 
           this.showMessage = true;
+
+          // Focus en el mensaje de error
+          setTimeout(() => {
+              this.errorAlert?.nativeElement?.focus();
+          }, 100);
 
           setTimeout(() => {
             this.showMessage = false;

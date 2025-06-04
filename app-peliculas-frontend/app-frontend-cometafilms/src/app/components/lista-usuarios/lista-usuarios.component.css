@@ -302,6 +302,8 @@
   transform: translateZ(0) !important;
 }
 
+
+
 /* FIX ESPECÍFICO PARA CHROME - Detectar y aplicar */
 @supports (-webkit-appearance: none) {
   .follow-btn {
@@ -414,6 +416,16 @@
 .fa-rocket{
   font-size: 2rem;
   transform: rotate(-45deg);
+}
+
+.follow-btn {
+  white-space: nowrap;
+  overflow: visible; 
+  text-overflow: clip;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.2;
 }
 
 
