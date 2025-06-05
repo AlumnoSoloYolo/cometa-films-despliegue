@@ -44,7 +44,7 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  background-color: var(--background-color-dark);
+  background: transparent; /* Sin fondo - se ve el fondo global */
   color: var(--text-color-light);
   font-family: var(--font-family-primary, 'Roboto', sans-serif);
   padding: 16px;
@@ -59,122 +59,6 @@
   height: 100%;
   z-index: 0;
   pointer-events: none;
-}
-
-/* ESTRELLAS COMO PUNTOS DE LUZ DIFUMINADA - ULTRA PEQUEÑAS */
-.star {
-  position: absolute;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.3) 30%, transparent 70%);
-  border-radius: 50%;
-  opacity: 0;
-  animation-timing-function: ease-in-out, linear;
-  animation-iteration-count: infinite, infinite;
-  animation-direction: alternate, normal;
-  z-index: 0;
-  will-change: transform, opacity, filter;
-  contain: layout style paint;
-  animation-fill-mode: both;
-  filter: blur(0.2px); /* Efecto difuminado sutil */
-}
-
-/* Animaciones de centellado nocturno - MÁS VISIBLE Y REALISTA */
-@keyframes twinkleBase {
-  0% { opacity: 0.1; transform: scale(0.7); filter: blur(0.2px); }
-  20% { opacity: 0.6; transform: scale(1.1); filter: blur(0.1px); }
-  40% { opacity: 0.2; transform: scale(0.9); filter: blur(0.2px); }
-  60% { opacity: 0.7; transform: scale(1.2); filter: blur(0.1px); }
-  80% { opacity: 0.1; transform: scale(0.8); filter: blur(0.2px); }
-  100% { opacity: 0.5; transform: scale(1.0); filter: blur(0.15px); }
-}
-
-@keyframes twinkleBright {
-  0% { opacity: 0.2; transform: scale(0.8); filter: blur(0.1px); }
-  15% { opacity: 0.9; transform: scale(1.4); filter: blur(0px); }
-  30% { opacity: 0.3; transform: scale(1.0); filter: blur(0.1px); }
-  45% { opacity: 1; transform: scale(1.5); filter: blur(0px); }
-  60% { opacity: 0.4; transform: scale(1.1); filter: blur(0.1px); }
-  75% { opacity: 0.8; transform: scale(1.3); filter: blur(0px); }
-  90% { opacity: 0.2; transform: scale(0.9); filter: blur(0.1px); }
-  100% { opacity: 0.6; transform: scale(1.2); filter: blur(0.05px); }
-}
-
-@keyframes twinkleSuperBright {
-  0% { opacity: 0.3; transform: scale(1); filter: blur(0px); }
-  10% { opacity: 1; transform: scale(1.8); filter: blur(0px); }
-  25% { opacity: 0.4; transform: scale(1.1); filter: blur(0.05px); }
-  40% { opacity: 1; transform: scale(2.0); filter: blur(0px); }
-  55% { opacity: 0.5; transform: scale(1.3); filter: blur(0.05px); }
-  70% { opacity: 1; transform: scale(1.9); filter: blur(0px); }
-  85% { opacity: 0.3; transform: scale(1.0); filter: blur(0.05px); }
-  100% { opacity: 0.8; transform: scale(1.6); filter: blur(0px); }
-}
-
-@keyframes twinkleDim {
-  0% { opacity: 0.05; transform: scale(0.6); filter: blur(0.3px); }
-  30% { opacity: 0.3; transform: scale(0.9); filter: blur(0.2px); }
-  60% { opacity: 0.1; transform: scale(0.7); filter: blur(0.25px); }
-  100% { opacity: 0.25; transform: scale(0.8); filter: blur(0.2px); }
-}
-
-@keyframes twinkleCluster {
-  0% { opacity: 0.1; transform: scale(0.7); filter: blur(0.2px); }
-  25% { opacity: 0.5; transform: scale(1.1); filter: blur(0.1px); }
-  50% { opacity: 0.2; transform: scale(0.9); filter: blur(0.15px); }
-  75% { opacity: 0.6; transform: scale(1.2); filter: blur(0.1px); }
-  100% { opacity: 0.3; transform: scale(1.0); filter: blur(0.15px); }
-}
-
-@keyframes slowDrift {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(0.3px, 0.6px); }
-  50% { transform: translate(-0.5px, -0.3px); }
-  75% { transform: translate(0.6px, -0.5px); }
-  100% { transform: translate(0, 0); }
-}
-
-/* Clases de estrellas con centellado nocturno realista */
-.star-super-bright {
-  background: radial-gradient(circle, rgba(100, 181, 246, 1) 0%, rgba(66, 165, 245, 0.9) 15%, rgba(255, 255, 255, 0.6) 35%, transparent 65%);
-  box-shadow: 
-    0 0 4px rgba(100, 181, 246, 1), 
-    0 0 8px rgba(66, 165, 245, 0.8),
-    0 0 12px rgba(255, 255, 255, 0.4);
-  animation-name: twinkleSuperBright, slowDrift;
-  filter: blur(0px);
-}
-
-.star-bright {
-  background: radial-gradient(circle, rgba(178, 235, 242, 1) 0%, rgba(255, 255, 255, 0.8) 25%, transparent 55%);
-  box-shadow: 
-    0 0 3px rgba(178, 235, 242, 0.9), 
-    0 0 6px rgba(255, 255, 255, 0.5);
-  animation-name: twinkleBright, slowDrift;
-  filter: blur(0.05px);
-}
-
-.star-medium {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, transparent 60%);
-  box-shadow: 
-    0 0 2px rgba(255, 255, 255, 0.8), 
-    0 0 4px rgba(255, 255, 255, 0.3);
-  animation-name: twinkleBase, slowDrift;
-  filter: blur(0.1px);
-}
-
-.star-dim {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 40%, transparent 70%);
-  box-shadow: 0 0 1.5px rgba(255, 255, 255, 0.4);
-  animation-name: twinkleDim, slowDrift;
-  filter: blur(0.2px);
-}
-
-.star-cluster {
-  background: radial-gradient(circle, rgba(255, 193, 7, 0.8) 0%, rgba(255, 248, 220, 0.5) 25%, transparent 55%);
-  box-shadow: 
-    0 0 2.5px rgba(255, 193, 7, 0.7), 
-    0 0 5px rgba(255, 248, 220, 0.3);
-  animation-name: twinkleCluster, slowDrift;
-  filter: blur(0.15px);
 }
 
 /* CONTENEDOR PARA TÍTULO Y ESLOGAN */
@@ -535,78 +419,78 @@
   }
 }
 
-/* SOLO DOS COMETAS - UNA INICIAL INMEDIATA */
+/* COMETA 1 - INMEDIATO - Trayectoria más corta */
 .comet-1 {
   top: 5%;
-  left: -20%;
-  --comet-base-width: 180px;
+  left: -15%; /* Menos fuera de pantalla */
+  --comet-base-width: 120px; /* Más pequeña */
   --initial-scale: 0.9;
-  --final-scale: 1.3;
+  --final-scale: 1.1; /* Menos crecimiento */
   --tx-start: 0vw;
   --ty-start: 0vh;
-  --tx-end: 130vw;
-  --ty-end: 40vh;
-  --angle: 15deg;
+  --tx-end: 80vw; /* Trayectoria más corta */
+  --ty-end: 25vh; /* Menos desplazamiento vertical */
+  --angle: 18deg; /* Ángulo más pronunciado */
   --duration: 60s;
   --delay: 0s; /* INMEDIATO AL CARGAR */
   --comet-head-color: #FFFFFF;
   --rgb-comet-head-color: 255,255,255;
-  --trail-width-factor: 10;
-  --trail-length-factor: 2.8;
+  --trail-width-factor: 6; /* Estela más corta */
+  --trail-length-factor: 1.8; /* Estela menos larga */
 }
 
 .comet-2 {
   top: 60%;
-  left: 120%;
-  --comet-base-width: 150px;
+  left: 110%; /* Menos fuera de pantalla */
+  --comet-base-width: 100px; /* Más pequeña */
   --initial-scale: 0.8;
-  --final-scale: 1.1;
+  --final-scale: 1.0;
   --tx-start: 0vw;
   --ty-start: 0vh;
-  --tx-end: -140vw;
-  --ty-end: -30vh;
+  --tx-end: -70vw; /* Trayectoria más corta */
+  --ty-end: -20vh; /* Menos desplazamiento */
   --angle: 200deg;
   --duration: 60s;
   --delay: 30s; /* APARECE DESPUÉS DE 30 SEGUNDOS */
   --comet-head-color: #F8F8FF;
   --rgb-comet-head-color: 248,248,255;
-  --trail-width-factor: 9;
-  --trail-length-factor: 2.5;
+  --trail-width-factor: 5; /* Estela más corta */
+  --trail-length-factor: 1.6; /* Estela menos larga */
 }
 
-/* ESFERAS CON MEJOR GESTIÓN DE IMÁGENES */
+/* ESFERAS CON MENOS BRILLO - Sin fondo oscuro */
 .blur-sphere {
   position: absolute;
   border-radius: 50%;
   z-index: 1;
-  opacity: 0.6;
-  backdrop-filter: blur(var(--sphere-blur, 35px)) brightness(var(--sphere-brightness, 160%)) saturate(var(--sphere-saturate, 200%));
-  -webkit-backdrop-filter: blur(var(--sphere-blur, 35px)) brightness(var(--sphere-brightness, 160%)) saturate(var(--sphere-saturate, 200%));
-  box-shadow: 0 0 calc(var(--sphere-glow-radius, 60px)) calc(var(--sphere-glow-spread, 12px)) rgba(var(--sphere-shadow-color-rgb, 255,255,255), 0.2),
-              inset 0 0 calc(var(--sphere-glow-radius, 60px) * 0.6) -12px rgba(var(--sphere-shadow-color-rgb, 255,255,255), 0.25);
+  opacity: 0.4; /* Reducido de 0.6 */
+  backdrop-filter: blur(var(--sphere-blur, 25px)) brightness(var(--sphere-brightness, 130%)) saturate(var(--sphere-saturate, 150%)); /* Reducido */
+  -webkit-backdrop-filter: blur(var(--sphere-blur, 25px)) brightness(var(--sphere-brightness, 130%)) saturate(var(--sphere-saturate, 150%));
+  box-shadow: 0 0 calc(var(--sphere-glow-radius, 40px)) calc(var(--sphere-glow-spread, 8px)) rgba(var(--sphere-shadow-color-rgb, 255,255,255), 0.1), /* Reducido */
+              inset 0 0 calc(var(--sphere-glow-radius, 40px) * 0.6) -8px rgba(var(--sphere-shadow-color-rgb, 255,255,255), 0.15); /* Reducido */
   animation-name: pulseSphere, driftSphereEnhanced;
   animation-duration: 20s, 100s;
   animation-timing-function: ease-in-out, linear;
   animation-iteration-count: infinite, infinite;
   transition: backdrop-filter 0.6s ease, box-shadow 0.6s ease;
 
-  --sphere-blur: 35px;
-  --sphere-brightness: 160%;
-  --sphere-saturate: 200%;
-  --sphere-glow-radius: 60px;
-  --sphere-glow-spread: 12px;
-  --sphere-core-opacity: 0.03;
-  --sphere-edge-opacity: 0.005;
+  --sphere-blur: 25px; /* Reducido de 35px */
+  --sphere-brightness: 130%; /* Reducido de 160% */
+  --sphere-saturate: 150%; /* Reducido de 200% */
+  --sphere-glow-radius: 40px; /* Reducido de 60px */
+  --sphere-glow-spread: 8px; /* Reducido de 12px */
+  --sphere-core-opacity: 0.02; /* Reducido de 0.03 */
+  --sphere-edge-opacity: 0.003; /* Reducido de 0.005 */
 }
 
 @keyframes pulseSphere {
   0%, 100% {
-    opacity: 0.6;
-    transform: scale(var(--sphere-scale-pulse-min, 0.96)) rotate(0deg);
+    opacity: 0.4; /* Reducido de 0.6 */
+    transform: scale(var(--sphere-scale-pulse-min, 0.98)) rotate(0deg); /* Menos pulsación */
   }
   50% {
-    opacity: 0.95;
-    transform: scale(var(--sphere-scale-pulse-max, 1.04)) rotate(var(--sphere-pulse-rotate, 3deg));
+    opacity: 0.7; /* Reducido de 0.95 */
+    transform: scale(var(--sphere-scale-pulse-max, 1.02)) rotate(var(--sphere-pulse-rotate, 2deg)); /* Menos pulsación */
   }
 }
 
@@ -756,8 +640,8 @@
   max-height: 380px;
   min-width: 120px;
   min-height: 120px;
-  top: 45%;
-  left: 30%;
+  top: 0%;
+  left: 65%;
   background: radial-gradient(circle, rgba(var(--sphere-color-6-rgb), calc(var(--sphere-core-opacity))) 0%, rgba(var(--sphere-color-6-rgb), calc(var(--sphere-edge-opacity))) 40%, transparent 68%);
   --sphere-shadow-color-rgb: var(--sphere-color-6-rgb);
   animation-delay: -22s, -38s;
@@ -1021,4 +905,12 @@
     padding: 22px 44px;
     font-size: 1.2rem;
   }
+}
+
+.logo-image-landing {
+ /* ... tus estilos actuales ... */
+ filter: 
+   drop-shadow(0 0 10px rgba(255,255,255,0.8))
+   drop-shadow(0 0 20px rgba(255,255,255,0.6))
+   drop-shadow(0 0 30px rgba(255,255,255,0.4));
 }

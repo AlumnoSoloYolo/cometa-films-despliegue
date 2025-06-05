@@ -9,17 +9,6 @@ interface CinematicImage {
   isVisible: boolean;
 }
 
-interface Star {
-  id: number;
-  top: string;
-  left: string;
-  size: string;
-  animationDelay: string;
-  animationDurationTwinkle: string;
-  starClass: string;
-  brightness: number;
-}
-
 @Component({
   selector: 'app-landing-page',
   standalone: true,
@@ -28,9 +17,6 @@ interface Star {
   styleUrls: ['./landing-page.component.css']
 })
 export class LandingPageComponent implements OnInit, AfterViewInit, OnDestroy {
-
-  starsArray: Star[] = [];
-  numberOfStars: number = 1800; // Más estrellas para un cielo nocturno realista
 
   // Estados de carga para botones
   isLoginLoading: boolean = false;
@@ -41,7 +27,7 @@ export class LandingPageComponent implements OnInit, AfterViewInit, OnDestroy {
     sphere1: [
       { url: 'https://m.media-amazon.com/images/S/pv-target-images/42dbfcf2215f0e3ecddbb5e46e10acdc50d79552d337ac07c93c6e9c66123a2d._SX1080_FMjpg_.jpg', title: 'Blade Runner', opacity: 0, isVisible: false },
       { url: 'https://cdn.hobbyconsolas.com/sites/navi.axelspringer.es/public/media/image/2025/04/matrix-regresara-pelicula-totalmente-nueva-mano-warner-bros-drew-goddard-4314363.jpg?tf=3840x', title: 'Matrix', opacity: 0, isVisible: false },
-      { url: 'https://sm.ign.com/t/ign_latam/screenshot/default/gremnlins_rvx1.1280.jpg', title: 'Citizen Kane', opacity: 0, isVisible: false }
+      { url: 'https://static.filmin.es/images/es/media/26512/1/still_0_3_790x398.webp', title: 'Citizen Kane', opacity: 0, isVisible: false }
     ],
     sphere2: [
       { url: 'https://static.nuso.org/media/cache/9d/36/9d36ab92f1de39e7e8dc389b0f908bc0.jpg', title: 'Pulp Fiction', opacity: 0, isVisible: false },
@@ -84,7 +70,7 @@ export class LandingPageComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
-    this.generateEnhancedStars();
+    // Ya no generamos estrellas en el landing - se generan en el componente fondo
   }
 
   ngAfterViewInit(): void {
@@ -101,99 +87,6 @@ export class LandingPageComponent implements OnInit, AfterViewInit, OnDestroy {
     [...this.cometIlluminationInterval, ...this.cinematicIntervals].forEach(interval => {
       clearInterval(interval);
     });
-  }
-
-  /**
-   * Genera estrellas más pequeñas y elegantes - MENOS ES MÁS 😄
-   */
-  generateEnhancedStars(): void {
-    const newStars: Star[] = [];
-
-    // GENERAR ESTRELLAS BASE - MÁS PEQUEÑAS Y SUTILES
-    for (let i = 0; i < this.numberOfStars; i++) {
-      const brightness = Math.random();
-      let starClass = 'star-dim';
-      let size = Math.random() * 0.8 + 0.3; // Tamaños más pequeños: 0.3px - 1.1px
-
-      // Distribución para un cielo estrellado visible
-      if (brightness > 0.97) { // 3% super brillantes  
-        starClass = 'star-super-bright';
-        size = Math.random() * 1.2 + 0.8; // 0.8px - 2px
-      } else if (brightness > 0.90) { // 7% brillantes
-        starClass = 'star-bright';
-        size = Math.random() * 0.8 + 0.5; // 0.5px - 1.3px
-      } else if (brightness > 0.80) { // 10% cluster
-        starClass = 'star-cluster';
-        size = Math.random() * 0.6 + 0.4; // 0.4px - 1px
-      } else if (brightness > 0.50) { // 30% medium - más visibles
-        starClass = 'star-medium';
-        size = Math.random() * 0.5 + 0.3; // 0.3px - 0.8px
-      } else { // 50% dim - menos proporción de muy tenues
-        starClass = 'star-dim';
-        size = Math.random() * 0.4 + 0.2; // 0.2px - 0.6px
-      }
-
-      newStars.push({
-        id: i,
-        top: Math.random() * 100 + '%',
-        left: Math.random() * 100 + '%',
-        animationDelay: Math.random() * 15 + 's', // Más rápido para ver efectos
-        animationDurationTwinkle: (Math.random() * 4 + 2) + 's', // Más rápido y visible
-        size: size + 'px',
-        starClass: starClass,
-        brightness: brightness
-      });
-    }
-
-    // GENERAR 8 CÚMULOS MÁS VISIBLES
-    const numberOfClusters = 8;
-    for (let cluster = 0; cluster < numberOfClusters; cluster++) {
-      const clusterX = Math.random() * 100;
-      const clusterY = Math.random() * 100;
-      const clusterStars = Math.random() * 80 + 40; // 40-120 estrellas por cúmulo
-
-      for (let j = 0; j < clusterStars; j++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 8; // Radio más pequeño del cúmulo
-
-        const x = Math.max(0, Math.min(100, clusterX + Math.cos(angle) * distance));
-        const y = Math.max(0, Math.min(100, clusterY + Math.sin(angle) * distance));
-
-        const brightness = Math.random();
-        let starClass = 'star-dim';
-        let size = Math.random() * 0.4 + 0.2; // Cúmulos más visibles
-
-        if (brightness > 0.95) {
-          starClass = 'star-bright';
-          size = Math.random() * 0.7 + 0.4;
-        } else if (brightness > 0.80) {
-          starClass = 'star-cluster';
-          size = Math.random() * 0.5 + 0.3;
-        } else if (brightness > 0.5) {
-          starClass = 'star-medium';
-          size = Math.random() * 0.4 + 0.25;
-        }
-
-        newStars.push({
-          id: this.numberOfStars + cluster * 100 + j,
-          top: y + '%',
-          left: x + '%',
-          animationDelay: Math.random() * 20 + 's',
-          animationDurationTwinkle: (Math.random() * 5 + 2) + 's',
-          size: size + 'px',
-          starClass: starClass,
-          brightness: brightness
-        });
-      }
-    }
-
-    console.log(`Generadas ${newStars.length} estrellas - Más negro que blanco 😄`);
-    this.starsArray = newStars;
-    this.cdr.detectChanges();
-  }
-
-  trackByStar(index: number, star: Star): number {
-    return star.id;
   }
 
   trackByCinematicImage(index: number, image: CinematicImage): string {
@@ -318,21 +211,21 @@ export class LandingPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Efecto de iluminación de cometas más suave
+   * Efecto de iluminación de cometas más sutil
    */
   private createCometBlurEffect(sphereSelectors: string[], duration: number): void {
     sphereSelectors.forEach((selector, index) => {
       const sphere = document.querySelector(selector) as HTMLElement;
       if (sphere) {
         setTimeout(() => {
-          // Efecto de iluminación más suave
-          sphere.style.backdropFilter = 'blur(45px) saturate(350%) brightness(220%)';
-          (sphere.style as any).webkitBackdropFilter = 'blur(45px) saturate(350%) brightness(220%)';
+          // Efecto de iluminación más sutil sin fondo
+          sphere.style.backdropFilter = 'blur(35px) saturate(250%) brightness(180%)';
+          (sphere.style as any).webkitBackdropFilter = 'blur(35px) saturate(250%) brightness(180%)';
 
           sphere.style.boxShadow = `
-            0 0 120px 40px rgba(var(--sphere-shadow-color-rgb), 0.6),
-            0 0 200px 60px rgba(var(--sphere-shadow-color-rgb), 0.3),
-            inset 0 0 80px -10px rgba(var(--sphere-shadow-color-rgb), 0.4)
+            0 0 80px 25px rgba(var(--sphere-shadow-color-rgb), 0.4),
+            0 0 140px 40px rgba(var(--sphere-shadow-color-rgb), 0.2),
+            inset 0 0 60px -8px rgba(var(--sphere-shadow-color-rgb), 0.3)
           `;
 
           // Transición de vuelta más gradual

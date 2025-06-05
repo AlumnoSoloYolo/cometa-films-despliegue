@@ -1,25 +1,18 @@
 <div class="landing-container">
   <div class="super-animated-background">
-    <!-- Estrellas con más variedad y brillos intermitentes -->
-    <div class="star" *ngFor="let star of starsArray; trackBy: trackByStar" [style.top]="star.top"
-      [style.left]="star.left" [style.width]="star.size" [style.height]="star.size"
-      [style.animation-delay]="star.animationDelay" [style.animation-duration]="star.animationDurationTwinkle + ', 60s'"
-      [class]="star.starClass">
-    </div>
-
     <!-- Solo dos cometas: una inmediata y otra después de 30s -->
     <div class="comet comet-1"></div>
     <div class="comet comet-2"></div>
 
     <!-- Esferas con imágenes cinematográficas mejoradas -->
-    <div class="blur-sphere sphere-1">
+    <!-- <div class="blur-sphere sphere-1">
       <div class="cinematic-images-container">
         <div *ngFor="let image of cinematicImages.sphere1; trackBy: trackByCinematicImage" class="cinematic-image"
           [class.visible]="image.isVisible" [style.opacity]="image.opacity"
           [style.background-image]="'url(' + image.url + ')'" [attr.data-title]="image.title">
         </div>
       </div>
-    </div>
+    </div> -->
 
     <div class="blur-sphere sphere-2">
       <div class="cinematic-images-container">
@@ -56,7 +49,7 @@
         </div>
       </div>
     </div>
-
+    <!-- 
     <div class="blur-sphere sphere-6">
       <div class="cinematic-images-container">
         <div *ngFor="let image of cinematicImages.sphere6; trackBy: trackByCinematicImage" class="cinematic-image"
@@ -64,12 +57,14 @@
           [style.background-image]="'url(' + image.url + ')'" [attr.data-title]="image.title">
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 
-  <!-- Título y eslogan -->
+  <!-- Título con logo y eslogan -->
   <div class="title-container">
-    <h1 class="main-page-title">CometaCine</h1>
+    <div class="brand-logo-landing">
+      <img src="images/logo.png" alt="CometaCine Logo" class="logo-image-landing">
+    </div>
     <p class="main-page-slogan">Explora, descubre y comparte tus películas favoritas</p>
   </div>
 
