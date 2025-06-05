@@ -63,10 +63,10 @@ exports.getUsers = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al obtener usuarios', 
-            error: error.message 
+            message: 'Error al obtener usuarios',
+            error: error.message
         });
     }
 };
@@ -82,33 +82,33 @@ exports.banUser = async (req, res) => {
         const { reason, duration } = req.body; // duration en horas, null/undefined = permanente
 
         if (!reason || reason.trim().length === 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'La razón del ban es obligatoria' 
+                message: 'La razón del ban es obligatoria'
             });
         }
 
         const targetUser = await User.findById(userId);
         if (!targetUser) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Usuario no encontrado' 
+                message: 'Usuario no encontrado'
             });
         }
 
         // Verificar que no esté ya baneado
         if (targetUser.isBanned) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'El usuario ya está baneado' 
+                message: 'El usuario ya está baneado'
             });
         }
 
         // Verificar permisos (ya verificado en middleware, pero seguridad extra)
         if (!PermissionsService.canBanUser(req.user, targetUser)) {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 success: false,
-                message: 'No tienes permisos para banear a este usuario' 
+                message: 'No tienes permisos para banear a este usuario'
             });
         }
 
@@ -155,10 +155,10 @@ exports.banUser = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al banear usuario:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al banear usuario', 
-            error: error.message 
+            message: 'Error al banear usuario',
+            error: error.message
         });
     }
 };
@@ -175,16 +175,16 @@ exports.unbanUser = async (req, res) => {
 
         const targetUser = await User.findById(userId);
         if (!targetUser) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Usuario no encontrado' 
+                message: 'Usuario no encontrado'
             });
         }
 
         if (!targetUser.isBanned) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Este usuario no está baneado' 
+                message: 'Este usuario no está baneado'
             });
         }
 
@@ -228,10 +228,10 @@ exports.unbanUser = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al desbanear usuario:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al desbanear usuario', 
-            error: error.message 
+            message: 'Error al desbanear usuario',
+            error: error.message
         });
     }
 };
@@ -247,7 +247,7 @@ exports.changeUserRole = async (req, res) => {
         const { newRole, reason } = req.body;
 
         if (!newRole || !Object.values(ROLES).includes(newRole)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
                 message: 'Rol no válido',
                 validRoles: Object.values(ROLES)
@@ -256,18 +256,18 @@ exports.changeUserRole = async (req, res) => {
 
         const targetUser = await User.findById(userId);
         if (!targetUser) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Usuario no encontrado' 
+                message: 'Usuario no encontrado'
             });
         }
 
         const oldRole = targetUser.role;
-        
+
         if (oldRole === newRole) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: `El usuario ya tiene el rol ${newRole}` 
+                message: `El usuario ya tiene el rol ${newRole}`
             });
         }
 
@@ -302,10 +302,10 @@ exports.changeUserRole = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al cambiar rol:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al cambiar rol', 
-            error: error.message 
+            message: 'Error al cambiar rol',
+            error: error.message
         });
     }
 };
@@ -326,9 +326,9 @@ exports.deleteReviewAdmin = async (req, res) => {
 
         const review = await Review.findById(reviewId).populate('userId', 'username');
         if (!review) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Reseña no encontrada' 
+                message: 'Reseña no encontrada'
             });
         }
 
@@ -376,10 +376,10 @@ exports.deleteReviewAdmin = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al eliminar reseña:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al eliminar reseña', 
-            error: error.message 
+            message: 'Error al eliminar reseña',
+            error: error.message
         });
     }
 };
@@ -396,9 +396,9 @@ exports.deleteCommentAdmin = async (req, res) => {
 
         const comment = await Comment.findById(commentId).populate('userId', 'username');
         if (!comment) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Comentario no encontrado' 
+                message: 'Comentario no encontrado'
             });
         }
 
@@ -446,10 +446,10 @@ exports.deleteCommentAdmin = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al eliminar comentario:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al eliminar comentario', 
-            error: error.message 
+            message: 'Error al eliminar comentario',
+            error: error.message
         });
     }
 };
@@ -466,9 +466,9 @@ exports.deleteListAdmin = async (req, res) => {
 
         const list = await MovieList.findById(listId).populate('userId', 'username');
         if (!list) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Lista no encontrada' 
+                message: 'Lista no encontrada'
             });
         }
 
@@ -513,10 +513,10 @@ exports.deleteListAdmin = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al eliminar lista:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al eliminar lista', 
-            error: error.message 
+            message: 'Error al eliminar lista',
+            error: error.message
         });
     }
 };
@@ -615,10 +615,10 @@ exports.getSystemStats = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al obtener estadísticas:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al obtener estadísticas', 
-            error: error.message 
+            message: 'Error al obtener estadísticas',
+            error: error.message
         });
     }
 };
@@ -636,9 +636,9 @@ exports.getUserModerationHistory = async (req, res) => {
             .populate('moderationHistory.moderator', 'username');
 
         if (!user) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Usuario no encontrado' 
+                message: 'Usuario no encontrado'
             });
         }
 
@@ -652,10 +652,12 @@ exports.getUserModerationHistory = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al obtener historial de moderación:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error al obtener historial', 
-            error: error.message 
+            message: 'Error al obtener historial',
+            error: error.message
         });
     }
 };
+
+
