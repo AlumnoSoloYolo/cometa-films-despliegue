@@ -21,7 +21,8 @@ import { Subscription } from 'rxjs';
 export class AppComponent implements OnInit {
   title = 'cometa-films';
   private routerSubscription?: Subscription;
-  
+  isLandingPage = false;
+
   // Registrar última actualización para evitar verificaciones excesivas
   private lastPremiumCheck = 0;
   private readonly CHECK_INTERVAL = 60 * 1000; // 1 minuto
@@ -29,8 +30,16 @@ export class AppComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private premiumService: PremiumService
-  ) {}
+    private premiumService: PremiumService,
+
+  ) {
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.isLandingPage = event.url === '/' || event.url === '/landing';
+      }
+    });
+  }
+
 
   ngOnInit() {
     // Solo actualizar el estado premium después de ciertas navegaciones
@@ -55,7 +64,7 @@ export class AppComponent implements OnInit {
       this.premiumService.getPremiumStatus().subscribe();
     }
   }
-  
+
   ngOnDestroy() {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();

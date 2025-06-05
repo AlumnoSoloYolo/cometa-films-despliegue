@@ -1,8 +1,17 @@
 <app-fondo />
+
 <div class="app-container">
+
+  @if(!isLandingPage){
   <app-header />
+  }
+
   <main class="site-content">
     <router-outlet />
   </main>
+
+  @if(!isLandingPage){
   <app-footer />
+  }
+
 </div>
