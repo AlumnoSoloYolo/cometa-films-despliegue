@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth.middleware');
+const { requirePermission } = require('../middleware/permissions.middleware');
+
 const {
     getUserChats,
     getOrCreateChat,
@@ -14,19 +16,69 @@ const {
     clearChatForUser
 } = require('../controllers/chatController');
 
+// Todas las rutas requieren autenticación
 router.use(auth);
 
-router.get('/chats', getUserChats);
-router.get('/chats/:otherUserId/get-or-create', getOrCreateChat);
-router.get('/chats/:chatId/messages', getChatMessages);
-router.get('/users/search', searchUsersForChat);
-router.get('/users/search', searchUsersForChat);
-router.post('/chats/:chatId/messages', sendMessage);
-router.put('/messages/:messageId', editMessage);
-router.delete('/messages/:messageId', deleteMessage);
-router.post('/chats/:chatId/toggle-archive', toggleArchiveChat);
-router.post('/chats/:chatId/clear', clearChatForUser)
-router.post('/chats/:chatId/mark-read', markMessagesAsRead);
+// === RUTAS DE CHAT CON PERMISOS ===
 
+// Ver chats propios
+router.get('/chats', 
+    requirePermission('chat.participate'), 
+    getUserChats
+);
+
+// Crear o obtener chat con otro usuario
+router.get('/chats/:otherUserId/get-or-create', 
+    requirePermission('chat.create'), 
+    getOrCreateChat
+);
+
+// Ver mensajes de un chat
+router.get('/chats/:chatId/messages', 
+    requirePermission('chat.participate'), 
+    getChatMessages
+);
+
+// Buscar usuarios para chat
+router.get('/users/search', 
+    requirePermission('chat.create'), 
+    searchUsersForChat
+);
+
+// Enviar mensaje
+router.post('/chats/:chatId/messages', 
+    requirePermission('chat.participate'), 
+    sendMessage
+);
+
+// Editar mensaje propio
+router.put('/messages/:messageId', 
+    requirePermission('chat.participate'), 
+    editMessage
+);
+
+// Eliminar mensaje propio
+router.delete('/messages/:messageId', 
+    requirePermission('chat.participate'), 
+    deleteMessage
+);
+
+// Archivar chat
+router.post('/chats/:chatId/toggle-archive', 
+    requirePermission('chat.archive'), 
+    toggleArchiveChat
+);
+
+// Limpiar historial del chat
+router.post('/chats/:chatId/clear', 
+    requirePermission('chat.clear'), 
+    clearChatForUser
+);
+
+// Marcar mensajes como leídos
+router.post('/chats/:chatId/mark-read', 
+    requirePermission('chat.participate'), 
+    markMessagesAsRead
+);
 
 module.exports = router;

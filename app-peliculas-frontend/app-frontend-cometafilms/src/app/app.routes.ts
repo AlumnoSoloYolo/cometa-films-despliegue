@@ -18,10 +18,20 @@ import { PremiumCancelComponent } from './components/premium/premium-cancel/prem
 import { ChatContainerComponent } from './components/chat/chat-container/chat-container.component';
 import { ChatWindowComponent } from './components/chat/chat-window/chat-window.component';
 import { LandingPageComponent } from './components/landing-page/landing-page.component';
+import { AdminGuard } from './shared/guards/admin.guard';
+import { AdminPanelComponent } from './components/admin-panel/admin-panel/admin-panel.component';
 
 export const routes: Routes = [
 
-     { path: '', component: LandingPageComponent, pathMatch: 'full' },
+     { 
+        path: '', component: LandingPageComponent, 
+        pathMatch: 'full' 
+    },
+    {
+        path: 'home', 
+        component: HomeComponent,
+        canActivate: [AuthGuard]
+    },
     {
         path: 'pelicula/:id',
         component: PeliculaDetallesComponent,
@@ -111,6 +121,11 @@ export const routes: Routes = [
                 component: ChatWindowComponent
             }
         ]
+    },
+    {
+    path: 'admin',
+    component: AdminPanelComponent,
+    canActivate: [AdminGuard]
     },
 
     { path: '**', redirectTo: 'login' },

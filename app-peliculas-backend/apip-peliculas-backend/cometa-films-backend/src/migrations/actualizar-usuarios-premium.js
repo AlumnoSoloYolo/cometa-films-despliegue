@@ -1,8 +1,8 @@
 // actualizar-usuarios-premium.js
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('./models/user.model');
-const config = require('./config/config');
+const User = require('../models/user.model');
+const config = require('../config/config');
 
 async function actualizarUsuarios() {
     try {

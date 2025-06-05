@@ -16,6 +16,7 @@ const likeRoutes = require('./routes/likeRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const premiumRoutes = require('./routes/premiumRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const adminRoutes = require('./routes/admin.routes');
 
 
 const app = express();
@@ -56,6 +57,7 @@ app.use('/likes', likeRoutes);
 app.use('/activity', activityRoutes);
 app.use('/api/premium', premiumRoutes);
 app.use('/chat', chatRoutes);
+app.use('/admin', adminRoutes);
 
 // Ruta para prueba de salud del API
 app.get('/', (req, res) => {

@@ -22,7 +22,7 @@ interface Star {
 export class FondoComponent implements OnInit {
 
   starsArray: Star[] = [];
-  numberOfStars: number = 500; // Misma cantidad que el landing
+  numberOfStars: number = 100; // Misma cantidad que el landing
 
   constructor(private cdr: ChangeDetectorRef) { }
 
@@ -31,19 +31,19 @@ export class FondoComponent implements OnInit {
   }
 
   /**
-   * Genera estrellas idénticas al landing - SIN COMETAS
+   * Genera estrellas
    */
   generateEnhancedStars(): void {
     const newStars: Star[] = [];
 
-    // GENERAR ESTRELLAS BASE - Idéntica lógica al landing
+  
     for (let i = 0; i < this.numberOfStars; i++) {
       const brightness = Math.random();
       let starClass = 'star-dim';
       let size = Math.random() * 0.4 + 0.2; // Tamaños idénticos
 
       // Distribución idéntica al landing
-      if (brightness > 0.97) { // 3% super brillantes  
+      if (brightness > 0.97) { // 5% super brillantes  
         starClass = 'star-super-bright';
         size = Math.random() * 1.2 + 0.8; // 0.8px - 2px
       } else if (brightness > 0.90) { // 7% brillantes
@@ -115,7 +115,6 @@ export class FondoComponent implements OnInit {
       }
     }
 
-    console.log(`Fondo: Generadas ${newStars.length} estrellas estáticas con centellado muy espaciado`);
     this.starsArray = newStars;
     this.cdr.detectChanges();
   }

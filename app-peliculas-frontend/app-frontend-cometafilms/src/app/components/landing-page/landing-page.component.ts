@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -285,5 +285,41 @@ export class LandingPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       });
     }, 1000);
+  }
+
+
+@HostListener('document:mousemove', ['$event'])
+  onMouseMove(e: MouseEvent) {
+    const spheres = document.querySelectorAll('.blur-sphere');
+    spheres.forEach(sphereElement => {
+      const sphere = sphereElement as HTMLElement;
+      const rect = sphere.getBoundingClientRect();
+      
+      // Vector desde el centro de la esfera al ratón
+      const vecX = e.clientX - (rect.left + rect.width / 2);
+      const vecY = e.clientY - (rect.top + rect.height / 2);
+      const distance = Math.sqrt(vecX * vecX + vecY * vecY);
+
+      if (distance < 200 && distance > 0.1) { // Radio de atracción y evitar división por cero si distance es muy pequeño
+        // Factor de fuerza: 1 cuando la distancia es mínima, 0 cuando la distancia es 200
+        // Esto hace que la atracción sea más fuerte cuanto más cerca esté el ratón.
+        const strengthFactor = (200 - distance) / 200;
+
+        // Desplazamiento máximo que quieres permitir (ej., cuando el ratón está casi encima)
+        const maxDisplacement = 25; // en píxeles, ajústalo a tu gusto
+
+        // El desplazamiento real es el factor de fuerza por el desplazamiento máximo
+        const currentDisplacementMagnitude = strengthFactor * maxDisplacement;
+
+        // Calcula el desplazamiento en X e Y normalizando el vector dirección y multiplicando por la magnitud del desplazamiento
+        const moveX = (vecX / distance) * currentDisplacementMagnitude;
+        const moveY = (vecY / distance) * currentDisplacementMagnitude;
+
+        sphere.style.transform = `translate(${moveX}px, ${moveY}px)`;
+      } else {
+        // Resetea el desplazamiento local cuando el ratón está fuera del radio de atracción
+        sphere.style.transform = `translate(0px, 0px)`;
+      }
+    });
   }
 }

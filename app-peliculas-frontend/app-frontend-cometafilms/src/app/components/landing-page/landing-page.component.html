@@ -1,18 +1,22 @@
 <div class="landing-container">
   <div class="super-animated-background">
-    <!-- Solo dos cometas: una inmediata y otra después de 30s -->
+    <!-- SISTEMA DE 6 COMETAS CON DELAYS DE 10s -->
     <div class="comet comet-1"></div>
-    <div class="comet comet-2"></div>
+    <!-- <div class="comet comet-2"></div> -->
+    <div class="comet comet-3"></div>
+    <div class="comet comet-4"></div>
+    <div class="comet comet-5"></div>
+    <!-- <div class="comet comet-6"></div> -->
 
-    <!-- Esferas con imágenes cinematográficas mejoradas -->
-    <!-- <div class="blur-sphere sphere-1">
+    <!-- ESFERAS SATELITALES CON VELOCIDADES VARIADAS -->
+    <div class="blur-sphere sphere-1">
       <div class="cinematic-images-container">
         <div *ngFor="let image of cinematicImages.sphere1; trackBy: trackByCinematicImage" class="cinematic-image"
           [class.visible]="image.isVisible" [style.opacity]="image.opacity"
           [style.background-image]="'url(' + image.url + ')'" [attr.data-title]="image.title">
         </div>
       </div>
-    </div> -->
+    </div>
 
     <div class="blur-sphere sphere-2">
       <div class="cinematic-images-container">
@@ -49,7 +53,7 @@
         </div>
       </div>
     </div>
-    <!-- 
+
     <div class="blur-sphere sphere-6">
       <div class="cinematic-images-container">
         <div *ngFor="let image of cinematicImages.sphere6; trackBy: trackByCinematicImage" class="cinematic-image"
@@ -57,26 +61,25 @@
           [style.background-image]="'url(' + image.url + ')'" [attr.data-title]="image.title">
         </div>
       </div>
-    </div> -->
+    </div>
   </div>
 
-  <!-- Título con logo y eslogan -->
+  <!-- CONTENIDO CENTRAL -->
   <div class="title-container">
     <div class="brand-logo-landing">
       <img src="images/logo.png" alt="CometaCine Logo" class="logo-image-landing">
     </div>
-    <p class="main-page-slogan">Explora, descubre y comparte tus películas favoritas</p>
+    <!-- <h1 class="main-page-title">CometaCine</h1> -->
+    <p class="main-page-slogan">Explora, descubre y comparte tu universo cinematográfico</p>
   </div>
 
-  <!-- Botones con efectos de carga mejorados -->
+  <!-- BOTONES CENTRADOS -->
   <nav class="landing-actions-floating">
-    <button class="btn-cosmic btn-primary-cosmic" [class.loading]="isLoginLoading" (click)="navigateToLogin()"
-      [disabled]="isLoginLoading">
+    <button class="btn-cosmic btn-primary-cosmic" [class.loading]="isLoginLoading" (click)="navigateToLogin()" [disabled]="isLoginLoading">
       <span *ngIf="!isLoginLoading">Acceder</span>
       <span *ngIf="isLoginLoading">Cargando...</span>
     </button>
-    <button class="btn-cosmic btn-secondary-cosmic" [class.loading]="isRegisterLoading" (click)="navigateToRegister()"
-      [disabled]="isRegisterLoading">
+    <button class="btn-cosmic btn-secondary-cosmic" [class.loading]="isRegisterLoading" (click)="navigateToRegister()" [disabled]="isRegisterLoading">
       <span *ngIf="!isRegisterLoading">Registrarse</span>
       <span *ngIf="isRegisterLoading">Cargando...</span>
     </button>
