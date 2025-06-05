@@ -1,7 +1,7 @@
 <!-- src/app/components/admin-panel/admin-panel.component.html -->
 <div class="admin-container">
   <div class="admin-wrapper">
-    
+
     <!-- Header del Panel -->
     <div class="admin-header fade-in">
       <h1>🎬 Panel de Administración</h1>
@@ -9,9 +9,9 @@
         <div class="admin-user-details">
           <span>Bienvenido, <strong>{{ currentUser?.username }}</strong></span>
           @if (userPermissions) {
-            <span class="user-role-badge" [ngClass]="'role-' + userPermissions.role">
-              {{ userPermissions.role }}
-            </span>
+          <span class="user-role-badge" [ngClass]="'role-' + userPermissions.role">
+            {{ userPermissions.role }}
+          </span>
           }
         </div>
         <button class="logout-btn" (click)="logout()">
@@ -22,41 +22,26 @@
 
     <!-- Navegación Principal -->
     <nav class="admin-nav">
-      <button 
-        class="nav-tab" 
-        [class.active]="tabState.activeTab === 'dashboard'"
-        (click)="showTab('dashboard')">
+      <button class="nav-tab" [class.active]="tabState.activeTab === 'dashboard'" (click)="showTab('dashboard')">
         <i class="bi bi-speedometer2"></i> Dashboard
       </button>
-      
-      <button 
-        class="nav-tab" 
-        [class.active]="tabState.activeTab === 'users'"
-        (click)="showTab('users')"
+
+      <button class="nav-tab" [class.active]="tabState.activeTab === 'users'" (click)="showTab('users')"
         *ngIf="canManageUsers">
         <i class="bi bi-people"></i> Usuarios
       </button>
-      
-      <button 
-        class="nav-tab" 
-        [class.active]="tabState.activeTab === 'content'"
-        (click)="showTab('content')"
+
+      <button class="nav-tab" [class.active]="tabState.activeTab === 'content'" (click)="showTab('content')"
         *ngIf="canModerateContent">
         <i class="bi bi-file-text"></i> Contenido
       </button>
-      
-      <button 
-        class="nav-tab" 
-        [class.active]="tabState.activeTab === 'reports'"
-        (click)="showTab('reports')"
+
+      <button class="nav-tab" [class.active]="tabState.activeTab === 'reports'" (click)="showTab('reports')"
         *ngIf="isModerator">
         <i class="bi bi-flag"></i> Reportes
       </button>
-      
-      <button 
-        class="nav-tab" 
-        [class.active]="tabState.activeTab === 'settings'"
-        (click)="showTab('settings')"
+
+      <button class="nav-tab" [class.active]="tabState.activeTab === 'settings'" (click)="showTab('settings')"
         *ngIf="isAdmin">
         <i class="bi bi-gear"></i> Configuración
       </button>
@@ -64,79 +49,79 @@
 
     <!-- Dashboard Tab -->
     <div id="dashboard" class="tab-content" [class.active]="tabState.activeTab === 'dashboard'">
-      
+
       @if (loading.stats) {
-        <div class="loading">
-          <i class="bi bi-arrow-clockwise"></i>
-          <p>Cargando estadísticas...</p>
-        </div>
+      <div class="loading">
+        <i class="bi bi-arrow-clockwise"></i>
+        <p>Cargando estadísticas...</p>
+      </div>
       }
 
       @if (errors.stats) {
-        <div class="error-message">
-          <i class="bi bi-exclamation-triangle"></i>
-          {{ errors.stats }}
-        </div>
+      <div class="error-message">
+        <i class="bi bi-exclamation-triangle"></i>
+        {{ errors.stats }}
+      </div>
       }
 
       @if (stats && !loading.stats) {
-        <div class="stats-grid fade-in">
-          <div class="stat-card">
-            <div class="stat-number">{{ stats.overview.totalUsers }}</div>
-            <div class="stat-label">Total Usuarios</div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-number">{{ stats.overview.activeUsers }}</div>
-            <div class="stat-label">Usuarios Activos</div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-number">{{ stats.overview.bannedUsers }}</div>
-            <div class="stat-label">Usuarios Baneados</div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-number">{{ stats.overview.totalReviews }}</div>
-            <div class="stat-label">Total Reseñas</div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-number">{{ stats.overview.totalComments }}</div>
-            <div class="stat-label">Total Comentarios</div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-number">{{ stats.overview.totalLists }}</div>
-            <div class="stat-label">Total Listas</div>
-          </div>
+      <div class="stats-grid fade-in">
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.overview.totalUsers }}</div>
+          <div class="stat-label">Total Usuarios</div>
         </div>
 
-        <!-- Estadísticas de Hoy -->
-        <div class="admin-card">
-          <h3><i class="bi bi-calendar-day"></i> Actividad de Hoy</h3>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.today.newUsers }}</div>
-              <div class="stat-label">Nuevos Usuarios</div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.today.newReviews }}</div>
-              <div class="stat-label">Nuevas Reseñas</div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.today.newComments }}</div>
-              <div class="stat-label">Nuevos Comentarios</div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-number">{{ stats.today.newLists }}</div>
-              <div class="stat-label">Nuevas Listas</div>
-            </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.overview.activeUsers }}</div>
+          <div class="stat-label">Usuarios Activos</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.overview.bannedUsers }}</div>
+          <div class="stat-label">Usuarios Baneados</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.overview.totalReviews }}</div>
+          <div class="stat-label">Total Reseñas</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.overview.totalComments }}</div>
+          <div class="stat-label">Total Comentarios</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.overview.totalLists }}</div>
+          <div class="stat-label">Total Listas</div>
+        </div>
+      </div>
+
+      <!-- Estadísticas de Hoy -->
+      <div class="admin-card">
+        <h3><i class="bi bi-calendar-day"></i> Actividad de Hoy</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">{{ stats.today.newUsers }}</div>
+            <div class="stat-label">Nuevos Usuarios</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number">{{ stats.today.newReviews }}</div>
+            <div class="stat-label">Nuevas Reseñas</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number">{{ stats.today.newComments }}</div>
+            <div class="stat-label">Nuevos Comentarios</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number">{{ stats.today.newLists }}</div>
+            <div class="stat-label">Nuevas Listas</div>
           </div>
         </div>
+      </div>
       }
     </div>
 
@@ -144,15 +129,11 @@
     <div id="users" class="tab-content" [class.active]="tabState.activeTab === 'users'" *ngIf="canManageUsers">
       <div class="admin-card">
         <h3><i class="bi bi-people"></i> Gestión de Usuarios</h3>
-        
+
         <!-- Formulario de Búsqueda -->
         <form [formGroup]="userSearchForm" class="search-filters">
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="Buscar por username o email..."
-            formControlName="search">
-          
+          <input type="text" class="search-input" placeholder="Buscar por username o email..." formControlName="search">
+
           <select class="filter-select" formControlName="role">
             <option value="">Todos los roles</option>
             <option value="admin">Administrador</option>
@@ -160,7 +141,7 @@
             <option value="premium">Premium</option>
             <option value="user">Usuario</option>
           </select>
-          
+
           <select class="filter-select" formControlName="status">
             <option value="">Todos los estados</option>
             <option value="active">Activos</option>
@@ -169,97 +150,91 @@
         </form>
 
         @if (loading.users && users.length === 0) {
-          <div class="loading">
-            <i class="bi bi-arrow-clockwise"></i>
-            <p>Cargando usuarios...</p>
-          </div>
+        <div class="loading">
+          <i class="bi bi-arrow-clockwise"></i>
+          <p>Cargando usuarios...</p>
+        </div>
         }
 
         @if (errors.users) {
-          <div class="error-message">
-            <i class="bi bi-exclamation-triangle"></i>
-            {{ errors.users }}
-          </div>
+        <div class="error-message">
+          <i class="bi bi-exclamation-triangle"></i>
+          {{ errors.users }}
+        </div>
         }
 
         @if (users.length > 0) {
-          <div class="table-container">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Usuario</th>
-                  <th>Email</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
-                  <th>Registro</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (user of users; track user._id) {
-                  <tr>
-                    <td>
-                      <div style="display: flex; align-items: center;">
-                        <img [src]="getUserAvatarPath(user.avatar || 'avatar1')" 
-                             alt="Avatar" class="user-avatar">
-                        <span>{{ user.username }}</span>
-                      </div>
-                    </td>
-                    <td>{{ user.email }}</td>
-                    <td>
-                      <span class="status-badge" [ngClass]="getRoleClass(user.role)">
-                        {{ user.role }}
-                      </span>
-                    </td>
-                    <td>
-                      @if (user.isBanned) {
-                        <span class="status-badge status-banned">Baneado</span>
-                      } @else {
-                        <span class="status-badge status-active">Activo</span>
-                      }
-                    </td>
-                    <td>{{ formatDate(user.createdAt) }}</td>
-                    <td>
-                      @if (!user.isBanned && canBanUsers) {
-                        <button class="action-btn btn-warning" 
-                                (click)="openBanModal(user)">
-                          <i class="bi bi-ban"></i> Banear
-                        </button>
-                      }
-                      
-                      @if (user.isBanned && canBanUsers) {
-                        <button class="action-btn btn-success" 
-                                (click)="unbanUser(user)">
-                          <i class="bi bi-check-circle"></i> Desbanear
-                        </button>
-                      }
-                      
-                      @if (isAdmin) {
-                        <button class="action-btn btn-primary" 
-                                (click)="openRoleModal(user)">
-                          <i class="bi bi-person-gear"></i> Cambiar Rol
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of users; track user._id) {
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center;">
+                    <img [src]="getUserAvatarPath(user.avatar || 'avatar1')" alt="Avatar" class="user-avatar">
+                    <span>{{ user.username }}</span>
+                  </div>
+                </td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getRoleClass(user.role)">
+                    {{ user.role }}
+                  </span>
+                </td>
+                <td>
+                  @if (user.isBanned) {
+                  <span class="status-badge status-banned">Baneado</span>
+                  } @else {
+                  <span class="status-badge status-active">Activo</span>
+                  }
+                </td>
+                <td>{{ formatDate(user.createdAt) }}</td>
+                <td>
+                  @if (!user.isBanned && canBanUsers) {
+                  <button class="action-btn btn-warning" (click)="openBanModal(user)">
+                    <i class="bi bi-ban"></i> Banear
+                  </button>
+                  }
 
-          @if (pagination.users.hasMore) {
-            <div class="pagination">
-              <button class="load-more-btn" 
-                      [disabled]="loading.users"
-                      (click)="loadMoreUsers()">
-                @if (loading.users) {
-                  <i class="bi bi-arrow-clockwise"></i> Cargando...
-                } @else {
-                  Cargar más usuarios
-                }
-              </button>
-            </div>
-          }
+                  @if (user.isBanned && canBanUsers) {
+                  <button class="action-btn btn-success" (click)="unbanUser(user)">
+                    <i class="bi bi-check-circle"></i> Desbanear
+                  </button>
+                  }
+
+                  @if (isAdmin) {
+                  <button class="action-btn btn-primary" (click)="openRoleModal(user)">
+                    <i class="bi bi-person-gear"></i> Cambiar Rol
+                  </button>
+                  }
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (pagination.users.hasMore) {
+        <div class="pagination">
+          <button class="load-more-btn" [disabled]="loading.users" (click)="loadMoreUsers()">
+            @if (loading.users) {
+            <i class="bi bi-arrow-clockwise"></i> Cargando...
+            } @else {
+            Cargar más usuarios
+            }
+          </button>
+        </div>
+        }
         }
       </div>
     </div>
@@ -268,26 +243,20 @@
     <div id="content" class="tab-content" [class.active]="tabState.activeTab === 'content'" *ngIf="canModerateContent">
       <div class="admin-card">
         <h3><i class="bi bi-file-text"></i> Moderación de Contenido</h3>
-        
+
         <!-- Sub-navegación de contenido -->
         <div class="content-tabs">
-          <button 
-            class="content-tab" 
-            [class.active]="tabState.activeContentTab === 'reviews'"
+          <button class="content-tab" [class.active]="tabState.activeContentTab === 'reviews'"
             (click)="showContentTab('reviews')">
             <i class="bi bi-star"></i> Reseñas
           </button>
-          
-          <button 
-            class="content-tab" 
-            [class.active]="tabState.activeContentTab === 'comments'"
+
+          <button class="content-tab" [class.active]="tabState.activeContentTab === 'comments'"
             (click)="showContentTab('comments')">
             <i class="bi bi-chat"></i> Comentarios
           </button>
-          
-          <button 
-            class="content-tab" 
-            [class.active]="tabState.activeContentTab === 'lists'"
+
+          <button class="content-tab" [class.active]="tabState.activeContentTab === 'lists'"
             (click)="showContentTab('lists')">
             <i class="bi bi-list"></i> Listas
           </button>
@@ -296,235 +265,226 @@
         <!-- Reseñas -->
         <div id="contentReviews" class="tab-content" [class.active]="tabState.activeContentTab === 'reviews'">
           @if (loading.reviews && reviews.length === 0) {
-            <div class="loading">
-              <i class="bi bi-arrow-clockwise"></i>
-              <p>Cargando reseñas...</p>
-            </div>
+          <div class="loading">
+            <i class="bi bi-arrow-clockwise"></i>
+            <p>Cargando reseñas...</p>
+          </div>
           }
 
           @if (errors.reviews) {
-            <div class="error-message">
-              <i class="bi bi-exclamation-triangle"></i>
-              {{ errors.reviews }}
-            </div>
+          <div class="error-message">
+            <i class="bi bi-exclamation-triangle"></i>
+            {{ errors.reviews }}
+          </div>
           }
 
           @if (reviews.length > 0) {
-            <div class="table-container">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Película</th>
-                    <th>Puntuación</th>
-                    <th>Comentario</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (review of reviews; track review._id) {
-                    <tr>
-                      <td>
-                        <div style="display: flex; align-items: center;">
-                          <img [src]="getUserAvatarPath(review.userId.avatar)" 
-                               alt="Avatar" class="user-avatar">
-                          <span>{{ review.userId.username }}</span>
-                        </div>
-                      </td>
-                      <td>ID: {{ review.movieId }}</td>
-                      <td>
-                        <span style="color: #f39c12;">
-                          ⭐ {{ review.rating }}/10
-                        </span>
-                      </td>
-                      <td>
-                        <span [title]="review.comment">
-                          {{ review.comment.length > 100 ? (review.comment | slice:0:100) + '...' : review.comment }}
-                        </span>
-                      </td>
-                      <td>{{ formatDate(review.createdAt) }}</td>
-                      <td>
-                        <button class="action-btn btn-danger" 
-                                (click)="openDeleteModal('review', review._id, 'Reseña de ' + review.userId.username)">
-                          <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Película</th>
+                  <th>Puntuación</th>
+                  <th>Comentario</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (review of reviews; track review._id) {
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center;">
+                      <img [src]="getUserAvatarPath(review.userId.avatar)" alt="Avatar" class="user-avatar">
+                      <span>{{ review.userId.username }}</span>
+                    </div>
+                  </td>
+                  <td>ID: {{ review.movieId }}</td>
+                  <td>
+                    <span style="color: #f39c12;">
+                      ⭐ {{ review.rating }}/10
+                    </span>
+                  </td>
+                  <td>
+                    <span [title]="review.comment">
+                      {{ review.comment.length > 100 ? (review.comment | slice:0:100) + '...' : review.comment }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(review.createdAt) }}</td>
+                  <td>
+                    <button class="action-btn btn-danger"
+                      (click)="openDeleteModal('review', review._id, 'Reseña de ' + review.userId.username)">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
 
-            @if (pagination.reviews.hasMore) {
-              <div class="pagination">
-                <button class="load-more-btn" 
-                        [disabled]="loading.reviews"
-                        (click)="loadMoreReviews()">
-                  @if (loading.reviews) {
-                    <i class="bi bi-arrow-clockwise"></i> Cargando...
-                  } @else {
-                    Cargar más reseñas
-                  }
-                </button>
-              </div>
-            }
+          @if (pagination.reviews.hasMore) {
+          <div class="pagination">
+            <button class="load-more-btn" [disabled]="loading.reviews" (click)="loadMoreReviews()">
+              @if (loading.reviews) {
+              <i class="bi bi-arrow-clockwise"></i> Cargando...
+              } @else {
+              Cargar más reseñas
+              }
+            </button>
+          </div>
+          }
           }
         </div>
 
         <!-- Comentarios -->
         <div id="contentComments" class="tab-content" [class.active]="tabState.activeContentTab === 'comments'">
           @if (loading.comments && comments.length === 0) {
-            <div class="loading">
-              <i class="bi bi-arrow-clockwise"></i>
-              <p>Cargando comentarios...</p>
-            </div>
+          <div class="loading">
+            <i class="bi bi-arrow-clockwise"></i>
+            <p>Cargando comentarios...</p>
+          </div>
           }
 
           @if (errors.comments) {
-            <div class="error-message">
-              <i class="bi bi-exclamation-triangle"></i>
-              {{ errors.comments }}
-            </div>
+          <div class="error-message">
+            <i class="bi bi-exclamation-triangle"></i>
+            {{ errors.comments }}
+          </div>
           }
 
           @if (comments.length > 0) {
-            <div class="table-container">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Comentario</th>
-                    <th>Reseña</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (comment of comments; track comment._id) {
-                    <tr>
-                      <td>
-                        <div style="display: flex; align-items: center;">
-                          <img [src]="getUserAvatarPath(comment.userId.avatar)" 
-                               alt="Avatar" class="user-avatar">
-                          <span>{{ comment.userId.username }}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span [title]="comment.text">
-                          {{ comment.text.length > 100 ? (comment.text | slice:0:100) + '...' : comment.text }}
-                        </span>
-                      </td>
-                      <td>{{ comment.reviewId }}</td>
-                      <td>{{ formatDate(comment.createdAt) }}</td>
-                      <td>
-                        <button class="action-btn btn-danger" 
-                                (click)="openDeleteModal('comment', comment._id, 'Comentario de ' + comment.userId.username)">
-                          <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Comentario</th>
+                  <th>Reseña</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (comment of comments; track comment._id) {
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center;">
+                      <img [src]="getUserAvatarPath(comment.userId.avatar)" alt="Avatar" class="user-avatar">
+                      <span>{{ comment.userId.username }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span [title]="comment.text">
+                      {{ comment.text.length > 100 ? (comment.text | slice:0:100) + '...' : comment.text }}
+                    </span>
+                  </td>
+                  <td>{{ comment.reviewId }}</td>
+                  <td>{{ formatDate(comment.createdAt) }}</td>
+                  <td>
+                    <button class="action-btn btn-danger"
+                      (click)="openDeleteModal('comment', comment._id, 'Comentario de ' + comment.userId.username)">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
 
-            @if (pagination.comments.hasMore) {
-              <div class="pagination">
-                <button class="load-more-btn" 
-                        [disabled]="loading.comments"
-                        (click)="loadMoreComments()">
-                  @if (loading.comments) {
-                    <i class="bi bi-arrow-clockwise"></i> Cargando...
-                  } @else {
-                    Cargar más comentarios
-                  }
-                </button>
-              </div>
-            }
+          @if (pagination.comments.hasMore) {
+          <div class="pagination">
+            <button class="load-more-btn" [disabled]="loading.comments" (click)="loadMoreComments()">
+              @if (loading.comments) {
+              <i class="bi bi-arrow-clockwise"></i> Cargando...
+              } @else {
+              Cargar más comentarios
+              }
+            </button>
+          </div>
+          }
           }
         </div>
 
         <!-- Listas -->
         <div id="contentLists" class="tab-content" [class.active]="tabState.activeContentTab === 'lists'">
           @if (loading.lists && lists.length === 0) {
-            <div class="loading">
-              <i class="bi bi-arrow-clockwise"></i>
-              <p>Cargando listas...</p>
-            </div>
+          <div class="loading">
+            <i class="bi bi-arrow-clockwise"></i>
+            <p>Cargando listas...</p>
+          </div>
           }
 
           @if (errors.lists) {
-            <div class="error-message">
-              <i class="bi bi-exclamation-triangle"></i>
-              {{ errors.lists }}
-            </div>
+          <div class="error-message">
+            <i class="bi bi-exclamation-triangle"></i>
+            {{ errors.lists }}
+          </div>
           }
 
           @if (lists.length > 0) {
-            <div class="table-container">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Título</th>
-                    <th>Descripción</th>
-                    <th>Visibilidad</th>
-                    <th>Películas</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (list of lists; track list._id) {
-                    <tr>
-                      <td>
-                        <div style="display: flex; align-items: center;">
-                          <img [src]="getUserAvatarPath(list.userId.avatar)" 
-                               alt="Avatar" class="user-avatar">
-                          <span>{{ list.userId.username }}</span>
-                        </div>
-                      </td>
-                      <td>{{ list.title }}</td>
-                      <td>
-                        <span [title]="list.description">
-                          {{ list.description && list.description.length > 50 ? (list.description | slice:0:50) + '...' : list.description || 'Sin descripción' }}
-                        </span>
-                      </td>
-                      <td>
-                        @if (list.isPublic) {
-                          <span class="status-badge status-active">Pública</span>
-                        } @else {
-                          <span class="status-badge status-banned">Privada</span>
-                        }
-                      </td>
-                      <td>{{ list.movies?.length || 0 }} películas</td>
-                      <td>{{ formatDate(list.createdAt) }}</td>
-                      <td>
-                        <button class="action-btn btn-danger" 
-                                (click)="openDeleteModal('list', list._id, list.title)">
-                          <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Título</th>
+                  <th>Descripción</th>
+                  <th>Visibilidad</th>
+                  <th>Películas</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (list of lists; track list._id) {
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center;">
+                      <img [src]="getUserAvatarPath(list.userId.avatar)" alt="Avatar" class="user-avatar">
+                      <span>{{ list.userId.username }}</span>
+                    </div>
+                  </td>
+                  <td>{{ list.title }}</td>
+                  <td>
+                    <span [title]="list.description">
+                      {{ list.description && list.description.length > 50 ? (list.description | slice:0:50) + '...' :
+                      list.description || 'Sin descripción' }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (list.isPublic) {
+                    <span class="status-badge status-active">Pública</span>
+                    } @else {
+                    <span class="status-badge status-banned">Privada</span>
+                    }
+                  </td>
+                  <td>{{ list.movies.length || 0 }} películas</td>
+                  <td>{{ formatDate(list.createdAt) }}</td>
+                  <td>
+                    <button class="action-btn btn-danger" (click)="openDeleteModal('list', list._id, list.title)">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
 
-            @if (pagination.lists.hasMore) {
-              <div class="pagination">
-                <button class="load-more-btn" 
-                        [disabled]="loading.lists"
-                        (click)="loadMoreLists()">
-                  @if (loading.lists) {
-                    <i class="bi bi-arrow-clockwise"></i> Cargando...
-                  } @else {
-                    Cargar más listas
-                  }
-                </button>
-              </div>
-            }
+          @if (pagination.lists.hasMore) {
+          <div class="pagination">
+            <button class="load-more-btn" [disabled]="loading.lists" (click)="loadMoreLists()">
+              @if (loading.lists) {
+              <i class="bi bi-arrow-clockwise"></i> Cargando...
+              } @else {
+              Cargar más listas
+              }
+            </button>
+          </div>
+          }
           }
         </div>
       </div>
@@ -559,140 +519,133 @@
 
 <!-- Modal de Ban -->
 @if (showBanModal) {
-  <div class="modal-overlay" (click)="closeModals()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-ban"></i> Banear Usuario</h3>
-        <button class="close-btn" (click)="closeModals()">
-          <i class="bi bi-x"></i>
+<div class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-ban"></i> Banear Usuario</h3>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="banForm" (ngSubmit)="banUser()">
+      <div class="form-group">
+        <label>Usuario:</label>
+        <input type="text" [value]="modalData.username" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Razón del ban: *</label>
+        <textarea formControlName="reason" placeholder="Describe la razón del ban..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Duración (horas):</label>
+        <select formControlName="duration">
+          <option value="">Permanente</option>
+          <option value="1">1 hora</option>
+          <option value="24">24 horas</option>
+          <option value="168">7 días</option>
+          <option value="720">30 días</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
+          Cancelar
+        </button>
+        <button type="submit" class="action-btn btn-danger" [disabled]="banForm.invalid">
+          <i class="bi bi-ban"></i> Banear Usuario
         </button>
       </div>
-      
-      <form [formGroup]="banForm" (ngSubmit)="banUser()">
-        <div class="form-group">
-          <label>Usuario:</label>
-          <input type="text" [value]="modalData.username" readonly>
-        </div>
-        
-        <div class="form-group">
-          <label>Razón del ban: *</label>
-          <textarea 
-            formControlName="reason" 
-            placeholder="Describe la razón del ban..."
-            required></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label>Duración (horas):</label>
-          <select formControlName="duration">
-            <option value="">Permanente</option>
-            <option value="1">1 hora</option>
-            <option value="24">24 horas</option>
-            <option value="168">7 días</option>
-            <option value="720">30 días</option>
-          </select>
-        </div>
-        
-        <div class="form-actions">
-          <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
-            Cancelar
-          </button>
-          <button type="submit" class="action-btn btn-danger" [disabled]="banForm.invalid">
-            <i class="bi bi-ban"></i> Banear Usuario
-          </button>
-        </div>
-      </form>
-    </div>
+    </form>
   </div>
+</div>
 }
 
 <!-- Modal de Cambio de Rol -->
 @if (showRoleModal) {
-  <div class="modal-overlay" (click)="closeModals()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-person-gear"></i> Cambiar Rol</h3>
-        <button class="close-btn" (click)="closeModals()">
-          <i class="bi bi-x"></i>
+<div class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-person-gear"></i> Cambiar Rol</h3>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="roleForm" (ngSubmit)="changeUserRole()">
+      <div class="form-group">
+        <label>Usuario:</label>
+        <input type="text" [value]="modalData.username" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Rol actual:</label>
+        <input type="text" [value]="modalData.currentRole" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Nuevo rol: *</label>
+        <select formControlName="newRole" required>
+          <option value="">Seleccionar rol</option>
+          <option value="user">Usuario</option>
+          <option value="premium">Premium</option>
+          <option value="moderator">Moderador</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Razón del cambio:</label>
+        <textarea formControlName="reason" placeholder="Razón para el cambio de rol (opcional)..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
+          Cancelar
+        </button>
+        <button type="submit" class="action-btn btn-primary" [disabled]="roleForm.invalid">
+          <i class="bi bi-check"></i> Cambiar Rol
         </button>
       </div>
-      
-      <form [formGroup]="roleForm" (ngSubmit)="changeUserRole()">
-        <div class="form-group">
-          <label>Usuario:</label>
-          <input type="text" [value]="modalData.username" readonly>
-        </div>
-        
-        <div class="form-group">
-          <label>Rol actual:</label>
-          <input type="text" [value]="modalData.currentRole" readonly>
-        </div>
-        
-        <div class="form-group">
-          <label>Nuevo rol: *</label>
-          <select formControlName="newRole" required>
-            <option value="">Seleccionar rol</option>
-            <option value="user">Usuario</option>
-            <option value="premium">Premium</option>
-            <option value="moderator">Moderador</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>Razón del cambio:</label>
-          <textarea 
-            formControlName="reason" 
-            placeholder="Razón para el cambio de rol (opcional)..."></textarea>
-        </div>
-        
-        <div class="form-actions">
-          <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
-            Cancelar
-          </button>
-          <button type="submit" class="action-btn btn-primary" [disabled]="roleForm.invalid">
-            <i class="bi bi-check"></i> Cambiar Rol
-          </button>
-        </div>
-      </form>
-    </div>
+    </form>
   </div>
+</div>
 }
 
 <!-- Modal de Eliminación -->
 @if (showDeleteModal) {
-  <div class="modal-overlay" (click)="closeModals()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-trash"></i> Eliminar {{ capitalizeFirst(modalData.itemType || '') }}</h3>
-        <button class="close-btn" (click)="closeModals()">
-          <i class="bi bi-x"></i>
+<div class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-trash"></i> Eliminar {{ capitalizeFirst(modalData.itemType || '') }}</h3>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="deleteForm" (ngSubmit)="deleteContent()">
+      <div style="margin-bottom: 20px;">
+        <p><strong>¿Estás seguro de que quieres eliminar?</strong></p>
+        <p style="color: #666;">{{ modalData.itemTitle }}</p>
+        <p style="color: #e74c3c; font-size: 14px;">Esta acción no se puede deshacer.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Razón de la eliminación (opcional):</label>
+        <textarea formControlName="reason" placeholder="Describe la razón de la eliminación..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
+          Cancelar
+        </button>
+        <button type="submit" class="action-btn btn-danger">
+          <i class="bi bi-trash"></i> Eliminar
         </button>
       </div>
-      
-      <form [formGroup]="deleteForm" (ngSubmit)="deleteContent()">
-        <div style="margin-bottom: 20px;">
-          <p><strong>¿Estás seguro de que quieres eliminar?</strong></p>
-          <p style="color: #666;">{{ modalData.itemTitle }}</p>
-          <p style="color: #e74c3c; font-size: 14px;">Esta acción no se puede deshacer.</p>
-        </div>
-        
-        <div class="form-group">
-          <label>Razón de la eliminación (opcional):</label>
-          <textarea 
-            formControlName="reason" 
-            placeholder="Describe la razón de la eliminación..."></textarea>
-        </div>
-        
-        <div class="form-actions">
-          <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
-            Cancelar
-          </button>
-          <button type="submit" class="action-btn btn-danger">
-            <i class="bi bi-trash"></i> Eliminar
-          </button>
-        </div>
-      </form>
-    </div>
+    </form>
   </div>
+</div>
 }

@@ -1,7 +1,1 @@
-<div class="container-star">
-    <div class="star" *ngFor="let star of starsArray; trackBy: trackByStar" [style.top]="star.top"
-        [style.left]="star.left" [style.width]="star.size" [style.height]="star.size"
-        [style.animation-delay]="star.animationDelay" [style.animation-duration]="star.animationDurationTwinkle"
-        [class]="star.starClass">
-    </div>
-</div>
+<canvas #starCanvas class="star-canvas"></canvas>
