@@ -1,5 +1,5 @@
-const User = require('../models/User');
-const TokenBlacklist = require('../models/TokenBlacklist');
+const User = require('../models/user.model');
+const TokenBlackList = require('../models/tokenBlackList.model');
 
 /**
  * Middleware para verificar si el usuario está baneado en cada request

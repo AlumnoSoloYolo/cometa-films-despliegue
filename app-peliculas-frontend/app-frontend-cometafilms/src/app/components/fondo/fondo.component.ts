@@ -24,7 +24,7 @@ export class FondoComponent implements OnInit, OnDestroy {
   @ViewChild('starCanvas', { static: true }) private canvasRef!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D | null;
   private stars: Star[] = [];
-  private numStars: number = 250;
+  private numStars: number = 1000;
   private animationFrameId?: number;
 
   private readonly FPS = 60;
@@ -35,8 +35,8 @@ export class FondoComponent implements OnInit, OnDestroy {
       '#FFFFFF', '#FFFFFF',                           // ~20% Resplandor blanco (para estrellas puramente blancas)
       '#AEC6CF', '#AEC6CF', '#AEC6CF',               // ~30% "Pastel Blue" o similar (un azul pálido pero visible)
       '#FFFAC8', '#FFFAC8', '#FFFAC8',               // ~30% "Lemon Chiffon" aclarado (amarillo pálido cálido y visible)
-      '#FFD1DC',                                     // ~10% "Pink" muy pálido (rosa claro)
-      '#B0E0E6',                                     // ~10% "PowderBlue" (otro azul/cian pálido)
+       '#a3d8ff', '#a3d8ff', '#a3d8ff',               // ~23% NUEVO: Azul Hielo Estelar
+      '#ffe699', '#ffe699', '#ffe699' 
       // Nota: Eliminamos los verdes/lavandas muy oscuros o difíciles de percibir como "luz"
     ],
     minBaseRadius: 0.05,

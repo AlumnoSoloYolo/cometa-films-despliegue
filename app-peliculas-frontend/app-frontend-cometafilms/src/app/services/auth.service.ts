@@ -26,12 +26,13 @@ export interface User {
 
 // Interfaz para errores de ban
 export interface BanError {
-    code: 'ACCOUNT_BANNED';
-    message: string;
-    banReason: string;
-    bannedAt: Date;
-    banExpiresAt?: Date;
-    hoursRemaining?: number;
+  code: 'USER_BANNED' | 'USER_BANNED_SESSION_INVALID' | 'ACCOUNT_BANNED'; // Acepta los 3 códigos
+  message: string;
+  banReason: string;
+  bannedAt: Date;
+  banExpiresAt?: Date;
+  isPermanent?: boolean;
+  hoursRemaining?: number;
 }
 
 @Injectable({
@@ -89,15 +90,16 @@ export class AuthService {
             catchError(error => {
                 console.error('Error en login:', error);
 
-                // Manejo específico para usuarios baneados
-                if (error.status === 403 && error.error?.code === 'ACCOUNT_BANNED') {
+                // Manejo específico para usuarios baneados - AJUSTADO para el backend
+                if (error.status === 403 && error.error?.code === 'USER_BANNED') {
                     const banInfo: BanError = {
-                        code: 'ACCOUNT_BANNED',
-                        message: error.error.message,
-                        banReason: error.error.banReason,
-                        bannedAt: new Date(error.error.bannedAt),
-                        banExpiresAt: error.error.banExpiresAt ? new Date(error.error.banExpiresAt) : undefined,
-                        hoursRemaining: error.error.hoursRemaining
+                        code: 'USER_BANNED',
+                        message: error.error.message || 'Tu cuenta está suspendida',
+                        banReason: error.error.banInfo?.reason || 'No especificado',
+                        bannedAt: error.error.banInfo?.bannedAt ? new Date(error.error.banInfo.bannedAt) : new Date(),
+                        banExpiresAt: error.error.banInfo?.expiresAt ? new Date(error.error.banInfo.expiresAt) : undefined,
+                        isPermanent: error.error.banInfo?.isPermanent || false,
+                        hoursRemaining: this.calculateHoursRemaining(error.error.banInfo?.expiresAt)
                     };
 
                     // Notificar que el usuario está baneado
@@ -168,7 +170,7 @@ export class AuthService {
      * Fuerza el logout del usuario (usado cuando es baneado mientras está conectado)
      */
     forcedLogout(banInfo?: BanError): void {
-        console.log('🚫 Usuario forzado a cerrar sesión:', banInfo);
+        console.log('Usuario forzado a cerrar sesión:', banInfo);
 
         this.logout();
 
@@ -181,17 +183,19 @@ export class AuthService {
     }
 
     /**
-     * Método para manejar errores 403 de ban en las peticiones HTTP
+     * Método para manejar errores 403 de ban en las peticiones HTTP - ACTUALIZADO
      */
     handleBanError(error: any): void {
-        if (error.status === 403 && error.error?.code === 'ACCOUNT_BANNED') {
+        if (error.status === 403 && 
+           (error.error?.code === 'USER_BANNED' || error.error?.code === 'ACCOUNT_BANNED')) {
             const banInfo: BanError = {
-                code: 'ACCOUNT_BANNED',
-                message: error.error.message,
-                banReason: error.error.banReason,
-                bannedAt: new Date(error.error.bannedAt),
-                banExpiresAt: error.error.banExpiresAt ? new Date(error.error.banExpiresAt) : undefined,
-                hoursRemaining: error.error.hoursRemaining
+                code: error.error.code,
+                message: error.error.message || 'Tu cuenta está suspendida',
+                banReason: error.error.banInfo?.reason || 'No especificado',
+                bannedAt: error.error.banInfo?.bannedAt ? new Date(error.error.banInfo.bannedAt) : new Date(),
+                banExpiresAt: error.error.banInfo?.expiresAt ? new Date(error.error.banInfo.expiresAt) : undefined,
+                isPermanent: error.error.banInfo?.isPermanent || false,
+                hoursRemaining: this.calculateHoursRemaining(error.error.banInfo?.expiresAt)
             };
 
             this.forcedLogout(banInfo);
@@ -204,6 +208,11 @@ export class AuthService {
 
     isAuthenticated(): boolean {
         return this.getToken() !== null;
+    }
+
+    // Getter para currentUser (para compatibilidad)
+    get currentUserValue(): any {
+        return this.currentUserSubject.value;
     }
 
     updatePremiumStatus(isPremium: boolean, expiryDate?: string): void {
@@ -258,12 +267,13 @@ export class AuthService {
             { headers }
         ).pipe(
             map(response => {
-                console.log('✅ Verificación exitosa:', response.valid);
+                console.log('Verificación exitosa:', response.valid);
                 return response.valid;
             }),
             catchError(error => {
                 // Manejar error de ban en verificación de contraseña
-                if (error.status === 403 && error.error?.code === 'ACCOUNT_BANNED') {
+                if (error.status === 403 && 
+                   (error.error?.code === 'USER_BANNED' || error.error?.code === 'ACCOUNT_BANNED')) {
                     this.handleBanError(error);
                 }
 
@@ -286,5 +296,38 @@ export class AuthService {
      */
     clearBanState(): void {
         this.userBannedSubject.next(null);
+    }
+
+    /**
+     * Calcula las horas restantes hasta la expiración del ban
+     */
+    private calculateHoursRemaining(expiresAt?: string): number | undefined {
+        if (!expiresAt) return undefined;
+        
+        const now = new Date();
+        const expiry = new Date(expiresAt);
+        const diffMs = expiry.getTime() - now.getTime();
+        
+        if (diffMs <= 0) return 0;
+        
+        return Math.ceil(diffMs / (1000 * 60 * 60));
+    }
+
+    /**
+     * Para compatibilidad con componentes que usan getBanInfoFromRoute
+     */
+    getBanInfoFromRoute(): BanError | null {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('banned') === 'true') {
+            return {
+                code: 'USER_BANNED',
+                message: 'Tu cuenta ha sido suspendida',
+                banReason: 'Revisa la información proporcionada',
+                bannedAt: new Date(),
+                banExpiresAt: undefined,
+                isPermanent: true
+            };
+        }
+        return null;
     }
 }

@@ -1,4 +1,3 @@
-// src/controllers/admin.controller.js
 const User = require('../models/user.model');
 const Review = require('../models/review.model');
 const Comment = require('../models/comment.model');
@@ -6,15 +5,13 @@ const MovieList = require('../models/movie-list.model');
 const { Chat, Message } = require('../models/chat.model');
 const PermissionsService = require('../services/permissions.service');
 const { ROLES } = require('../config/roles.config');
+const TokenBlacklist = require('../models/tokenBlackList.model');
 
 // ========================================
 // GESTIÓN DE USUARIOS
 // ========================================
 
-/**
- * Obtener lista de usuarios con paginación y filtros
- * GET /admin/users?page=1&limit=20&role=user&banned=false
- */
+/*Obtener lista de usuarios con paginación y filtros*/
 exports.getUsers = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -71,15 +68,11 @@ exports.getUsers = async (req, res) => {
     }
 };
 
-/**
- * Banear un usuario
- * POST /admin/users/:userId/ban
- * Body: { reason: string, duration?: number (horas) }
- */
+/*Banear un usuario*/
 exports.banUser = async (req, res) => {
     try {
         const { userId } = req.params;
-        const { reason, duration } = req.body; // duration en horas, null/undefined = permanente
+        const { reason, duration } = req.body;
 
         if (!reason || reason.trim().length === 0) {
             return res.status(400).json({
@@ -96,7 +89,6 @@ exports.banUser = async (req, res) => {
             });
         }
 
-        // Verificar que no esté ya baneado
         if (targetUser.isBanned) {
             return res.status(400).json({
                 success: false,
@@ -104,7 +96,6 @@ exports.banUser = async (req, res) => {
             });
         }
 
-        // Verificar permisos (ya verificado en middleware, pero seguridad extra)
         if (!PermissionsService.canBanUser(req.user, targetUser)) {
             return res.status(403).json({
                 success: false,
@@ -115,8 +106,16 @@ exports.banUser = async (req, res) => {
         // Calcular fecha de expiración si es temporal
         let banExpiresAt = null;
         if (duration && duration > 0) {
-            banExpiresAt = new Date(Date.now() + (duration * 60 * 60 * 1000)); // horas a milisegundos
+            banExpiresAt = new Date(Date.now() + (duration * 60 * 60 * 1000));
         }
+
+        // Invalidar todas las sesiones activas del usuario
+        await TokenBlacklist.create({
+            userId: targetUser._id,
+            reason: 'user_banned',
+            invalidatedBy: req.user._id,
+            invalidatedAt: new Date()
+        });
 
         // Actualizar usuario
         targetUser.isBanned = true;
@@ -137,7 +136,7 @@ exports.banUser = async (req, res) => {
 
         await targetUser.save();
 
-        console.log(`Usuario ${targetUser.username} baneado por ${req.user.username}. Razón: ${reason}`);
+        console.log(`Usuario ${targetUser.username} baneado por ${req.user.username}. Sesiones invalidadas.`);
 
         res.json({
             success: true,
@@ -150,7 +149,8 @@ exports.banUser = async (req, res) => {
                 bannedBy: req.user.username,
                 expiresAt: banExpiresAt,
                 isTemporary: !!banExpiresAt,
-                durationHours: duration || null
+                durationHours: duration || null,
+                sessionsInvalidated: true
             }
         });
     } catch (error) {
@@ -163,11 +163,7 @@ exports.banUser = async (req, res) => {
     }
 };
 
-/**
- * Desbanear un usuario
- * POST /admin/users/:userId/unban
- * Body: { reason?: string }
- */
+/*Desbanear un usuario*/
 exports.unbanUser = async (req, res) => {
     try {
         const { userId } = req.params;

@@ -30,7 +30,7 @@ export class AdminGuard implements CanActivate {
       return of(false);
     }
     
-    console.log('✅ AdminGuard: Usuario autenticado, verificando permisos...');
+    console.log(' AdminGuard: Usuario autenticado, verificando permisos...');
 
     // Verificar permisos de admin
     return this.adminService.getUserPermissions().pipe(
