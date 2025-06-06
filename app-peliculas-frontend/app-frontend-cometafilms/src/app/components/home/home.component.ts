@@ -26,8 +26,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   listaGeneros: any[] = [];
   pelisProximosEstrenos: any[] = [];
   isPremium: boolean = false;
-
-  // Variables para optimización de perfil
+  isLoadingCarousel = true;
   userProfile: any = null;
   isAuthenticated = false;
   private authSubscription?: Subscription;
@@ -143,14 +142,17 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Métodos originales de carga de películas
+
   populares(): void {
+    this.isLoadingCarousel = true; // Opcional: reiniciar si se recarga
     this.pelisService.getPelisPopulares().subscribe({
       next: (response) => {
         this.pelisPopulares = response.results.slice(0, 10);
+        this.isLoadingCarousel = false; // Datos cargados, ocultar esqueleto
       },
       error: (error) => {
         console.error("Error al consultar la lista de pelis populares", error);
+        this.isLoadingCarousel = false; // Error, ocultar esqueleto igualmente
       }
     });
   }

@@ -1,16 +1,15 @@
-
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
-import { 
-  AdminService, 
-  AdminUser, 
-  AdminReview, 
-  AdminComment, 
-  AdminList, 
-  SystemStats, 
+import {
+  AdminService,
+  AdminUser,
+  AdminReview,
+  AdminComment,
+  AdminList,
+  SystemStats,
   UserPermissions,
   PermissionsResponse
 } from '../../../services/admin.service';
@@ -35,6 +34,7 @@ interface LoadingState {
   comments: boolean;
   lists: boolean;
   permissions: boolean;
+  banning: boolean;
 }
 
 interface ErrorState {
@@ -55,11 +55,11 @@ interface ErrorState {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminPanelComponent implements OnInit, OnDestroy {
-  
+
   // Estado de la aplicación
   currentUser: any = null;
   userPermissions: UserPermissions | null = null;
-  
+
   // Estados de UI
   tabState: TabState = {
     activeTab: 'dashboard',
@@ -72,7 +72,8 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     reviews: false,
     comments: false,
     lists: false,
-    permissions: false
+    permissions: false,
+    banning: false
   };
 
   errors: ErrorState = {
@@ -100,12 +101,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
   // Formularios de búsqueda y filtros
   userSearchForm!: FormGroup;
-  
+
   // Modales
   showBanModal = false;
   showRoleModal = false;
   showDeleteModal = false;
-  
+
   // Estado del modal actual
   modalData: {
     userId?: string;
@@ -116,7 +117,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     itemTitle?: string;
   } = {};
 
-  // Formularios de modal - Inicializados correctamente
+  // Formularios de modal
   banForm!: FormGroup;
   roleForm!: FormGroup;
   deleteForm!: FormGroup;
@@ -154,7 +155,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
     // Formulario de ban
     this.banForm = this.fb.group({
-      reason: ['', Validators.required],
+      reason: ['', [Validators.required, Validators.minLength(10)]],
       duration: [''] // Vacío = permanente
     });
 
@@ -170,16 +171,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async initializeComponent(): Promise<void> {
-    try {
-      this.currentUser = this.getCurrentUser();
-      await this.loadUserPermissions();
-      await this.loadDashboard();
-      this.setupSearchSubscription();
-    } catch (error) {
-      console.error('Error inicializando panel de admin:', error);
-      this.router.navigate(['/']);
-    }
+  private initializeComponent(): void {
+    this.currentUser = this.getCurrentUser();
+    this.loadUserPermissions();
+    this.loadDashboard();
+    this.loadUsers();
+    this.setupSearchSubscription();
   }
 
   private setupSubscriptions(): void {
@@ -200,6 +197,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         distinctUntilChanged()
       )
       .subscribe(() => {
+        this.resetUsersPagination();
         this.loadUsers();
       });
 
@@ -210,7 +208,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     switch (dataType) {
       case 'users':
         this.loadUsers();
-        this.loadDashboard(); // Actualizar stats también
+        this.loadDashboard();
         break;
       case 'reviews':
         this.loadReviews();
@@ -224,153 +222,201 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ===== CARGA DE DATOS =====
+  // ===== CARGA DE DATOS CON OBSERVABLES =====
 
-  private async loadUserPermissions(): Promise<void> {
+  private loadUserPermissions(): void {
     this.loading.permissions = true;
     this.errors.permissions = null;
 
-    try {
-      const response = await this.adminService.getUserPermissions().toPromise();
-      // Extraer solo los permisos de la respuesta completa
-      this.userPermissions = response?.permissions || null;
-    } catch (error: any) {
-      this.errors.permissions = error.message;
-      throw error; // Re-lanzar para manejar en initializeComponent
-    } finally {
-      this.loading.permissions = false;
-      this.cdr.markForCheck();
-    }
+    const permissionsSub = this.adminService.getUserPermissions().subscribe({
+      next: (response) => {
+        this.userPermissions = response?.permissions || null;
+        console.log('Permisos cargados:', this.userPermissions);
+      },
+      error: (error: any) => {
+        this.errors.permissions = error.message;
+        console.error('Error cargando permisos:', error);
+      },
+      complete: () => {
+        this.loading.permissions = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(permissionsSub);
   }
 
-  async loadDashboard(): Promise<void> {
+  loadDashboard(): void {
     this.loading.stats = true;
     this.errors.stats = null;
 
-    try {
-      this.stats = await this.adminService.getSystemStats().toPromise() || null;
-    } catch (error: any) {
-      this.errors.stats = error.message;
-    } finally {
-      this.loading.stats = false;
-      this.cdr.markForCheck();
-    }
+    const statsSub = this.adminService.getSystemStats().subscribe({
+      next: (stats) => {
+        this.stats = stats;
+        console.log('Estadísticas cargadas:', this.stats);
+      },
+      error: (error: any) => {
+        this.errors.stats = error.message;
+        console.error('Error cargando estadísticas:', error);
+      },
+      complete: () => {
+        this.loading.stats = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(statsSub);
   }
 
-  async loadUsers(page: number = 1): Promise<void> {
-    if (this.loading.users) return;
+  loadUsers(page: number = 1): void {
+    if (this.loading.users && page !== 1) return;
 
     this.loading.users = true;
     this.errors.users = null;
 
-    try {
-      const formValue = this.userSearchForm.value;
-      const filters: any = { page, limit: 20 };
+    const formValue = this.userSearchForm.value;
+    const filters: any = { page, limit: 20 };
 
-      if (formValue.search?.trim()) filters.search = formValue.search.trim();
-      if (formValue.role) filters.role = formValue.role;
-      if (formValue.status === 'banned') filters.banned = true;
-      if (formValue.status === 'active') filters.banned = false;
-
-      const response = await this.adminService.getUsers(filters).toPromise();
-      
-      if (response) {
-        this.users = page === 1 ? (response.users || []) : [...this.users, ...(response.users || [])];
-        this.pagination.users = {
-          page: response.pagination.page,
-          total: response.pagination.total,
-          hasMore: response.pagination.hasMore
-        };
-      }
-    } catch (error: any) {
-      this.errors.users = error.message;
-    } finally {
-      this.loading.users = false;
-      this.cdr.markForCheck();
+    // Aplicar filtros del formulario
+    if (formValue.search?.trim()) {
+      filters.search = formValue.search.trim();
     }
+    if (formValue.role) {
+      filters.role = formValue.role;
+    }
+    if (formValue.status === 'banned') {
+      filters.banned = true;
+    } else if (formValue.status === 'active') {
+      filters.banned = false;
+    }
+
+    console.log('Cargando usuarios con filtros:', filters);
+
+    const usersSub = this.adminService.getUsers(filters).subscribe({
+      next: (response) => {
+        if (response) {
+          this.users = page === 1 ? (response.users || []) : [...this.users, ...(response.users || [])];
+
+          this.pagination.users = {
+            page: response.pagination.page,
+            total: response.pagination.total,
+            hasMore: response.pagination.hasMore
+          };
+
+          console.log(`Usuarios cargados: ${this.users.length} total, página ${page}`);
+        }
+      },
+      error: (error: any) => {
+        this.errors.users = error.message;
+        console.error('Error cargando usuarios:', error);
+      },
+      complete: () => {
+        this.loading.users = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(usersSub);
   }
 
-  async loadReviews(page: number = 1): Promise<void> {
-    if (this.loading.reviews) return;
+  loadReviews(page: number = 1): void {
+    if (this.loading.reviews && page !== 1) return;
 
     this.loading.reviews = true;
     this.errors.reviews = null;
 
-    try {
-      const response = await this.adminService.getReviews({ page, limit: 20 }).toPromise();
-      
-      if (response) {
-        this.reviews = page === 1 ? (response.reviews || []) : [...this.reviews, ...(response.reviews || [])];
-        this.pagination.reviews = {
-          page: response.pagination.page,
-          total: response.pagination.total,
-          hasMore: response.pagination.hasMore
-        };
+    const reviewsSub = this.adminService.getReviews({ page, limit: 20 }).subscribe({
+      next: (response) => {
+        if (response) {
+          this.reviews = page === 1 ? (response.reviews || []) : [...this.reviews, ...(response.reviews || [])];
+          this.pagination.reviews = {
+            page: response.pagination.page,
+            total: response.pagination.total,
+            hasMore: response.pagination.hasMore
+          };
+          console.log(`Reseñas cargadas: ${this.reviews.length} total`);
+        }
+      },
+      error: (error: any) => {
+        this.errors.reviews = error.message;
+        console.error('Error cargando reseñas:', error);
+      },
+      complete: () => {
+        this.loading.reviews = false;
+        this.cdr.markForCheck();
       }
-    } catch (error: any) {
-      this.errors.reviews = error.message;
-    } finally {
-      this.loading.reviews = false;
-      this.cdr.markForCheck();
-    }
+    });
+
+    this.subscriptions.add(reviewsSub);
   }
 
-  async loadComments(page: number = 1): Promise<void> {
-    if (this.loading.comments) return;
+  loadComments(page: number = 1): void {
+    if (this.loading.comments && page !== 1) return;
 
     this.loading.comments = true;
     this.errors.comments = null;
 
-    try {
-      const response = await this.adminService.getComments({ page, limit: 20 }).toPromise();
-      
-      if (response) {
-        this.comments = page === 1 ? (response.comments || []) : [...this.comments, ...(response.comments || [])];
-        this.pagination.comments = {
-          page: response.pagination.page,
-          total: response.pagination.total,
-          hasMore: response.pagination.hasMore
-        };
+    const commentsSub = this.adminService.getComments({ page, limit: 20 }).subscribe({
+      next: (response) => {
+        if (response) {
+          this.comments = page === 1 ? (response.comments || []) : [...this.comments, ...(response.comments || [])];
+          this.pagination.comments = {
+            page: response.pagination.page,
+            total: response.pagination.total,
+            hasMore: response.pagination.hasMore
+          };
+          console.log(`Comentarios cargados: ${this.comments.length} total`);
+        }
+      },
+      error: (error: any) => {
+        this.errors.comments = error.message;
+        console.error('Error cargando comentarios:', error);
+      },
+      complete: () => {
+        this.loading.comments = false;
+        this.cdr.markForCheck();
       }
-    } catch (error: any) {
-      this.errors.comments = error.message;
-    } finally {
-      this.loading.comments = false;
-      this.cdr.markForCheck();
-    }
+    });
+
+    this.subscriptions.add(commentsSub);
   }
 
-  async loadLists(page: number = 1): Promise<void> {
-    if (this.loading.lists) return;
+  loadLists(page: number = 1): void {
+    if (this.loading.lists && page !== 1) return;
 
     this.loading.lists = true;
     this.errors.lists = null;
 
-    try {
-      const response = await this.adminService.getLists({ page, limit: 20 }).toPromise();
-      
-      if (response) {
-        this.lists = page === 1 ? (response.lists || []) : [...this.lists, ...(response.lists || [])];
-        this.pagination.lists = {
-          page: response.pagination.page,
-          total: response.pagination.total,
-          hasMore: response.pagination.hasMore
-        };
+    const listsSub = this.adminService.getLists({ page, limit: 20 }).subscribe({
+      next: (response) => {
+        if (response) {
+          this.lists = page === 1 ? (response.lists || []) : [...this.lists, ...(response.lists || [])];
+          this.pagination.lists = {
+            page: response.pagination.page,
+            total: response.pagination.total,
+            hasMore: response.pagination.hasMore
+          };
+          console.log(`Listas cargadas: ${this.lists.length} total`);
+        }
+      },
+      error: (error: any) => {
+        this.errors.lists = error.message;
+        console.error('Error cargando listas:', error);
+      },
+      complete: () => {
+        this.loading.lists = false;
+        this.cdr.markForCheck();
       }
-    } catch (error: any) {
-      this.errors.lists = error.message;
-    } finally {
-      this.loading.lists = false;
-      this.cdr.markForCheck();
-    }
+    });
+
+    this.subscriptions.add(listsSub);
   }
 
   // ===== NAVEGACIÓN DE TABS =====
 
   showTab(tabName: string): void {
     this.tabState.activeTab = tabName;
-    
-    // Cargar datos al cambiar de tab
+
     switch (tabName) {
       case 'users':
         if (this.users.length === 0) this.loadUsers();
@@ -379,14 +425,13 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         if (this.reviews.length === 0) this.loadReviews();
         break;
     }
-    
+
     this.cdr.markForCheck();
   }
 
   showContentTab(contentType: string): void {
     this.tabState.activeContentTab = contentType;
-    
-    // Cargar datos específicos del tipo de contenido
+
     switch (contentType) {
       case 'reviews':
         if (this.reviews.length === 0) this.loadReviews();
@@ -398,7 +443,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         if (this.lists.length === 0) this.loadLists();
         break;
     }
-    
+
     this.cdr.markForCheck();
   }
 
@@ -412,6 +457,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.banForm.reset();
     this.showBanModal = true;
     this.cdr.markForCheck();
+    console.log('Abriendo modal de ban para:', user.username);
   }
 
   openRoleModal(user: AdminUser): void {
@@ -423,6 +469,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.roleForm.patchValue({ newRole: '', reason: '' });
     this.showRoleModal = true;
     this.cdr.markForCheck();
+    console.log('Abriendo modal de rol para:', user.username);
   }
 
   openDeleteModal(itemType: string, itemId: string, itemTitle: string): void {
@@ -434,6 +481,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.deleteForm.reset();
     this.showDeleteModal = true;
     this.cdr.markForCheck();
+    console.log('Abriendo modal de eliminación para:', itemType, itemTitle);
   }
 
   closeModals(): void {
@@ -444,78 +492,148 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  // ===== ACCIONES DE USUARIO =====
+  // ===== ACCIONES DE BAN CON OBSERVABLES =====
 
-  async banUser(): Promise<void> {
-    if (this.banForm.invalid || !this.modalData.userId) return;
-
-    try {
-      const formValue = this.banForm.value;
-      await this.adminService.banUser(
-        this.modalData.userId,
-        formValue.reason,
-        formValue.duration ? parseInt(formValue.duration) : undefined
-      ).toPromise();
-
-      this.closeModals();
-      this.showSuccessMessage(`Usuario ${this.modalData.username} baneado correctamente`);
-    } catch (error: any) {
-      this.showErrorMessage(error.message);
+  banUser(): void {
+    if (this.banForm.invalid || !this.modalData.userId) {
+      console.log('Formulario de ban inválido o falta userId');
+      return;
     }
+
+    this.loading.banning = true;
+
+    const formValue = this.banForm.value;
+    const duration = formValue.duration ? parseInt(formValue.duration) : undefined;
+
+    console.log('Baneando usuario:', {
+      userId: this.modalData.userId,
+      username: this.modalData.username,
+      reason: formValue.reason,
+      duration: duration
+    });
+
+    const banSub = this.adminService.banUser(
+      this.modalData.userId,
+      formValue.reason,
+      duration
+    ).subscribe({
+      next: (response) => {
+        this.closeModals();
+        console.log(`Usuario ${this.modalData.username} baneado correctamente`, response);
+
+        // Refrescar lista de usuarios
+        this.resetUsersPagination();
+        this.loadUsers();
+      },
+      error: (error: any) => {
+        console.error('Error baneando usuario:', error);
+        alert(`Error al banear usuario: ${error.message}`);
+      },
+      complete: () => {
+        this.loading.banning = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(banSub);
   }
 
-  async unbanUser(user: AdminUser): Promise<void> {
-    try {
-      await this.adminService.unbanUser(user._id, 'Desbaneado desde panel de admin').toPromise();
-      this.showSuccessMessage(`Usuario ${user.username} desbaneado correctamente`);
-    } catch (error: any) {
-      this.showErrorMessage(error.message);
-    }
+  unbanUser(user: AdminUser): void {
+    console.log('Desbaneando usuario:', user.username);
+
+    const unbanSub = this.adminService.unbanUser(user._id, 'Desbaneado desde panel de admin').subscribe({
+      next: (response) => {
+        console.log(`Usuario ${user.username} desbaneado correctamente`, response);
+
+        // Refrescar lista de usuarios
+        this.resetUsersPagination();
+        this.loadUsers();
+      },
+      error: (error: any) => {
+        console.error('Error desbaneando usuario:', error);
+        alert(`Error al desbanear usuario: ${error.message}`);
+      }
+    });
+
+    this.subscriptions.add(unbanSub);
   }
 
-  async changeUserRole(): Promise<void> {
+  changeUserRole(): void {
     if (this.roleForm.invalid || !this.modalData.userId) return;
 
-    try {
-      const formValue = this.roleForm.value;
-      await this.adminService.changeUserRole(
-        this.modalData.userId,
-        formValue.newRole,
-        formValue.reason
-      ).toPromise();
+    const formValue = this.roleForm.value;
 
-      this.closeModals();
-      this.showSuccessMessage(`Rol de ${this.modalData.username} cambiado correctamente`);
-    } catch (error: any) {
-      this.showErrorMessage(error.message);
-    }
+    console.log('Cambiando rol de usuario:', {
+      userId: this.modalData.userId,
+      username: this.modalData.username,
+      newRole: formValue.newRole,
+      reason: formValue.reason
+    });
+
+    const roleSub = this.adminService.changeUserRole(
+      this.modalData.userId,
+      formValue.newRole,
+      formValue.reason
+    ).subscribe({
+      next: (response) => {
+        this.closeModals();
+        console.log(`Rol de ${this.modalData.username} cambiado correctamente`, response);
+
+        // Refrescar lista de usuarios
+        this.resetUsersPagination();
+        this.loadUsers();
+      },
+      error: (error: any) => {
+        console.error('Error cambiando rol:', error);
+        alert(`Error al cambiar rol: ${error.message}`);
+      }
+    });
+
+    this.subscriptions.add(roleSub);
   }
 
   // ===== ACCIONES DE CONTENIDO =====
 
-  async deleteContent(): Promise<void> {
+  deleteContent(): void {
     if (!this.modalData.itemId || !this.modalData.itemType) return;
 
-    try {
-      const reason = this.deleteForm.value.reason || 'Eliminado por moderación';
+    const reason = this.deleteForm.value.reason || 'Eliminado por moderación';
 
-      switch (this.modalData.itemType) {
-        case 'review':
-          await this.adminService.deleteReview(this.modalData.itemId, reason).toPromise();
-          break;
-        case 'comment':
-          await this.adminService.deleteComment(this.modalData.itemId, reason).toPromise();
-          break;
-        case 'list':
-          await this.adminService.deleteList(this.modalData.itemId, reason).toPromise();
-          break;
-      }
+    console.log('Eliminando contenido:', {
+      type: this.modalData.itemType,
+      id: this.modalData.itemId,
+      reason: reason
+    });
 
-      this.closeModals();
-      this.showSuccessMessage(`${this.capitalizeFirst(this.modalData.itemType || '')} eliminado correctamente`);
-    } catch (error: any) {
-      this.showErrorMessage(error.message);
+    let deleteObservable;
+
+    switch (this.modalData.itemType) {
+      case 'review':
+        deleteObservable = this.adminService.deleteReview(this.modalData.itemId, reason);
+        break;
+      case 'comment':
+        deleteObservable = this.adminService.deleteComment(this.modalData.itemId, reason);
+        break;
+      case 'list':
+        deleteObservable = this.adminService.deleteList(this.modalData.itemId, reason);
+        break;
+      default:
+        console.error('Tipo de contenido no válido');
+        return;
     }
+
+    const deleteSub = deleteObservable.subscribe({
+      next: (response) => {
+        this.closeModals();
+        console.log(`${this.capitalizeFirst(this.modalData.itemType || '')} eliminado correctamente`, response);
+      },
+      error: (error: any) => {
+        console.error('Error eliminando contenido:', error);
+        alert(`Error al eliminar contenido: ${error.message}`);
+      }
+    });
+
+    this.subscriptions.add(deleteSub);
   }
 
   // ===== PAGINACIÓN =====
@@ -544,6 +662,11 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  private resetUsersPagination(): void {
+    this.pagination.users = { page: 1, total: 0, hasMore: false };
+    this.users = [];
+  }
+
   // ===== UTILIDADES =====
 
   private getCurrentUser(): any {
@@ -555,18 +678,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  private showSuccessMessage(message: string): void {
-    // Implementar notificación de éxito
-    console.log('✅', message);
-    // Aquí puedes integrar con tu sistema de notificaciones
-  }
-
-  private showErrorMessage(message: string): void {
-    // Implementar notificación de error
-    console.error('❌', message);
-    // Aquí puedes integrar con tu sistema de notificaciones
-  }
-
   public capitalizeFirst(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
@@ -574,7 +685,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   // ===== GETTERS PARA TEMPLATES =====
 
   get canManageUsers(): boolean {
-    return this.userPermissions?.can.manageUsers || false;
+    return this.userPermissions?.can.manageUsers || this.userPermissions?.can.banUsers || false;
   }
 
   get canBanUsers(): boolean {
@@ -604,14 +715,14 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     });
   }
 
-  getRoleClass(role: string): string {
+  getBadgeRoleClass(role: string): string {
     const roleClasses: { [key: string]: string } = {
-      'admin': 'badge-admin',
-      'moderator': 'badge-moderator',
-      'premium': 'badge-premium',
-      'user': 'badge-user'
+      'admin': 'badge-role-admin',
+      'moderator': 'badge-role-moderator',
+      'premium': 'badge-role-premium',
+      'user': 'badge-role-user'
     };
-    return roleClasses[role] || 'badge-user';
+    return roleClasses[role] || 'badge-role-user';
   }
 
   getUserAvatarPath(avatar: string): string {
@@ -622,4 +733,51 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
+
+  // Método para obtener texto de duración de ban
+  getBanDurationText(duration: string): string {
+    switch (duration) {
+      case '1': return '1 hora';
+      case '24': return '24 horas (1 día)';
+      case '168': return '7 días (1 semana)';
+      case '720': return '30 días (1 mes)';
+      case '': return 'Permanente';
+      default: return `${duration} horas`;
+    }
+  }
+
+
+  // ===== MÉTODOS AUXILIARES PARA TEMPLATES =====
+
+
+
+  formatShortDate(date: Date | string): string {
+    return new Date(date).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    });
+  }
+
+  getRoleClass(role: string): string {
+    const roleClasses: { [key: string]: string } = {
+      'admin': 'badge-admin',
+      'moderator': 'badge-moderator',
+      'premium': 'badge-premium',
+      'user': 'badge-user'
+    };
+    return roleClasses[role] || 'badge-user';
+  }
+
+  getRoleDisplayName(role: string): string {
+    const roleNames: { [key: string]: string } = {
+      'admin': 'Admin',
+      'moderator': 'Mod',
+      'premium': 'Premium',
+      'user': 'Usuario'
+    };
+    return roleNames[role] || role;
+  }
+
+
 }

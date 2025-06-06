@@ -10,8 +10,10 @@ export interface AdminUser {
   _id: string;
   username: string;
   email: string;
-  avatar: string; // ← AGREGADO
+  avatar: string;
+  isPremium: boolean;
   role: string;
+  biografia?: string;
   isActive: boolean;
   isBanned: boolean;
   banReason?: string;
@@ -20,6 +22,12 @@ export interface AdminUser {
   createdAt: Date;
   canBeBanned?: boolean;
   banTimeRemaining?: number;
+  moderationHistory?: {
+    action: string;
+    reason?: string;
+    timestamp: Date;
+  }[];
+  // Indica si el usuario ha editado su perfil
 }
 
 export interface AdminReview {
@@ -47,6 +55,7 @@ export interface AdminComment {
   text: string;
   reviewId: string;
   createdAt: Date;
+  isEdited: boolean;
 }
 
 export interface AdminList {
@@ -62,6 +71,7 @@ export interface AdminList {
   isPublic: boolean;
   movies: any[];
   createdAt: Date;
+  coverImage?: string;
 }
 
 export interface SystemStats {
@@ -133,7 +143,7 @@ export interface PaginatedResponse<T> {
 })
 export class AdminService {
   private readonly apiUrl = `${environment.apiUrl}/admin`;
-  
+
   // Subject para notificar cambios
   private refreshDataSubject = new BehaviorSubject<string>('');
   public refreshData$ = this.refreshDataSubject.asObservable();
@@ -141,7 +151,7 @@ export class AdminService {
   constructor(
     private http: HttpClient,
     private authService: AuthService
-  ) {}
+  ) { }
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -153,9 +163,9 @@ export class AdminService {
 
   private handleError(error: any): Observable<never> {
     console.error('Error en AdminService:', error);
-    
+
     let errorMessage = 'Error desconocido';
-    
+
     if (error.error?.message) {
       errorMessage = error.error.message;
     } else if (error.status === 403) {
@@ -170,7 +180,7 @@ export class AdminService {
   }
 
   // ===== PERMISOS Y CONFIGURACIÓN =====
-  
+
   getUserPermissions(): Observable<PermissionsResponse> {
     return this.http.get<PermissionsResponse>(`${this.apiUrl}/permissions`, {
       headers: this.getHeaders()
@@ -180,7 +190,7 @@ export class AdminService {
   }
 
   // ===== ESTADÍSTICAS =====
-  
+
   getSystemStats(): Observable<SystemStats> {
     return this.http.get<SystemStats>(`${this.apiUrl}/stats`, {
       headers: this.getHeaders()
@@ -190,7 +200,7 @@ export class AdminService {
   }
 
   // ===== GESTIÓN DE USUARIOS =====
-  
+
   getUsers(filters: {
     page?: number;
     limit?: number;
@@ -200,7 +210,7 @@ export class AdminService {
     active?: boolean;
   } = {}): Observable<PaginatedResponse<AdminUser>> {
     let params = new HttpParams();
-    
+
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.limit) params = params.set('limit', filters.limit.toString());
     if (filters.search) params = params.set('search', filters.search);
@@ -232,7 +242,7 @@ export class AdminService {
 
   unbanUser(userId: string, reason?: string): Observable<any> {
     const body = reason ? { reason } : {};
-    
+
     return this.http.post(`${this.apiUrl}/users/${userId}/unban`, body, {
       headers: this.getHeaders()
     }).pipe(
@@ -262,14 +272,14 @@ export class AdminService {
   }
 
   // ===== MODERACIÓN DE CONTENIDO =====
-  
+
   getReviews(filters: {
     page?: number;
     limit?: number;
     user?: string;
   } = {}): Observable<PaginatedResponse<AdminReview>> {
     let params = new HttpParams();
-    
+
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.limit) params = params.set('limit', filters.limit.toString());
     if (filters.user) params = params.set('user', filters.user);
@@ -284,7 +294,7 @@ export class AdminService {
 
   deleteReview(reviewId: string, reason?: string): Observable<any> {
     const body = reason ? { reason } : {};
-    
+
     return this.http.delete(`${this.apiUrl}/reviews/${reviewId}`, {
       headers: this.getHeaders(),
       body
@@ -300,7 +310,7 @@ export class AdminService {
     user?: string;
   } = {}): Observable<PaginatedResponse<AdminComment>> {
     let params = new HttpParams();
-    
+
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.limit) params = params.set('limit', filters.limit.toString());
     if (filters.user) params = params.set('user', filters.user);
@@ -315,7 +325,7 @@ export class AdminService {
 
   deleteComment(commentId: string, reason?: string): Observable<any> {
     const body = reason ? { reason } : {};
-    
+
     return this.http.delete(`${this.apiUrl}/comments/${commentId}`, {
       headers: this.getHeaders(),
       body
@@ -332,7 +342,7 @@ export class AdminService {
     public?: boolean;
   } = {}): Observable<PaginatedResponse<AdminList>> {
     let params = new HttpParams();
-    
+
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.limit) params = params.set('limit', filters.limit.toString());
     if (filters.user) params = params.set('user', filters.user);
@@ -348,7 +358,7 @@ export class AdminService {
 
   deleteList(listId: string, reason?: string): Observable<any> {
     const body = reason ? { reason } : {};
-    
+
     return this.http.delete(`${this.apiUrl}/lists/${listId}`, {
       headers: this.getHeaders(),
       body
@@ -359,7 +369,7 @@ export class AdminService {
   }
 
   // ===== UTILIDADES =====
-  
+
   /**
    * Notifica que los datos han cambiado para refrescar las vistas
    */
@@ -381,4 +391,7 @@ export class AdminService {
       })
     );
   }
+
+
+
 }

@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environments';
+import { Router } from '@angular/router';
 
 interface AuthResponse {
     token: string;
@@ -23,6 +24,16 @@ export interface User {
     premiumExpiry?: Date;
 }
 
+// Interfaz para errores de ban
+export interface BanError {
+    code: 'ACCOUNT_BANNED';
+    message: string;
+    banReason: string;
+    bannedAt: Date;
+    banExpiresAt?: Date;
+    hoursRemaining?: number;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -30,9 +41,16 @@ export class AuthService {
     public currentUserSubject = new BehaviorSubject<any>(null);
     public currentUser = this.currentUserSubject.asObservable();
 
+    // Subject para notificar cuando un usuario es baneado
+    private userBannedSubject = new BehaviorSubject<BanError | null>(null);
+    public userBanned$ = this.userBannedSubject.asObservable();
+
     private apiUrl = environment.apiUrl + '/auth';
 
-    constructor(private http: HttpClient) {
+    constructor(
+        private http: HttpClient,
+        private router: Router
+    ) {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             this.currentUserSubject.next(JSON.parse(storedUser));
@@ -70,6 +88,24 @@ export class AuthService {
             }),
             catchError(error => {
                 console.error('Error en login:', error);
+
+                // Manejo específico para usuarios baneados
+                if (error.status === 403 && error.error?.code === 'ACCOUNT_BANNED') {
+                    const banInfo: BanError = {
+                        code: 'ACCOUNT_BANNED',
+                        message: error.error.message,
+                        banReason: error.error.banReason,
+                        bannedAt: new Date(error.error.bannedAt),
+                        banExpiresAt: error.error.banExpiresAt ? new Date(error.error.banExpiresAt) : undefined,
+                        hoursRemaining: error.error.hoursRemaining
+                    };
+
+                    // Notificar que el usuario está baneado
+                    this.userBannedSubject.next(banInfo);
+                    return throwError(() => banInfo);
+                }
+
+                // Otros errores
                 if (error.status === 401) {
                     return throwError(() => new Error('INVALID_CREDENTIALS'));
                 } else if (error.status === 404) {
@@ -125,6 +161,41 @@ export class AuthService {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         this.currentUserSubject.next(null);
+        this.userBannedSubject.next(null); // Limpiar estado de ban
+    }
+
+    /**
+     * Fuerza el logout del usuario (usado cuando es baneado mientras está conectado)
+     */
+    forcedLogout(banInfo?: BanError): void {
+        console.log('🚫 Usuario forzado a cerrar sesión:', banInfo);
+
+        this.logout();
+
+        if (banInfo) {
+            this.userBannedSubject.next(banInfo);
+        }
+
+        // Redirigir al login
+        this.router.navigate(['/login']);
+    }
+
+    /**
+     * Método para manejar errores 403 de ban en las peticiones HTTP
+     */
+    handleBanError(error: any): void {
+        if (error.status === 403 && error.error?.code === 'ACCOUNT_BANNED') {
+            const banInfo: BanError = {
+                code: 'ACCOUNT_BANNED',
+                message: error.error.message,
+                banReason: error.error.banReason,
+                bannedAt: new Date(error.error.bannedAt),
+                banExpiresAt: error.error.banExpiresAt ? new Date(error.error.banExpiresAt) : undefined,
+                hoursRemaining: error.error.hoursRemaining
+            };
+
+            this.forcedLogout(banInfo);
+        }
     }
 
     getToken(): string | null {
@@ -140,12 +211,12 @@ export class AuthService {
         if (currentUser) {
             // Verificar si realmente hay un cambio
             const premiumChanged = currentUser.isPremium !== isPremium;
-            const expiryChanged = 
-                (expiryDate && !currentUser.premiumExpiry) || 
+            const expiryChanged =
+                (expiryDate && !currentUser.premiumExpiry) ||
                 (!expiryDate && currentUser.premiumExpiry) ||
-                (expiryDate && currentUser.premiumExpiry && 
-                 new Date(expiryDate).getTime() !== new Date(currentUser.premiumExpiry).getTime());
-            
+                (expiryDate && currentUser.premiumExpiry &&
+                    new Date(expiryDate).getTime() !== new Date(currentUser.premiumExpiry).getTime());
+
             // Solo actualizar si hay cambios
             if (premiumChanged || expiryChanged) {
                 const updatedUser = {
@@ -153,25 +224,23 @@ export class AuthService {
                     isPremium,
                     premiumExpiry: expiryDate ? new Date(expiryDate) : null
                 };
-    
+
                 // Actualizar en localStorage
                 localStorage.setItem('user', JSON.stringify(updatedUser));
-    
+
                 // Actualizar en el subject
                 this.currentUserSubject.next(updatedUser);
-                
+
                 console.log('Estado premium actualizado:', { isPremium, expiryDate });
             }
         }
     }
 
-
     /* Verifica si la contraseña proporcionada es correcta para el usuario actual*/
-
-        verifyPassword(password: string): Observable<boolean> {
+    verifyPassword(password: string): Observable<boolean> {
         // Obtener el token de localStorage
         const token = this.getToken();
-        
+
         if (!token) {
             console.error('No hay token de autenticación disponible');
             return of(false);
@@ -183,8 +252,8 @@ export class AuthService {
             'Content-Type': 'application/json'
         });
 
-        return this.http.post<{valid: boolean}>(
-            `${this.apiUrl}/verify-password`, 
+        return this.http.post<{ valid: boolean }>(
+            `${this.apiUrl}/verify-password`,
             { password },
             { headers }
         ).pipe(
@@ -193,7 +262,11 @@ export class AuthService {
                 return response.valid;
             }),
             catchError(error => {
-                
+                // Manejar error de ban en verificación de contraseña
+                if (error.status === 403 && error.error?.code === 'ACCOUNT_BANNED') {
+                    this.handleBanError(error);
+                }
+
                 // Manejo específico de errores
                 if (error.status === 401) {
                     console.error('Token inválido o expirado');
@@ -202,10 +275,16 @@ export class AuthService {
                 } else if (error.status === 500) {
                     console.error('Error del servidor');
                 }
-                
+
                 return of(false);
             })
         );
     }
 
+    /**
+     * Limpia el estado de ban (útil para cuando se cierra el modal)
+     */
+    clearBanState(): void {
+        this.userBannedSubject.next(null);
+    }
 }

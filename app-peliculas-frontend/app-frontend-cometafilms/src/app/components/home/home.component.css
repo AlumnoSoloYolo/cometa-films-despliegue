@@ -389,6 +389,107 @@
   padding: 0 var(--spacing-md);
 }
 
+
+.carousel-skeleton {
+  position: relative;
+  height: 600px; /* Misma altura que el carrusel real */
+  background-color: #1a1a2e; /* Un color de fondo oscuro */
+  overflow: hidden;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.skeleton-backdrop {
+  width: 100%;
+  height: 100%;
+  background-color: #2c2c3a; /* Un gris oscuro para el fondo */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animación de brillo (shimmer) */
+.shimmer-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: shimmer 2s infinite;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Placeholder para la información de la película */
+.carousel-skeleton .movie-info {
+  position: absolute;
+  top: 65%;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  z-index: 3;
+}
+
+.skeleton-title,
+.skeleton-details,
+.skeleton-overview-line {
+  background-color: #4a4a5a; /* Color de los placeholders */
+  border-radius: var(--radius-md);
+}
+
+.skeleton-title {
+  height: 45px;
+  width: 60%;
+  margin-bottom: var(--spacing-lg);
+}
+
+.skeleton-details {
+  height: 24px;
+  width: 40%;
+  margin-bottom: var(--spacing-lg);
+}
+
+.skeleton-overview-line {
+  height: 16px;
+  width: 80%;
+  margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-overview-line.short {
+  width: 70%;
+}
+
+
+/* === RESPONSIVE PARA EL ESQUELETO === */
+@media (max-width: 768px) {
+  .carousel-skeleton {
+    height: 400px;
+  }
+  .skeleton-title {
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-skeleton {
+    height: 300px;
+  }
+  .skeleton-title {
+    height: 30px;
+    width: 75%;
+  }
+  .skeleton-details {
+    height: 20px;
+    width: 50%;
+  }
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 1400px) {
   .movie-scroll-content {

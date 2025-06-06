@@ -1,5 +1,22 @@
 <div class="container-fluid p-0 mb-5">
-    <!-- Carrusel Principal -->
+
+    @if (isLoadingCarousel) {
+    <div class="carousel-skeleton">
+        <div class="skeleton-backdrop">
+            <div class="shimmer-wrapper">
+                <div class="shimmer"></div>
+            </div>
+        </div>
+        <div class="movie-info">
+            <div class="container">
+                <div class="skeleton-title"></div>
+                <div class="skeleton-details"></div>
+                <div class="skeleton-overview-line"></div>
+                <div class="skeleton-overview-line short"></div>
+            </div>
+        </div>
+    </div>
+    } @else {
     <div id="movieCarousel" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-inner">
             @for (pelicula of pelisPopulares; track pelicula.id; let i = $index) {
@@ -39,6 +56,7 @@
             <span class="visually-hidden">Siguiente</span>
         </button>
     </div>
+    }
 
     <div class="container mt-5 px-8">
 
@@ -46,7 +64,6 @@
         <app-recomendaciones></app-recomendaciones>
 
 
-        <!-- Géneros -->
         <div class="movie-section">
             <div class="section-header">
                 <h2 class="section-title mb-4">Géneros</h2>
@@ -76,7 +93,6 @@
 
 
 
-        <!-- Películas Mejor Valoradas -->
         <div class="movie-section">
             <div class="section-header">
                 <h2 class="section-title mb-4">Películas Mejor Valoradas</h2>
@@ -106,7 +122,6 @@
             </div>
         </div>
 
-        <!-- Tendencias Semanales -->
         <div class="movie-section">
             <div class="section-header">
                 <h2 class="section-title mb-4">Tendencias de la Semana</h2>
@@ -136,7 +151,6 @@
             </div>
         </div>
 
-        <!-- Películas en Cine Actualmente -->
         <div class="movie-section">
             <div class="section-header">
                 <h2 class="section-title mb-4">En Cines Ahora</h2>
@@ -166,7 +180,6 @@
             </div>
         </div>
 
-        <!-- Próximos Estrenos -->
         <div class="movie-section">
             <div class="section-header">
                 <h2 class="section-title mb-4">Próximos Estrenos</h2>

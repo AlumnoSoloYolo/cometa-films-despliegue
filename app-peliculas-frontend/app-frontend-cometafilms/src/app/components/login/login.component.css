@@ -240,6 +240,157 @@ input.is-invalid {
     display: block;
 }
 
+
+/* === MODAL DE BAN === */
+.alert-ban {
+    /* Heredar estilos base de .alert y sobrescribir específicos */
+    background: linear-gradient(135deg, #1a0000, #330000);
+    border: 2px solid #ff4444;
+    box-shadow: 0 20px 60px rgba(255, 68, 68, 0.4);
+    min-height: 220px;
+    max-width: 500px;
+    padding: 2rem;
+}
+
+.alert-ban-icon {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    background: linear-gradient(45deg, #ff2d2d, #ff5555);
+    box-shadow: 0 10px 30px rgba(255, 45, 45, 0.5);
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+    animation: banIconPulse 2s ease-in-out infinite;
+}
+
+@keyframes banIconPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 10px 30px rgba(255, 45, 45, 0.5);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(255, 45, 45, 0.7);
+    }
+}
+
+.ban-title {
+    margin: 0 0 1rem 0;
+    color: #ff6b6b;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+.ban-content {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.ban-message {
+    color: white;
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: 0 0 1rem 0;
+    white-space: pre-line; /* Para respetar los saltos de línea en el mensaje */
+}
+
+.ban-countdown {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin: 1rem 0;
+}
+
+.ban-countdown small {
+    color: #ff9999;
+    font-weight: medium;
+}
+
+.ban-permanent {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin: 1rem 0;
+}
+
+.ban-permanent small {
+    color: #ffcccc;
+    font-style: italic;
+    line-height: 1.3;
+}
+
+.ban-close-button {
+    background: linear-gradient(45deg, #ff4444, #ff6666);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: medium;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    margin-top: 0.5rem;
+}
+
+.ban-close-button:hover {
+    background: linear-gradient(45deg, #ff3333, #ff5555);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+}
+
+.ban-close-button:active {
+    transform: translateY(0);
+}
+
+/* Animación específica para el modal de ban */
+.alert-ban {
+    animation: banModalSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes banModalSlideIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.7) rotateX(-15deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotateX(0deg);
+    }
+}
+
+/* Responsivo para modal de ban */
+@media (max-width: 600px) {
+    .alert-ban {
+        width: 95%;
+        padding: 1.5rem;
+        min-height: 200px;
+    }
+    
+    .alert-ban-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 2.5rem;
+    }
+    
+    .ban-title {
+        font-size: 1.3rem;
+    }
+    
+    .ban-message {
+        font-size: 0.9rem;
+    }
+}
+
 /* === BOTONES === */
 form {
     display: flex;
