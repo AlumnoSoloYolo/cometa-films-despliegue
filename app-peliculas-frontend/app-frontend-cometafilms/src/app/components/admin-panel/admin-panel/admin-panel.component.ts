@@ -9,6 +9,8 @@ import {
   AdminReview,
   AdminComment,
   AdminList,
+  AdminReport,
+  ReportStats,
   SystemStats,
   UserPermissions,
   PermissionsResponse
@@ -25,6 +27,7 @@ interface PaginationState {
   reviews: { page: number; total: number; hasMore: boolean };
   comments: { page: number; total: number; hasMore: boolean };
   lists: { page: number; total: number; hasMore: boolean };
+  reports: { page: number; total: number; hasMore: boolean };
 }
 
 interface LoadingState {
@@ -35,6 +38,9 @@ interface LoadingState {
   lists: boolean;
   permissions: boolean;
   banning: boolean;
+  reports: boolean;
+  resolvingReport: boolean;
+  reportStats: boolean;
 }
 
 interface ErrorState {
@@ -44,6 +50,8 @@ interface ErrorState {
   comments: string | null;
   lists: string | null;
   permissions: string | null;
+  reports: string | null;
+  reportStats: string | null;
 }
 
 @Component({
@@ -73,7 +81,10 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     comments: false,
     lists: false,
     permissions: false,
-    banning: false
+    banning: false,
+    reports: false,
+    resolvingReport: false,
+    reportStats: false
   };
 
   errors: ErrorState = {
@@ -82,14 +93,17 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     reviews: null,
     comments: null,
     lists: null,
-    permissions: null
+    permissions: null,
+    reports: null,
+    reportStats: null
   };
 
   pagination: PaginationState = {
     users: { page: 1, total: 0, hasMore: false },
     reviews: { page: 1, total: 0, hasMore: false },
     comments: { page: 1, total: 0, hasMore: false },
-    lists: { page: 1, total: 0, hasMore: false }
+    lists: { page: 1, total: 0, hasMore: false },
+    reports: { page: 1, total: 0, hasMore: false }
   };
 
   // Datos
@@ -98,12 +112,15 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   reviews: AdminReview[] = [];
   comments: AdminComment[] = [];
   lists: AdminList[] = [];
+  reports: AdminReport[] = [];
+  reportStats: ReportStats | null = null;
 
   // Formularios de búsqueda y filtros
   userSearchForm!: FormGroup;
-  contentSearchForm!: FormGroup;  // NUEVO FORMULARIO PARA CONTENIDO
+  contentSearchForm!: FormGroup;
+  reportSearchForm!: FormGroup;
 
-  // ===== BÚSQUEDA DE CONTENIDO =====
+  // BÚSQUEDA DE CONTENIDO
   isContentFiltered = false;
   originalContentData = {
     reviews: [] as any[],
@@ -114,115 +131,16 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   filteredComments: any[] = [];
   filteredLists: any[] = [];
 
-  // Modales originales
+  // Modales
   showBanModal = false;
   showRoleModal = false;
   showDeleteModal = false;
-
-  // ===== NUEVOS MODALES =====
   showHistoryModal = false;
   showReviewModal = false;
+  showResolveReportModal = false;
+  showReportDetailModal = false;
 
-  // ===== BÚSQUEDA DE CONTENIDO POR USUARIO =====
-
-  searchContent(): void {
-    const username = this.contentSearchForm.get('username')?.value?.trim().toLowerCase();
-    const userRole = this.contentSearchForm.get('userRole')?.value;
-
-    console.log('Búsqueda de contenido por usuario:', { username, userRole });
-
-    if (!username && !userRole) {
-      this.clearContentSearch();
-      return;
-    }
-
-    this.isContentFiltered = true;
-
-    // Guardar datos originales si es la primera búsqueda
-    if (this.originalContentData.reviews.length === 0) {
-      this.originalContentData.reviews = [...this.reviews];
-      this.originalContentData.comments = [...this.comments];
-      this.originalContentData.lists = [...this.lists];
-    }
-
-    // Filtrar reseñas
-    this.filteredReviews = this.originalContentData.reviews.filter(review => {
-      if (!review.userId) return false;
-      return this.matchesContentFilter(review.userId, username, userRole);
-    });
-
-    // Filtrar comentarios
-    this.filteredComments = this.originalContentData.comments.filter(comment => {
-      if (!comment.userId) return false;
-      return this.matchesContentFilter(comment.userId, username, userRole);
-    });
-
-    // Filtrar listas
-    this.filteredLists = this.originalContentData.lists.filter(list => {
-      if (!list.userId) return false;
-      return this.matchesContentFilter(list.userId, username, userRole);
-    });
-
-    console.log('Resultados de búsqueda de contenido:', {
-      reseñas: this.filteredReviews.length,
-      comentarios: this.filteredComments.length,
-      listas: this.filteredLists.length
-    });
-
-    this.cdr.markForCheck();
-  }
-
-  private matchesContentFilter(user: any, username: string, userRole: string): boolean {
-    // Si no hay usuario, no puede coincidir con filtros
-    if (!user) return false;
-    
-    // Filtro por username
-    if (username && !user.username?.toLowerCase().includes(username)) {
-      return false;
-    }
-
-    // Filtro por rol
-    if (userRole && user.role !== userRole) {
-      return false;
-    }
-
-    return true;
-  }
-
-  clearContentSearch(): void {
-    this.contentSearchForm.reset();
-    this.isContentFiltered = false;
-    
-    // Restaurar datos originales
-    if (this.originalContentData.reviews.length > 0) {
-      this.filteredReviews = [];
-      this.filteredComments = [];
-      this.filteredLists = [];
-      
-      // Limpiar datos originales
-      this.originalContentData = {
-        reviews: [],
-        comments: [],
-        lists: []
-      };
-    }
-
-    console.log('Búsqueda de contenido limpiada');
-    this.cdr.markForCheck();
-  }
-
-  // Getters para mostrar datos filtrados o completos
-  get displayReviews(): any[] {
-    return this.isContentFiltered ? this.filteredReviews : this.reviews;
-  }
-
-  get displayComments(): any[] {
-    return this.isContentFiltered ? this.filteredComments : this.comments;
-  }
-
-  get displayLists(): any[] {
-    return this.isContentFiltered ? this.filteredLists : this.lists;
-  }
+  // BÚSQUEDA GLOBAL
   isGlobalSearch = false;
   originalUsers: any[] = [];
   originalReviews: any[] = [];
@@ -239,12 +157,14 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     itemTitle?: string;
     moderationHistory?: any[];
     review?: any;
+    report?: AdminReport;
   } = {};
 
   // Formularios de modal
   banForm!: FormGroup;
   roleForm!: FormGroup;
   deleteForm!: FormGroup;
+  resolveReportForm!: FormGroup;
 
   private subscriptions = new Subscription();
 
@@ -277,16 +197,25 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       status: ['']
     });
 
-    // NUEVO: Formulario de búsqueda de contenido
+    // Formulario de búsqueda de contenido
     this.contentSearchForm = this.fb.group({
       username: [''],
       userRole: ['']
     });
 
+    // Formulario de búsqueda de reportes
+    this.reportSearchForm = this.fb.group({
+      status: [''],
+      priority: [''],
+      contentType: [''],
+      category: [''],
+      reason: ['']
+    });
+
     // Formulario de ban
     this.banForm = this.fb.group({
       reason: ['', [Validators.required, Validators.minLength(10)]],
-      duration: [''] // Vacío = permanente
+      duration: ['']
     });
 
     // Formulario de cambio de rol
@@ -299,6 +228,13 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.deleteForm = this.fb.group({
       reason: ['']
     });
+
+    // Formulario de resolución de reportes
+    this.resolveReportForm = this.fb.group({
+      action: ['', Validators.required],
+      notes: [''],
+      shouldNotify: [true]
+    });
   }
 
   private initializeComponent(): void {
@@ -310,7 +246,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   }
 
   private setupSubscriptions(): void {
-    // Suscribirse a cambios de datos para refrescar
     const refreshSub = this.adminService.refreshData$.subscribe(dataType => {
       if (dataType) {
         this.handleDataRefresh(dataType);
@@ -327,7 +262,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         distinctUntilChanged()
       )
       .subscribe(() => {
-        // Si no es búsqueda global, usar búsqueda normal
         if (!this.isGlobalSearch) {
           this.resetUsersPagination();
           this.loadUsers();
@@ -352,10 +286,14 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       case 'lists':
         this.loadLists();
         break;
+      case 'reports':
+        this.loadReports();
+        this.loadReportStats();
+        break;
     }
   }
 
-  // ===== CARGA DE DATOS CON OBSERVABLES =====
+  // ===== CARGA DE DATOS =====
 
   private loadUserPermissions(): void {
     this.loading.permissions = true;
@@ -410,7 +348,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     const formValue = this.userSearchForm.value;
     const filters: any = { page, limit: 20 };
 
-    // Aplicar filtros del formulario
     if (formValue.search?.trim()) {
       filters.search = formValue.search.trim();
     }
@@ -462,22 +399,17 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response) {
           const newReviews = response.reviews || [];
-          
-          // FILTRAR RESEÑAS QUE TIENEN userId NULL (usuarios eliminados)
           const validReviews = newReviews.filter(review => review.userId !== null && review.userId !== undefined);
-          console.log(`Reseñas filtradas: ${validReviews.length} de ${newReviews.length} (eliminadas ${newReviews.length - validReviews.length} sin usuario)`);
-          
+          console.log(`Reseñas filtradas: ${validReviews.length} de ${newReviews.length}`);
+
           this.reviews = page === 1 ? validReviews : [...this.reviews, ...validReviews];
-          
+
           this.pagination.reviews = {
             page: response.pagination.page,
             total: response.pagination.total,
             hasMore: response.pagination.hasMore
           };
-          
-          console.log(`Reseñas cargadas: ${this.reviews.length} total`);
-          
-          // Si hay búsqueda activa, actualizar filtros
+
           if (this.isContentFiltered) {
             this.originalContentData.reviews = [...this.reviews];
             this.searchContent();
@@ -505,25 +437,18 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
     const commentsSub = this.adminService.getComments({ page, limit: 20 }).subscribe({
       next: (response) => {
-        console.log('Respuesta de comentarios:', response);
         if (response) {
           const newComments = response.comments || [];
-          
-          // FILTRAR COMENTARIOS QUE TIENEN userId NULL (usuarios eliminados)
           const validComments = newComments.filter(comment => comment.userId !== null && comment.userId !== undefined);
-          console.log(`Comentarios filtrados: ${validComments.length} de ${newComments.length} (eliminados ${newComments.length - validComments.length} sin usuario)`);
-          
+
           this.comments = page === 1 ? validComments : [...this.comments, ...validComments];
-          
+
           this.pagination.comments = {
             page: response.pagination?.page || page,
             total: response.pagination?.total || 0,
             hasMore: response.pagination?.hasMore || false
           };
-          
-          console.log(`Comentarios cargados: ${this.comments.length} total`);
-          
-          // Si hay búsqueda activa, actualizar filtros
+
           if (this.isContentFiltered) {
             this.originalContentData.comments = [...this.comments];
             this.searchContent();
@@ -549,20 +474,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.loading.lists = true;
     this.errors.lists = null;
 
-    console.log('Cargando listas - página:', page);
-
     const listsSub = this.adminService.getLists({ page, limit: 20 }).subscribe({
       next: (response) => {
-        console.log('Respuesta de listas recibida:', response);
-        console.log('Tipo de respuesta:', typeof response);
-        console.log('Es array?:', Array.isArray(response));
-        
         if (response) {
-          // Manejar diferentes formatos de respuesta
           let newLists: any[] = [];
-          
+
           if (Array.isArray(response)) {
-            // Si la respuesta es directamente un array
             newLists = response;
             this.pagination.lists = {
               page: page,
@@ -570,7 +487,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
               hasMore: false
             };
           } else if (response.lists && Array.isArray(response.lists)) {
-            // Si la respuesta tiene formato { lists: [], pagination: {} }
             newLists = response.lists;
             this.pagination.lists = {
               page: response.pagination?.page || page,
@@ -578,28 +494,17 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
               hasMore: response.pagination?.hasMore || false
             };
           } else if (response.data && Array.isArray(response.data)) {
-            // Si la respuesta tiene formato { data: [], pagination: {} }
             newLists = response.data;
             this.pagination.lists = {
               page: response.pagination?.page || page,
               total: response.pagination?.total || 0,
               hasMore: response.pagination?.hasMore || false
             };
-          } else {
-            console.warn('Formato de respuesta no reconocido para listas:', response);
-            newLists = [];
           }
-          
-          // FILTRAR LISTAS QUE TIENEN userId NULL (usuarios eliminados)
+
           const validLists = newLists.filter(list => list.userId !== null && list.userId !== undefined);
-          console.log(`Listas filtradas: ${validLists.length} de ${newLists.length} (eliminadas ${newLists.length - validLists.length} sin usuario)`);
-          
           this.lists = page === 1 ? validLists : [...this.lists, ...validLists];
-          
-          console.log(`Listas procesadas: ${this.lists.length} total`);
-          console.log('Muestra de lista:', this.lists[0]);
-          
-          // Si hay búsqueda activa, actualizar filtros
+
           if (this.isContentFiltered) {
             this.originalContentData.lists = [...this.lists];
             this.searchContent();
@@ -609,30 +514,80 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         this.errors.lists = error.message;
         console.error('Error cargando listas:', error);
-        console.error('Detalles del error:', error);
       },
       complete: () => {
         this.loading.lists = false;
         this.cdr.markForCheck();
-        // Debug específico para listas
-        setTimeout(() => this.debugLists(), 500);
       }
     });
 
     this.subscriptions.add(listsSub);
   }
 
-  // ===== FUNCIÓN DE DEPURACIÓN PARA LISTAS =====
-  debugLists(): void {
-    console.log('=== DEBUG LISTAS ===');
-    console.log('Datos cargados:', this.lists);
-    console.log('Loading state:', this.loading.lists);
-    console.log('Error state:', this.errors.lists);
-    console.log('Pagination:', this.pagination.lists);
-    console.log('Tab state:', this.tabState.activeContentTab);
-    console.log('Array length:', this.lists.length);
-    console.log('Array type:', Array.isArray(this.lists));
-    console.log('===================');
+  loadReports(page: number = 1): void {
+    if (this.loading.reports && page !== 1) return;
+
+    this.loading.reports = true;
+    this.errors.reports = null;
+
+    const formValue = this.reportSearchForm.value;
+    const filters: any = { page, limit: 20 };
+
+    if (formValue.status) filters.status = formValue.status;
+    if (formValue.priority) filters.priority = formValue.priority;
+    if (formValue.contentType) filters.contentType = formValue.contentType;
+    if (formValue.category) filters.category = formValue.category;
+    if (formValue.reason) filters.reason = formValue.reason;
+
+    console.log('Cargando reportes con filtros:', filters);
+
+    const reportsSub = this.adminService.getReports(filters).subscribe({
+      next: (response) => {
+        if (response) {
+          this.reports = page === 1 ? (response.reports || []) : [...this.reports, ...(response.reports || [])];
+
+          this.pagination.reports = {
+            page: response.pagination.page,
+            total: response.pagination.total,
+            hasMore: response.pagination.hasMore
+          };
+
+          console.log(`Reportes cargados: ${this.reports.length} total, página ${page}`);
+        }
+      },
+      error: (error: any) => {
+        this.errors.reports = error.message;
+        console.error('Error cargando reportes:', error);
+      },
+      complete: () => {
+        this.loading.reports = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(reportsSub);
+  }
+
+  loadReportStats(): void {
+    this.loading.reportStats = true;
+    this.errors.reportStats = null;
+
+    const statsSub = this.adminService.getReportStats().subscribe({
+      next: (stats) => {
+        this.reportStats = stats;
+        console.log('Estadísticas de reportes cargadas:', stats);
+      },
+      error: (error: any) => {
+        this.errors.reportStats = error.message;
+        console.error('Error cargando estadísticas de reportes:', error);
+      },
+      complete: () => {
+        this.loading.reportStats = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(statsSub);
   }
 
   // ===== NAVEGACIÓN DE TABS =====
@@ -646,6 +601,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         break;
       case 'content':
         if (this.reviews.length === 0) this.loadReviews();
+        break;
+      case 'reports':
+        if (this.reports.length === 0) {
+          this.loadReports();
+          this.loadReportStats();
+        }
         break;
     }
 
@@ -665,12 +626,94 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         break;
       case 'lists':
         if (this.lists.length === 0) this.loadLists();
-        // Debug específico para listas
-        setTimeout(() => this.debugLists(), 500);
         break;
     }
 
     this.cdr.markForCheck();
+  }
+
+  // ===== BÚSQUEDA DE CONTENIDO =====
+
+  searchContent(): void {
+    const username = this.contentSearchForm.get('username')?.value?.trim().toLowerCase();
+    const userRole = this.contentSearchForm.get('userRole')?.value;
+
+    console.log('Búsqueda de contenido por usuario:', { username, userRole });
+
+    if (!username && !userRole) {
+      this.clearContentSearch();
+      return;
+    }
+
+    this.isContentFiltered = true;
+
+    if (this.originalContentData.reviews.length === 0) {
+      this.originalContentData.reviews = [...this.reviews];
+      this.originalContentData.comments = [...this.comments];
+      this.originalContentData.lists = [...this.lists];
+    }
+
+    this.filteredReviews = this.originalContentData.reviews.filter(review => {
+      if (!review.userId) return false;
+      return this.matchesContentFilter(review.userId, username, userRole);
+    });
+
+    this.filteredComments = this.originalContentData.comments.filter(comment => {
+      if (!comment.userId) return false;
+      return this.matchesContentFilter(comment.userId, username, userRole);
+    });
+
+    this.filteredLists = this.originalContentData.lists.filter(list => {
+      if (!list.userId) return false;
+      return this.matchesContentFilter(list.userId, username, userRole);
+    });
+
+    this.cdr.markForCheck();
+  }
+
+  private matchesContentFilter(user: any, username: string, userRole: string): boolean {
+    if (!user) return false;
+
+    if (username && !user.username?.toLowerCase().includes(username)) {
+      return false;
+    }
+
+    if (userRole && user.role !== userRole) {
+      return false;
+    }
+
+    return true;
+  }
+
+  clearContentSearch(): void {
+    this.contentSearchForm.reset();
+    this.isContentFiltered = false;
+
+    if (this.originalContentData.reviews.length > 0) {
+      this.filteredReviews = [];
+      this.filteredComments = [];
+      this.filteredLists = [];
+
+      this.originalContentData = {
+        reviews: [],
+        comments: [],
+        lists: []
+      };
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  get displayReviews(): any[] {
+    return this.isContentFiltered ? this.filteredReviews : this.reviews;
+  }
+
+  get displayComments(): any[] {
+    return this.isContentFiltered ? this.filteredComments : this.comments;
+  }
+
+  get displayLists(): any[] {
+    return this.isContentFiltered ? this.filteredLists : this.lists;
   }
 
   // ===== BÚSQUEDA GLOBAL =====
@@ -683,7 +726,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     console.log('Búsqueda global iniciada:', { searchTerm, roleFilter, statusFilter });
 
     if (!searchTerm && !roleFilter && !statusFilter) {
-      // Si no hay filtros, restaurar datos originales
       this.restoreOriginalData();
       this.isGlobalSearch = false;
       return;
@@ -691,7 +733,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
     this.isGlobalSearch = true;
 
-    // Guardar datos originales si es la primera búsqueda
     if (this.originalUsers.length === 0) {
       this.originalUsers = [...this.users];
       this.originalReviews = [...this.reviews];
@@ -699,12 +740,10 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       this.originalLists = [...this.lists];
     }
 
-    // Filtrar usuarios
-    this.users = this.originalUsers.filter(user => 
+    this.users = this.originalUsers.filter(user =>
       this.matchesGlobalFilter(user, searchTerm, roleFilter, statusFilter, 'user')
     );
 
-    // Filtrar reseñas por usuario
     this.reviews = this.originalReviews.filter(review => {
       if (review.userId && review.userId.username) {
         return this.matchesGlobalFilter(review.userId, searchTerm, roleFilter, statusFilter, 'review');
@@ -712,7 +751,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       return false;
     });
 
-    // Filtrar comentarios por usuario
     this.comments = this.originalComments.filter(comment => {
       if (comment.userId && comment.userId.username) {
         return this.matchesGlobalFilter(comment.userId, searchTerm, roleFilter, statusFilter, 'comment');
@@ -720,7 +758,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       return false;
     });
 
-    // Filtrar listas por usuario
     this.lists = this.originalLists.filter(list => {
       if (list.userId && list.userId.username) {
         return this.matchesGlobalFilter(list.userId, searchTerm, roleFilter, statusFilter, 'list');
@@ -728,33 +765,22 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       return false;
     });
 
-    console.log('Resultados de búsqueda:', {
-      usuarios: this.users.length,
-      reseñas: this.reviews.length,
-      comentarios: this.comments.length,
-      listas: this.lists.length
-    });
-
     this.cdr.markForCheck();
   }
 
-  // Función auxiliar para verificar si un elemento coincide con los filtros
   private matchesGlobalFilter(user: any, searchTerm: string, roleFilter: string, statusFilter: string, type: string): boolean {
-    // Filtro por término de búsqueda (username o email)
     if (searchTerm) {
-      const matchesSearch = 
+      const matchesSearch =
         user.username?.toLowerCase().includes(searchTerm) ||
         user.email?.toLowerCase().includes(searchTerm);
-      
+
       if (!matchesSearch) return false;
     }
 
-    // Filtro por rol
     if (roleFilter && user.role !== roleFilter) {
       return false;
     }
 
-    // Filtro por estado
     if (statusFilter) {
       const isActive = !user.isBanned;
       if (statusFilter === 'active' && !isActive) return false;
@@ -764,21 +790,39 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  // Restaurar datos originales
   private restoreOriginalData(): void {
     if (this.originalUsers.length > 0) {
       this.users = [...this.originalUsers];
       this.reviews = [...this.originalReviews];
       this.comments = [...this.originalComments];
       this.lists = [...this.originalLists];
-      
-      // Limpiar datos originales
+
       this.originalUsers = [];
       this.originalReviews = [];
       this.originalComments = [];
       this.originalLists = [];
     }
     this.cdr.markForCheck();
+  }
+
+  // ===== BÚSQUEDA DE REPORTES =====
+
+  searchReports(): void {
+    console.log('Búsqueda de reportes iniciada');
+    this.resetReportsPagination();
+    this.loadReports();
+  }
+
+  clearReportSearch(): void {
+    this.reportSearchForm.reset();
+    this.resetReportsPagination();
+    this.loadReports();
+    console.log('Búsqueda de reportes limpiada');
+  }
+
+  private resetReportsPagination(): void {
+    this.pagination.reports = { page: 1, total: 0, hasMore: false };
+    this.reports = [];
   }
 
   // ===== GESTIÓN DE MODALES =====
@@ -792,7 +836,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.showBanModal = true;
     this.closeOtherModals(['ban']);
     this.cdr.markForCheck();
-    console.log('Abriendo modal de ban para:', user.username);
   }
 
   openRoleModal(user: AdminUser): void {
@@ -805,7 +848,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.showRoleModal = true;
     this.closeOtherModals(['role']);
     this.cdr.markForCheck();
-    console.log('Abriendo modal de rol para:', user.username);
   }
 
   openDeleteModal(itemType: string, itemId: string, itemTitle: string): void {
@@ -818,30 +860,21 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.showDeleteModal = true;
     this.closeOtherModals(['delete']);
     this.cdr.markForCheck();
-    console.log('Abriendo modal de eliminación para:', itemType, itemTitle);
   }
 
-  // ===== NUEVOS MODALES =====
-
   openHistoryModal(user: any): void {
-    console.log('Abriendo historial para:', user.username);
-    
     this.modalData = {
       username: user.username,
       userId: user._id,
       moderationHistory: user.moderationHistory || []
     };
-    
+
     this.showHistoryModal = true;
     this.closeOtherModals(['history']);
     this.cdr.markForCheck();
-    
-    console.log('Historial de moderación:', this.modalData.moderationHistory);
   }
 
   openReviewModal(review: any): void {
-    console.log('Abriendo reseña completa:', review._id);
-    
     this.modalData = {
       review: {
         _id: review._id,
@@ -856,12 +889,33 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         }
       }
     };
-    
+
     this.showReviewModal = true;
     this.closeOtherModals(['review']);
     this.cdr.markForCheck();
-    
-    console.log('Datos de la reseña:', this.modalData.review);
+  }
+
+  // ===== MODALES DE REPORTES =====
+
+  openResolveReportModal(report: AdminReport): void {
+    this.modalData = { report };
+    this.resolveReportForm.reset({
+      action: '',
+      notes: '',
+      shouldNotify: true
+    });
+    this.showResolveReportModal = true;
+    this.closeOtherModals(['resolveReport']);
+    this.cdr.markForCheck();
+    console.log('Abriendo modal de resolución para reporte:', report._id);
+  }
+
+  openReportDetailModal(report: AdminReport): void {
+    this.modalData = { report };
+    this.showReportDetailModal = true;
+    this.closeOtherModals(['reportDetail']);
+    this.cdr.markForCheck();
+    console.log('Abriendo modal de detalles para reporte:', report._id);
   }
 
   closeOtherModals(except: string[] = []): void {
@@ -880,6 +934,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     if (!except.includes('review')) {
       this.showReviewModal = false;
     }
+    if (!except.includes('resolveReport')) {
+      this.showResolveReportModal = false;
+    }
+    if (!except.includes('reportDetail')) {
+      this.showReportDetailModal = false;
+    }
   }
 
   closeModals(): void {
@@ -888,20 +948,19 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.showDeleteModal = false;
     this.showHistoryModal = false;
     this.showReviewModal = false;
-    
-    // Limpiar datos del modal
-    this.modalData = {
-      userId: '',
-      username: '',
-      currentRole: '',
-      itemType: '',
-      itemId: '',
-      itemTitle: ''
-    };
+    this.closeReportModals();
+
+    this.modalData = {};
     this.cdr.markForCheck();
   }
 
-  // ===== ACCIONES DE BAN CON OBSERVABLES =====
+  closeReportModals(): void {
+    this.showResolveReportModal = false;
+    this.showReportDetailModal = false;
+    this.cdr.markForCheck();
+  }
+
+  // ===== ACCIONES DE BAN =====
 
   banUser(): void {
     if (this.banForm.invalid || !this.modalData.userId) {
@@ -930,7 +989,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         this.closeModals();
         console.log(`Usuario ${this.modalData.username} baneado correctamente`, response);
 
-        // Refrescar lista de usuarios
         this.resetUsersPagination();
         this.loadUsers();
       },
@@ -954,7 +1012,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       next: (response) => {
         console.log(`Usuario ${user.username} desbaneado correctamente`, response);
 
-        // Refrescar lista de usuarios
         this.resetUsersPagination();
         this.loadUsers();
       },
@@ -988,7 +1045,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         this.closeModals();
         console.log(`Rol de ${this.modalData.username} cambiado correctamente`, response);
 
-        // Refrescar lista de usuarios
         this.resetUsersPagination();
         this.loadUsers();
       },
@@ -1009,7 +1065,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Verificar que el formulario existe
     if (!this.deleteForm) {
       console.error('Formulario de eliminación no inicializado');
       return;
@@ -1050,8 +1105,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.closeModals();
         console.log(`${this.capitalizeFirst(this.modalData.itemType || '')} eliminado correctamente`, response);
-        
-        // Refrescar el contenido correspondiente
+
         try {
           switch (this.modalData.itemType) {
             case 'review':
@@ -1087,6 +1141,92 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.subscriptions.add(deleteSub);
   }
 
+  // ===== GESTIÓN DE REPORTES =====
+
+  updateReportStatus(reportId: string, newStatus: string): void {
+    console.log('Actualizando estado del reporte:', reportId, 'a', newStatus);
+
+    const updateSub = this.adminService.updateReportStatus(reportId, {
+      status: newStatus as any,
+      notes: `Estado cambiado a ${newStatus} por ${this.currentUser?.username}`
+    }).subscribe({
+      next: (response) => {
+        console.log('Estado del reporte actualizado:', response);
+
+        const reportIndex = this.reports.findIndex(r => r._id === reportId);
+        if (reportIndex !== -1) {
+          this.reports[reportIndex].status = newStatus as any;
+          this.cdr.markForCheck();
+        }
+
+        this.loadReportStats();
+      },
+      error: (error: any) => {
+        console.error('Error actualizando estado del reporte:', error);
+        alert(`Error al actualizar estado: ${error.message}`);
+      }
+    });
+
+    this.subscriptions.add(updateSub);
+  }
+
+  resolveReport(): void {
+    if (this.resolveReportForm.invalid || !this.modalData.report) {
+      console.log('Formulario de resolución inválido o falta reporte');
+      return;
+    }
+
+    this.loading.resolvingReport = true;
+
+    const formValue = this.resolveReportForm.value;
+    const reportId = this.modalData.report._id;
+
+    console.log('Resolviendo reporte:', {
+      reportId: reportId,
+      action: formValue.action,
+      notes: formValue.notes,
+      shouldNotify: formValue.shouldNotify
+    });
+
+    const resolveSub = this.adminService.resolveReport(reportId, {
+      action: formValue.action,
+      notes: formValue.notes,
+      shouldNotify: formValue.shouldNotify
+    }).subscribe({
+      next: (response) => {
+        this.closeReportModals();
+        console.log('Reporte resuelto correctamente:', response);
+
+        const reportIndex = this.reports.findIndex(r => r._id === reportId);
+        if (reportIndex !== -1) {
+          this.reports[reportIndex].status = 'resolved';
+          this.reports[reportIndex].resolution = {
+            action: formValue.action,
+            notes: formValue.notes,
+            resolvedBy: {
+              _id: this.currentUser?._id || '',
+              username: this.currentUser?.username || ''
+            },
+            resolvedAt: new Date()
+          };
+        }
+
+        this.loadReportStats();
+        this.cdr.markForCheck();
+      },
+      error: (error: any) => {
+        console.error('Error resolviendo reporte:', error);
+        alert(`Error al resolver reporte: ${error.message}`);
+      },
+      complete: () => {
+        this.loading.resolvingReport = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(resolveSub);
+  }
+
   // ===== PAGINACIÓN =====
 
   loadMoreUsers(): void {
@@ -1113,9 +1253,86 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  loadMoreReports(): void {
+    if (this.pagination.reports.hasMore && !this.loading.reports) {
+      this.loadReports(this.pagination.reports.page + 1);
+    }
+  }
+
   private resetUsersPagination(): void {
     this.pagination.users = { page: 1, total: 0, hasMore: false };
     this.users = [];
+  }
+
+  // ===== MÉTODOS AUXILIARES PARA REPORTES =====
+
+  getContentTypeDisplayText(contentType: string): string {
+    const typeMap: { [key: string]: string } = {
+      'user': 'Perfil de usuario',
+      'review': 'Reseña',
+      'comment': 'Comentario',
+      'list': 'Lista personalizada'
+    };
+    return typeMap[contentType] || contentType;
+  }
+
+  getReasonDisplayText(reason: string): string {
+    const reasonMap: { [key: string]: string } = {
+      'inappropriate_language': 'Lenguaje inapropiado',
+      'harassment': 'Acoso',
+      'discrimination': 'Discriminación',
+      'spam': 'Spam',
+      'inappropriate_content': 'Contenido inapropiado',
+      'violence_threats': 'Amenazas de violencia',
+      'false_information': 'Información falsa',
+      'hate_speech': 'Discurso de odio',
+      'sexual_content': 'Contenido sexual',
+      'copyright_violation': 'Violación de derechos de autor',
+      'impersonation': 'Suplantación de identidad',
+      'other': 'Otro'
+    };
+    return reasonMap[reason] || reason;
+  }
+
+  getActionDisplayText(action: string): string {
+    const actionMap: { [key: string]: string } = {
+      'no_action': 'Sin acción',
+      'content_deleted': 'Contenido eliminado',
+      'user_warned': 'Usuario advertido',
+      'user_banned': 'Usuario baneado',
+      'other': 'Otra acción'
+    };
+    return actionMap[action] || action;
+  }
+
+  getStatusDisplayText(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'pending': 'Pendiente',
+      'under_review': 'En revisión',
+      'resolved': 'Resuelto',
+      'dismissed': 'Descartado'
+    };
+    return statusMap[status] || status;
+  }
+
+  getPriorityClass(priority: string): string {
+    const priorityClasses: { [key: string]: string } = {
+      'low': 'priority-low',
+      'medium': 'priority-medium',
+      'high': 'priority-high',
+      'urgent': 'priority-urgent'
+    };
+    return priorityClasses[priority] || 'priority-medium';
+  }
+
+  getReportStatusClass(status: string): string {
+    const statusClasses: { [key: string]: string } = {
+      'pending': 'status-pending',
+      'under_review': 'status-under-review',
+      'resolved': 'status-resolved',
+      'dismissed': 'status-dismissed'
+    };
+    return statusClasses[status] || 'status-pending';
   }
 
   // ===== FUNCIÓN PARA OBTENER TEXTO DE ACCIÓN DE HISTORIAL =====
@@ -1139,7 +1356,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       'data_export': 'Exportación de Datos',
       'privacy_update': 'Actualización de Privacidad'
     };
-    
+
     return actions[action] || this.capitalizeFirst(action.replace('_', ' '));
   }
 
@@ -1211,7 +1428,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
-  // Método para obtener texto de duración de ban
   getBanDurationText(duration: string): string {
     switch (duration) {
       case '1': return '1 hora';
@@ -1222,8 +1438,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       default: return `${duration} horas`;
     }
   }
-
-  // ===== MÉTODOS AUXILIARES PARA TEMPLATES =====
 
   formatShortDate(date: Date | string): string {
     return new Date(date).toLocaleDateString('es-ES', {

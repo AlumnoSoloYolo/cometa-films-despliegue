@@ -129,6 +129,7 @@ export interface PaginatedResponse<T> {
   reviews?: T[];
   comments?: T[];
   lists?: T[];
+  reports?: T[];
   pagination: {
     total: number;
     page: number;
@@ -136,6 +137,76 @@ export interface PaginatedResponse<T> {
     hasMore: boolean;
     limit: number;
   };
+}
+
+export interface AdminReport {
+  _id: string;
+  reporter: {
+    _id: string;
+    username: string;
+    avatar: string;
+    role: string;
+  };
+  reportedUser: {
+    _id: string;
+    username: string;
+    avatar: string;
+    role: string;
+  };
+  reportedContent: {
+    contentType: 'user' | 'review' | 'comment' | 'list';
+    contentId?: string;
+    contentSnapshot?: {
+      text?: string;
+      title?: string;
+      description?: string;
+      rating?: number;
+      movieId?: string;
+      moviesCount?: number;
+    };
+  };
+  reason: string;
+  description?: string;
+  status: 'pending' | 'under_review' | 'resolved' | 'dismissed';
+  resolution?: {
+    action: string;
+    notes?: string;
+    resolvedBy: {
+      _id: string;
+      username: string;
+    };
+    resolvedAt: Date;
+  };
+  moderatorNotes?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  category: 'content' | 'behavior' | 'spam' | 'legal' | 'safety';
+  createdAt: Date;
+}
+
+export interface ReportStats {
+  summary: {
+    total: number;
+    pending: number;
+    underReview: number;
+    resolved: number;
+    resolutionRate: string;
+  };
+  byStatus: Array<{ _id: string; count: number }>;
+  byContentType: Array<{ _id: string; count: number }>;
+  byReason: Array<{ _id: string; count: number }>;
+  byPriority: Array<{ _id: string; count: number }>;
+  dailyTrend: Array<{ _id: string; count: number }>;
+}
+
+export interface ResolveReportRequest {
+  action: 'no_action' | 'content_deleted' | 'user_warned' | 'user_banned' | 'other';
+  notes?: string;
+  shouldNotify?: boolean;
+}
+
+export interface UpdateReportStatusRequest {
+  status: 'pending' | 'under_review' | 'resolved' | 'dismissed';
+  notes?: string;
 }
 
 @Injectable({
@@ -392,6 +463,198 @@ export class AdminService {
     );
   }
 
+  // ===== GESTIÓN DE REPORTES =====
 
+  /**
+   * Obtener reportes para el panel de administración
+   */
+  getReports(filters: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    priority?: string;
+    category?: string;
+    contentType?: string;
+    reason?: string;
+  } = {}): Observable<PaginatedResponse<AdminReport>> {
+    let params = new HttpParams();
 
+    if (filters.page) params = params.set('page', filters.page.toString());
+    if (filters.limit) params = params.set('limit', filters.limit.toString());
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.priority) params = params.set('priority', filters.priority);
+    if (filters.category) params = params.set('category', filters.category);
+    if (filters.contentType) params = params.set('contentType', filters.contentType);
+    if (filters.reason) params = params.set('reason', filters.reason);
+
+    return this.http.get<any>(`${this.apiUrl}/reports`, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      map(response => ({
+        success: response.success,
+        reports: response.reports,  // Mapear reports desde la respuesta
+        pagination: response.pagination
+      })),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Resolver un reporte específico
+   */
+  resolveReport(reportId: string, resolution: ResolveReportRequest): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/reports/${reportId}/resolve`, resolution, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(() => this.refreshDataSubject.next('reports')),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Actualizar el estado de un reporte
+   */
+  updateReportStatus(reportId: string, update: UpdateReportStatusRequest): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/reports/${reportId}/status`, update, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(() => this.refreshDataSubject.next('reports')),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtener estadísticas de reportes
+   */
+  getReportStats(): Observable<ReportStats> {
+    return this.http.get<{ success: boolean; data: ReportStats }>(`${this.apiUrl}/reports/stats`, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(response => response.data),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtener reportes contra un usuario específico
+   */
+  getReportsAgainstUser(userId: string, page: number = 1, limit: number = 10): Observable<PaginatedResponse<AdminReport>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<any>(`${this.apiUrl}/reports/against/${userId}`, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      map(response => ({
+        success: response.success,
+        data: response.data,
+        pagination: response.pagination
+      })),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtener reportes de contenido específico
+   */
+  getReportsForContent(contentType: string, contentId: string): Observable<AdminReport[]> {
+    return this.http.get<{ success: boolean; data: AdminReport[] }>(`${this.apiUrl}/reports/content/${contentType}/${contentId}`, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(response => response.data),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtener el texto de display para el motivo del reporte
+   */
+  getReasonDisplayText(reason: string): string {
+    const reasonMap: { [key: string]: string } = {
+      'inappropriate_language': 'Lenguaje inapropiado',
+      'harassment': 'Acoso',
+      'discrimination': 'Discriminación',
+      'spam': 'Spam',
+      'inappropriate_content': 'Contenido inapropiado',
+      'violence_threats': 'Amenazas de violencia',
+      'false_information': 'Información falsa',
+      'hate_speech': 'Discurso de odio',
+      'sexual_content': 'Contenido sexual',
+      'copyright_violation': 'Violación de derechos de autor',
+      'impersonation': 'Suplantación de identidad',
+      'other': 'Otro'
+    };
+    return reasonMap[reason] || reason;
+  }
+
+  /**
+   * Obtener el texto de display para el tipo de contenido
+   */
+  getContentTypeDisplayText(contentType: string): string {
+    const typeMap: { [key: string]: string } = {
+      'user': 'Perfil de usuario',
+      'review': 'Reseña',
+      'comment': 'Comentario',
+      'list': 'Lista personalizada'
+    };
+    return typeMap[contentType] || contentType;
+  }
+
+  /**
+   * Obtener el texto de display para la acción de resolución
+   */
+  getActionDisplayText(action: string): string {
+    const actionMap: { [key: string]: string } = {
+      'no_action': 'Sin acción',
+      'content_deleted': 'Contenido eliminado',
+      'user_warned': 'Usuario advertido',
+      'user_banned': 'Usuario baneado',
+      'other': 'Otra acción'
+    };
+    return actionMap[action] || action;
+  }
+
+  /**
+   * Obtener la clase CSS para la prioridad del reporte
+   */
+  getPriorityClass(priority: string): string {
+    const priorityClasses: { [key: string]: string } = {
+      'low': 'priority-low',
+      'medium': 'priority-medium',
+      'high': 'priority-high',
+      'urgent': 'priority-urgent'
+    };
+    return priorityClasses[priority] || 'priority-medium';
+  }
+
+  /**
+   * Obtener la clase CSS para el estado del reporte
+   */
+  getStatusClass(status: string): string {
+    const statusClasses: { [key: string]: string } = {
+      'pending': 'status-pending',
+      'under_review': 'status-under-review',
+      'resolved': 'status-resolved',
+      'dismissed': 'status-dismissed'
+    };
+    return statusClasses[status] || 'status-pending';
+  }
+
+  /**
+   * Verificar si el usuario puede gestionar reportes
+   */
+  canManageReports(): Observable<boolean> {
+    return this.getUserPermissions().pipe(
+      map(response => {
+        return response?.permissions?.can?.manageReports === true ||
+          response?.permissions?.permissions?.includes('moderate.reports.manage') === true;
+      }),
+      catchError(() => {
+        return of(false);
+      })
+    );
+  }
 }

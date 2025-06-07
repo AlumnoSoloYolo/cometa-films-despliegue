@@ -1,4 +1,3 @@
-
 <div class="admin-container">
   <div class="admin-wrapper">
 
@@ -218,7 +217,8 @@
                     </div>
                     }
                     @if (user.banReason) {
-                    <div style="font-size: 0.7rem; color: var(--color-error); margin-top: 2px; line-height: 1.2;" [title]="user.banReason">
+                    <div style="font-size: 0.7rem; color: var(--color-error); margin-top: 2px; line-height: 1.2;"
+                      [title]="user.banReason">
                       {{ user.banReason.length > 25 ? (user.banReason | slice:0:25) + '...' : user.banReason }}
                     </div>
                     }
@@ -259,7 +259,7 @@
                     }
 
                     @if (user.moderationHistory && user.moderationHistory.length > 0) {
-                    <button class="action-btn btn-secondary" (click)="openHistoryModal(user)" 
+                    <button class="action-btn btn-secondary" (click)="openHistoryModal(user)"
                       [title]="'Ver historial de ' + user.username">
                       Historial
                     </button>
@@ -299,7 +299,8 @@
 
         <!-- Formulario de Búsqueda Específico para Contenido -->
         <form [formGroup]="contentSearchForm" class="search-filters">
-          <input type="text" class="search-input" placeholder="Buscar por username del autor..." formControlName="username">
+          <input type="text" class="search-input" placeholder="Buscar por username del autor..."
+            formControlName="username">
 
           <select class="filter-select" formControlName="userRole">
             <option value="">Todos los roles</option>
@@ -313,7 +314,7 @@
             Buscar Contenido
           </button>
 
-          <button type="button" class="action-btn btn-secondary" (click)="clearContentSearch()" 
+          <button type="button" class="action-btn btn-secondary" (click)="clearContentSearch()"
             style="height: 44px; min-width: 80px;">
             Limpiar
           </button>
@@ -325,7 +326,8 @@
             (click)="showContentTab('reviews')">
             Reseñas
             @if (isContentFiltered && filteredReviews.length > 0) {
-            <span style="background: var(--color-primary); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; margin-left: 4px;">
+            <span
+              style="background: var(--color-primary); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; margin-left: 4px;">
               {{ filteredReviews.length }}
             </span>
             }
@@ -335,7 +337,8 @@
             (click)="showContentTab('comments')">
             Comentarios
             @if (isContentFiltered && filteredComments.length > 0) {
-            <span style="background: var(--color-primary); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; margin-left: 4px;">
+            <span
+              style="background: var(--color-primary); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; margin-left: 4px;">
               {{ filteredComments.length }}
             </span>
             }
@@ -345,7 +348,8 @@
             (click)="showContentTab('lists')">
             Listas
             @if (isContentFiltered && filteredLists.length > 0) {
-            <span style="background: var(--color-primary); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; margin-left: 4px;">
+            <span
+              style="background: var(--color-primary); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; margin-left: 4px;">
               {{ filteredLists.length }}
             </span>
             }
@@ -670,15 +674,264 @@
       </div>
     </div>
 
-    <!-- Reports Tab -->
+    <!-- Contenido de la pestaña Reports -->
     <div class="tab-content" [class.active]="tabState.activeTab === 'reports'" *ngIf="isModerator">
       <div class="admin-card">
         <h3>Sistema de Reportes</h3>
-        <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
-          <div style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;">🚧</div>
-          <p style="font-size: 1.1rem; margin-bottom: 10px;">Funcionalidad de reportes en desarrollo</p>
-          <p style="font-size: 0.9rem;">Próximamente: Gestión de reportes de usuarios y contenido</p>
+
+        <!-- Estadísticas de reportes -->
+        @if (reportStats) {
+        <div class="reports-stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">{{ reportStats.summary.total }}</div>
+            <div class="stat-label">Total Reportes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ reportStats.summary.pending }}</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ reportStats.summary.underReview }}</div>
+            <div class="stat-label">En Revisión</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ reportStats.summary.resolved }}</div>
+            <div class="stat-label">Resueltos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ reportStats.summary.resolutionRate }}%</div>
+            <div class="stat-label">Tasa de Resolución</div>
+          </div>
         </div>
+        }
+
+        <!-- Filtros de reportes -->
+        <form [formGroup]="reportSearchForm" class="search-filters">
+          <select class="filter-select" formControlName="status">
+            <option value="">Todos los estados</option>
+            <option value="pending">Pendientes</option>
+            <option value="under_review">En revisión</option>
+            <option value="resolved">Resueltos</option>
+            <option value="dismissed">Descartados</option>
+          </select>
+
+          <select class="filter-select" formControlName="priority">
+            <option value="">Todas las prioridades</option>
+            <option value="urgent">Urgente</option>
+            <option value="high">Alta</option>
+            <option value="medium">Media</option>
+            <option value="low">Baja</option>
+          </select>
+
+          <select class="filter-select" formControlName="contentType">
+            <option value="">Todos los tipos</option>
+            <option value="user">Perfil de usuario</option>
+            <option value="review">Reseña</option>
+            <option value="comment">Comentario</option>
+            <option value="list">Lista</option>
+          </select>
+
+          <select class="filter-select" formControlName="category">
+            <option value="">Todas las categorías</option>
+            <option value="content">Contenido</option>
+            <option value="behavior">Comportamiento</option>
+            <option value="spam">Spam</option>
+            <option value="legal">Legal</option>
+            <option value="safety">Seguridad</option>
+          </select>
+
+          <button type="button" class="search-btn" (click)="searchReports()">
+            Buscar
+          </button>
+
+          <button type="button" class="action-btn btn-secondary" (click)="clearReportSearch()">
+            Limpiar
+          </button>
+        </form>
+
+        @if (loading.reports && reports.length === 0) {
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <span>Cargando reportes...</span>
+        </div>
+        }
+
+        @if (errors.reports) {
+        <div class="error-message">
+          {{ errors.reports }}
+        </div>
+        }
+
+        @if (reports.length > 0) {
+        <div class="reports-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Reporter</th>
+                <th>Usuario Reportado</th>
+                <th>Contenido</th>
+                <th>Motivo</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (report of reports; track report._id) {
+              <tr>
+                <!-- Reporter -->
+                <td>
+                  <div class="flex-center">
+                    <img [src]="getUserAvatarPath(report.reporter.avatar)" alt="Avatar" class="user-avatar">
+                    <div>
+                      <div style="font-weight: 600; color: var(--text-primary);">{{ report.reporter.username }}</div>
+                      <span class="status-badge" [ngClass]="getRoleClass(report.reporter.role)"
+                        style="font-size: 0.65rem; margin-top: 2px;">
+                        {{ report.reporter.role }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Usuario reportado -->
+                <td>
+                  <div class="flex-center">
+                    <img [src]="getUserAvatarPath(report.reportedUser.avatar)" alt="Avatar" class="user-avatar">
+                    <div>
+                      <div style="font-weight: 600; color: var(--text-primary);">{{ report.reportedUser.username }}
+                      </div>
+                      <span class="status-badge" [ngClass]="getRoleClass(report.reportedUser.role)"
+                        style="font-size: 0.65rem; margin-top: 2px;">
+                        {{ report.reportedUser.role }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Contenido reportado -->
+                <td>
+                  <div>
+                    <div style="font-weight: 600; color: var(--text-primary);">
+                      {{ getContentTypeDisplayText(report.reportedContent.contentType) }}
+                    </div>
+                    @if (report.reportedContent.contentSnapshot) {
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.3;">
+                      @if (report.reportedContent.contentSnapshot.title) {
+                      <div><strong>Título:</strong> {{ report.reportedContent.contentSnapshot.title }}</div>
+                      }
+                      @if (report.reportedContent.contentSnapshot.text) {
+                      <div><strong>Texto:</strong> {{ (report.reportedContent.contentSnapshot.text | slice:0:60) + '...'
+                        }}
+                      </div>
+                      }
+                      @if (report.reportedContent.contentSnapshot.rating) {
+                      <div><strong>Puntuación:</strong> {{ report.reportedContent.contentSnapshot.rating }}/10</div>
+                      }
+                    </div>
+                    }
+                  </div>
+                </td>
+
+                <!-- Motivo -->
+                <td>
+                  <div style="max-width: 150px;">
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">
+                      {{ getReasonDisplayText(report.reason) }}
+                    </div>
+                    @if (report.description) {
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.3;"
+                      [title]="report.description">
+                      {{ (report.description | slice:0:50) + (report.description.length > 50 ? '...' : '') }}
+                    </div>
+                    }
+                  </div>
+                </td>
+
+                <!-- Prioridad -->
+                <td>
+                  <span class="priority-badge" [ngClass]="getPriorityClass(report.priority)">
+                    {{ capitalizeFirst(report.priority) }}
+                  </span>
+                </td>
+
+                <!-- Estado -->
+                <td>
+                  <span class="status-badge" [ngClass]="getReportStatusClass(report.status)">
+                    {{ getStatusDisplayText(report.status) }}
+                  </span>
+                  @if (report.resolution && report.resolution.resolvedBy) {
+                  <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
+                    Por: {{ report.resolution.resolvedBy.username }}
+                  </div>
+                  }
+                </td>
+
+                <!-- Fecha -->
+                <td>
+                  <div style="font-size: 0.8rem; color: var(--text-primary);">
+                    {{ formatDate(report.createdAt) }}
+                  </div>
+                  @if (report.resolution && report.resolution.resolvedAt) {
+                  <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
+                    Resuelto: {{ formatDate(report.resolution.resolvedAt) }}
+                  </div>
+                  }
+                </td>
+
+                <!-- Acciones -->
+                <td>
+                  <div class="actions-container">
+                    @if (report.status === 'pending') {
+                    <button class="action-btn btn-warning" (click)="updateReportStatus(report._id, 'under_review')"
+                      title="Marcar en revisión">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    }
+
+                    @if (report.status !== 'resolved') {
+                    <button class="action-btn btn-primary" (click)="openResolveReportModal(report)"
+                      title="Resolver reporte">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                    }
+
+                    @if (report.status !== 'dismissed') {
+                    <button class="action-btn btn-secondary" (click)="updateReportStatus(report._id, 'dismissed')"
+                      title="Descartar reporte">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                    }
+
+                    <button class="action-btn btn-secondary" (click)="openReportDetailModal(report)"
+                      title="Ver detalles">
+                      <i class="bi bi-info-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (pagination.reports.hasMore) {
+        <div class="pagination">
+          <button class="load-more-btn" [disabled]="loading.reports" (click)="loadMoreReports()">
+            @if (loading.reports) {
+            Cargando...
+            } @else {
+            Cargar más reportes
+            }
+          </button>
+        </div>
+        }
+        } @else if (!loading.reports) {
+        <div class="empty-state">
+          <div class="empty-state-icon">🚩</div>
+          <p>No se encontraron reportes</p>
+        </div>
+        }
       </div>
     </div>
 
@@ -759,6 +1012,268 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+}
+
+
+
+
+<!-- Modal para resolver reporte -->
+@if (showResolveReportModal) {
+<div class="modal-overlay" (click)="closeReportModals()">
+  <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Resolver Reporte</h3>
+      <button class="close-btn" (click)="closeReportModals()">
+        ×
+      </button>
+    </div>
+
+    <form [formGroup]="resolveReportForm" (ngSubmit)="resolveReport()">
+      @if (modalData.report) {
+      <!-- Información del reporte -->
+      <div
+        style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+        <div
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-md);">
+          <div>
+            <strong>Reporter:</strong> {{ modalData.report.reporter.username }}
+          </div>
+          <div>
+            <strong>Usuario reportado:</strong> {{ modalData.report.reportedUser.username }}
+          </div>
+        </div>
+
+        <div
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-md);">
+          <div>
+            <strong>Tipo:</strong> {{ getContentTypeDisplayText(modalData.report.reportedContent.contentType) }}
+          </div>
+          <div>
+            <strong>Motivo:</strong> {{ getReasonDisplayText(modalData.report.reason) }}
+          </div>
+        </div>
+
+        @if (modalData.report.description) {
+        <div style="margin-bottom: var(--spacing-md);">
+          <strong>Descripción:</strong>
+          <div
+            style="background: var(--bg-input); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-top: var(--spacing-xs);">
+            {{ modalData.report.description }}
+          </div>
+        </div>
+        }
+
+        @if (modalData.report.reportedContent.contentSnapshot) {
+        <div>
+          <strong>Contenido reportado:</strong>
+          <div
+            style="background: var(--bg-input); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-top: var(--spacing-xs);">
+            @if (modalData.report.reportedContent.contentSnapshot.title) {
+            <div><strong>Título:</strong> {{ modalData.report.reportedContent.contentSnapshot.title }}</div>
+            }
+            @if (modalData.report.reportedContent.contentSnapshot.text) {
+            <div><strong>Texto:</strong> {{ modalData.report.reportedContent.contentSnapshot.text }}</div>
+            }
+            @if (modalData.report.reportedContent.contentSnapshot.rating) {
+            <div><strong>Puntuación:</strong> {{ modalData.report.reportedContent.contentSnapshot.rating }}/10</div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      }
+
+      <div class="form-group">
+        <label>Acción a tomar: *</label>
+        <select formControlName="action" required>
+          <option value="">Seleccionar acción</option>
+          <option value="no_action">Sin acción</option>
+          <option value="content_deleted">Contenido eliminado</option>
+          <option value="user_warned">Usuario advertido</option>
+          <option value="user_banned">Usuario baneado</option>
+          <option value="other">Otra acción</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Notas de resolución:</label>
+        <textarea formControlName="notes" placeholder="Describe la acción tomada y el motivo..." rows="4"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+          <input type="checkbox" formControlName="shouldNotify" style="margin: 0;">
+          Enviar notificación al usuario reportado
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn btn-secondary" (click)="closeReportModals()">
+          Cancelar
+        </button>
+        <button type="submit" class="action-btn btn-primary"
+          [disabled]="resolveReportForm.invalid || loading.resolvingReport">
+          @if (loading.resolvingReport) {
+          Resolviendo...
+          } @else {
+          Resolver Reporte
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+
+<!-- Modal para ver detalles del reporte -->
+@if (showReportDetailModal) {
+<div class="modal-overlay" (click)="closeReportModals()">
+  <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Detalles del Reporte</h3>
+      <button class="close-btn" (click)="closeReportModals()">
+        ×
+      </button>
+    </div>
+
+    @if (modalData.report) {
+    <div style="padding: var(--spacing-lg);">
+      <!-- Información básica -->
+      <div
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
+        <div>
+          <h4>Reporter</h4>
+          <div class="flex-center" style="gap: var(--spacing-md);">
+            <img [src]="getUserAvatarPath(modalData.report.reporter.avatar)" alt="Avatar" class="user-avatar">
+            <div>
+              <div style="font-weight: 600;">{{ modalData.report.reporter.username }}</div>
+              <span class="status-badge" [ngClass]="getRoleClass(modalData.report.reporter.role)">
+                {{ modalData.report.reporter.role }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4>Usuario Reportado</h4>
+          <div class="flex-center" style="gap: var(--spacing-md);">
+            <img [src]="getUserAvatarPath(modalData.report.reportedUser.avatar)" alt="Avatar" class="user-avatar">
+            <div>
+              <div style="font-weight: 600;">{{ modalData.report.reportedUser.username }}</div>
+              <span class="status-badge" [ngClass]="getRoleClass(modalData.report.reportedUser.role)">
+                {{ modalData.report.reportedUser.role }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalles del reporte -->
+      <div style="margin-bottom: var(--spacing-xl);">
+        <h4>Detalles del Reporte</h4>
+        <div style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-md);">
+          <div
+            style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-md);">
+            <div>
+              <strong>Tipo:</strong> {{ getContentTypeDisplayText(modalData.report.reportedContent.contentType) }}
+            </div>
+            <div>
+              <strong>Motivo:</strong> {{ getReasonDisplayText(modalData.report.reason) }}
+            </div>
+            <div>
+              <strong>Prioridad:</strong>
+              <span class="priority-badge" [ngClass]="getPriorityClass(modalData.report.priority)">
+                {{ capitalizeFirst(modalData.report.priority) }}
+              </span>
+            </div>
+          </div>
+
+          <div style="margin-bottom: var(--spacing-md);">
+            <strong>Estado:</strong>
+            <span class="status-badge" [ngClass]="getReportStatusClass(modalData.report.status)">
+              {{ getStatusDisplayText(modalData.report.status) }}
+            </span>
+          </div>
+
+          @if (modalData.report.description) {
+          <div style="margin-bottom: var(--spacing-md);">
+            <strong>Descripción del reporter:</strong>
+            <div
+              style="background: var(--bg-input); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-top: var(--spacing-xs);">
+              {{ modalData.report.description }}
+            </div>
+          </div>
+          }
+
+          <div style="margin-bottom: var(--spacing-md);">
+            <strong>Fecha del reporte:</strong> {{ formatDate(modalData.report.createdAt) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido reportado -->
+      @if (modalData.report.reportedContent.contentSnapshot) {
+      <div style="margin-bottom: var(--spacing-xl);">
+        <h4>Contenido Reportado</h4>
+        <div style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-md);">
+          @if (modalData.report.reportedContent.contentSnapshot.title) {
+          <div style="margin-bottom: var(--spacing-sm);">
+            <strong>Título:</strong> {{ modalData.report.reportedContent.contentSnapshot.title }}
+          </div>
+          }
+          @if (modalData.report.reportedContent.contentSnapshot.text) {
+          <div style="margin-bottom: var(--spacing-sm);">
+            <strong>Texto:</strong>
+            <div
+              style="background: var(--bg-input); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-top: var(--spacing-xs); white-space: pre-wrap;">
+              {{ modalData.report.reportedContent.contentSnapshot.text }}</div>
+          </div>
+          }
+          @if (modalData.report.reportedContent.contentSnapshot.rating) {
+          <div style="margin-bottom: var(--spacing-sm);">
+            <strong>Puntuación:</strong> {{ modalData.report.reportedContent.contentSnapshot.rating }}/10
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Resolución (si existe) -->
+      @if (modalData.report.resolution) {
+      <div>
+        <h4>Resolución</h4>
+        <div style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-md);">
+          <div style="margin-bottom: var(--spacing-sm);">
+            <strong>Acción:</strong> {{ getActionDisplayText(modalData.report.resolution.action) }}
+          </div>
+          <div style="margin-bottom: var(--spacing-sm);">
+            <strong>Resuelto por:</strong> {{ modalData.report.resolution.resolvedBy.username }}
+          </div>
+          <div style="margin-bottom: var(--spacing-sm);">
+            <strong>Fecha de resolución:</strong> {{ formatDate(modalData.report.resolution.resolvedAt) }}
+          </div>
+          @if (modalData.report.resolution.notes) {
+          <div>
+            <strong>Notas:</strong>
+            <div
+              style="background: var(--bg-input); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-top: var(--spacing-xs);">
+              {{ modalData.report.resolution.notes }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    <div class="form-actions">
+      <button type="button" class="action-btn btn-secondary" (click)="closeReportModals()">
+        Cerrar
+      </button>
+    </div>
   </div>
 </div>
 }
@@ -860,7 +1375,7 @@
       <button type="button" class="action-btn btn-secondary" (click)="closeModals()">
         Cerrar
       </button>
-      <button type="button" class="action-btn btn-danger" 
+      <button type="button" class="action-btn btn-danger"
         (click)="openDeleteModal('review', modalData.review._id, 'Reseña de ' + modalData.review.userId.username)">
         Eliminar Reseña
       </button>
@@ -944,7 +1459,8 @@
 
     <form [formGroup]="deleteForm" (ngSubmit)="deleteContent()">
       <div style="margin-bottom: 20px;">
-        <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <div
+          style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
             <span style="color: var(--color-warning);">⚠️</span>
             <strong style="color: var(--color-warning);">¿Estás seguro de que quieres eliminar?</strong>
@@ -952,7 +1468,8 @@
           <p style="margin: 0; color: var(--text-primary);">{{ modalData.itemTitle }}</p>
         </div>
 
-        <div style="background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 8px; padding: 12px;">
+        <div
+          style="background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 8px; padding: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="color: var(--color-error);">❌</span>
             <span style="color: var(--color-error); font-size: 14px; font-weight: 600;">
