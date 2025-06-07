@@ -249,7 +249,7 @@
     --ty-end: 80vh;
     --angle: 95deg;
     --duration: 40s;
-    --delay: 5s;
+    --delay: 10s;
 }
 
 /* Cometa normal */
@@ -269,14 +269,14 @@
     --ty-end: 70vh;
     --angle: 85deg;
     --duration: 60s;
-    --delay: 25s;
+    --delay: 30s;
 }
 
 /* Cometa normal */
 .comet-5 { top: 50%; left: -20%; --comet-base-width: 95px; --initial-scale: 0.5; --final-scale: 1.1; --tx-start: 0vw; --ty-start: 0vh; --tx-end: 75vw; --ty-end: -15vh; --angle: 345deg; --duration: 60s; --delay: 40s; }
 
 /* Cometa normal */
-.comet-6 { top: 90%; left: 20%; --comet-base-width: 105px; --initial-scale: 0.2; --final-scale: 0.5; --tx-start: 0vw; --ty-start: 0vh; --tx-end: 50vw; --ty-end: -35vh; --angle: 320deg; --duration: 60s; --delay: 50s;   --comet-head-color: #a3d8ff;
+.comet-6 { top: 90%; left: -15%; --comet-base-width: 105px; --initial-scale: 0.2; --final-scale: 0.5; --tx-start: 0vw; --ty-start: 0vh; --tx-end: 65vw; --ty-end: 30vh; --angle: 320deg; --duration: 60s; --delay: 50s;   --comet-head-color: #a3d8ff;
     --rgb-comet-head-color: 163, 216, 255; }
 /* ===== ESFERAS CINEMATOGRÁFICAS ORBITALES ===== */
 .blur-sphere {
@@ -329,7 +329,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(ellipse at center, rgba(var(--sphere-color-1-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-1-rgb), var(--sphere-edge-opacity)) 40%, transparent 60%);
   --sphere-shadow-color-rgb: var(--sphere-color-1-rgb);
-  --orbit-radius: 86vw; --orbit-start: 0deg;
+  --orbit-radius: 40vw; --orbit-start: 0deg;
   animation: pulseSphere 18s ease-in-out infinite, orbitSphere 45s linear infinite;
   animation-delay: 0s, 0s;
   --sphere-blur: 30px; --sphere-brightness: 160%; --sphere-saturate: 200%; --sphere-core-opacity: 0.04; --sphere-edge-opacity: 0.01;
@@ -340,7 +340,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(circle, rgba(var(--sphere-color-2-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-2-rgb), var(--sphere-edge-opacity)) 50%, transparent 70%);
   --sphere-shadow-color-rgb: var(--sphere-color-2-rgb);
-  --orbit-radius: 90vw; /* Aumentado */ --orbit-start: 60deg;
+  --orbit-radius: 41vw; /* Aumentado */ --orbit-start: 60deg;
   animation: pulseSphere 22s ease-in-out infinite, orbitSphere 60s linear infinite;
   animation-delay: -8s, -15s;
   --sphere-blur: 25px; --sphere-brightness: 155%; --sphere-saturate: 190%; --sphere-core-opacity: 0.03; --sphere-edge-opacity: 0.008;
@@ -351,7 +351,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(circle, rgba(var(--sphere-color-3-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-3-rgb), var(--sphere-edge-opacity)) 45%, transparent 65%);
   --sphere-shadow-color-rgb: var(--sphere-color-3-rgb);
-  --orbit-radius: 97vw; --orbit-start: 120deg;
+  --orbit-radius: 42vw; --orbit-start: 120deg;
   animation: pulseSphere 16s ease-in-out infinite, orbitSphere 50s linear infinite;
   animation-delay: -12s, -25s;
   --sphere-blur: 28px; --sphere-brightness: 150%; --sphere-saturate: 185%; --sphere-core-opacity: 0.035; --sphere-edge-opacity: 0.009;
@@ -362,7 +362,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(circle, rgba(var(--sphere-color-4-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-4-rgb), var(--sphere-edge-opacity)) 50%, transparent 70%);
   --sphere-shadow-color-rgb: var(--sphere-color-4-rgb);
-  --orbit-radius: 85vw; /* Aumentado */ --orbit-start: 180deg;
+  --orbit-radius: 43vw; /* Aumentado */ --orbit-start: 180deg;
   animation: pulseSphere 25s ease-in-out infinite, orbitSphere 70s linear infinite;
   animation-delay: -20s, -35s;
   --sphere-blur: 22px; --sphere-brightness: 145%; --sphere-saturate: 175%; --sphere-core-opacity: 0.025; --sphere-edge-opacity: 0.007;
@@ -373,7 +373,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(ellipse at center, rgba(var(--sphere-color-5-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-5-rgb), var(--sphere-edge-opacity)) 55%, transparent 72%);
   --sphere-shadow-color-rgb: var(--sphere-color-5-rgb);
-  --orbit-radius: 81vw; --orbit-start: 240deg;
+  --orbit-radius: 44vw; --orbit-start: 240deg;
   animation: pulseSphere 20s ease-in-out infinite, orbitSphere 55s linear infinite;
   animation-delay: -5s, -10s;
   --sphere-blur: 20px; --sphere-brightness: 140%; --sphere-saturate: 170%; --sphere-core-opacity: 0.02; --sphere-edge-opacity: 0.006;
@@ -384,7 +384,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(circle, rgba(var(--sphere-color-6-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-6-rgb), var(--sphere-edge-opacity)) 40%, transparent 68%);
   --sphere-shadow-color-rgb: var(--sphere-color-6-rgb);
-  --orbit-radius: 93vw; --orbit-start: 300deg;
+  --orbit-radius: 45vw; --orbit-start: 300deg;
   animation: pulseSphere 28s ease-in-out infinite, orbitSphere 65s linear infinite;
   animation-delay: -25s, -45s;
   --sphere-blur: 24px; --sphere-brightness: 148%; --sphere-saturate: 180%; --sphere-core-opacity: 0.028; --sphere-edge-opacity: 0.0075;
@@ -396,7 +396,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(ellipse at center, rgba(var(--sphere-color-7-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-7-rgb), var(--sphere-edge-opacity)) 45%, transparent 70%);
   --sphere-shadow-color-rgb: var(--sphere-color-7-rgb);
-  --orbit-radius: 84vw; --orbit-start: 30deg;
+  --orbit-radius: 46vw; --orbit-start: 30deg;
   animation: pulseSphere 19s ease-in-out infinite, orbitSphere 52s linear infinite;
   animation-delay: -7s, -12s;
   --sphere-blur: 26px; --sphere-brightness: 150%; --sphere-saturate: 190%; --sphere-core-opacity: 0.03; --sphere-edge-opacity: 0.008;
@@ -407,7 +407,7 @@
   top: 50%; left: 50%; transform-origin: center center;
   background: radial-gradient(circle, rgba(var(--sphere-color-8-rgb), var(--sphere-core-opacity)) 0%, rgba(var(--sphere-color-8-rgb), var(--sphere-edge-opacity)) 50%, transparent 75%);
   --sphere-shadow-color-rgb: var(--sphere-color-8-rgb);
-  --orbit-radius: 87vw; --orbit-start: 150deg;
+  --orbit-radius: 47vw; --orbit-start: 150deg;
   animation: pulseSphere 23s ease-in-out infinite, orbitSphere 68s linear infinite;
   animation-delay: -14s, -30s;
   --sphere-blur: 23px; --sphere-brightness: 140%; --sphere-saturate: 170%; --sphere-core-opacity: 0.025; --sphere-edge-opacity: 0.007;
@@ -431,14 +431,14 @@
   .title-container { margin-bottom: 2rem; padding: 1.5rem; max-width: 90%; }
   
 
-  .sphere-1 { width: 80px; height: 80px; --orbit-radius: 65vw; }
-  .sphere-2 { width: 65px; height: 65px; --orbit-radius: 69vw; } 
-  .sphere-3 { width: 75px; height: 75px; --orbit-radius: 55vw; }
-  .sphere-4 { width: 55px; height: 55px; --orbit-radius: 58vw; } 
-  .sphere-5 { width: 90px; height: 90px; --orbit-radius: 60vw; }
-  .sphere-6 { width: 70px; height: 70px; --orbit-radius: 57vw; }
-  .sphere-7 { width: 60px; height: 60px; --orbit-radius: 63vw; } 
-  .sphere-8 { width: 78px; height: 78px; --orbit-radius: 64vw; } 
+  .sphere-1 { width: 80px; height: 80px; --orbit-radius: 40vw; }
+  .sphere-2 { width: 65px; height: 65px; --orbit-radius: 41vw; } 
+  .sphere-3 { width: 75px; height: 75px; --orbit-radius: 42vw; }
+  .sphere-4 { width: 55px; height: 55px; --orbit-radius: 43vw; } 
+  .sphere-5 { width: 90px; height: 90px; --orbit-radius: 44vw; }
+  .sphere-6 { width: 70px; height: 70px; --orbit-radius: 45vw; }
+  .sphere-7 { width: 60px; height: 60px; --orbit-radius: 46vw; } 
+  .sphere-8 { width: 78px; height: 78px; --orbit-radius: 47vw; } 
 
   .cinematic-image::after { font-size: clamp(0.35rem, 1vw, 0.5rem); /* ... */ }
 }
@@ -463,14 +463,14 @@
   .title-container { max-width: 800px; padding: 3rem; }
   
 
-   .sphere-1 { --orbit-radius: 30vw; }
-   .sphere-2 { --orbit-radius: 36vw; } 
-   .sphere-3 { --orbit-radius: 31vw; }
-   .sphere-2 { --orbit-radius: 29vw; } 
-   .sphere-5 { --orbit-radius: 32vw; }
-   .sphere-6 { --orbit-radius: 35vw; }
-   .sphere-7 { --orbit-radius: 28vw; } 
-   .sphere-8 { --orbit-radius: 33vw; } 
+   .sphere-1 { --orbit-radius: 37vw; }
+   .sphere-2 { --orbit-radius: 38vw; } 
+   .sphere-3 { --orbit-radius: 39vw; }
+   .sphere-2 { --orbit-radius: 40vw; } 
+   .sphere-5 { --orbit-radius: 35vw; }
+   .sphere-6 { --orbit-radius: 42vw; }
+   .sphere-7 { --orbit-radius: 43vw; } 
+   .sphere-8 { --orbit-radius: 36vw; } 
 }
 
 .logo-image-landing {

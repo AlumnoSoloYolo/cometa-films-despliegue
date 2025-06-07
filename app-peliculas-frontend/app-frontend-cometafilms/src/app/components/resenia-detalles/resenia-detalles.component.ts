@@ -8,6 +8,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { UserSocialService } from '../../services/social.service';
 import { User, UserResponse } from '../../models/user.model';
 import { LikeButtonComponent } from '../like-button/like-button.component';
+import { ReportModalComponent, ReportModalData } from '../report/report.component';
 
 interface Comment {
   _id?: string;
@@ -25,7 +26,7 @@ interface Comment {
 @Component({
   selector: 'app-resenia-detalles',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, LikeButtonComponent],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, LikeButtonComponent, ReportModalComponent],
   templateUrl: './resenia-detalles.component.html',
   styleUrl: './resenia-detalles.component.css'
 })
@@ -45,7 +46,8 @@ export class ReseniaDetallesComponent implements OnInit {
   mostrarFormularioEdicion: boolean = false;
   followStatus: 'none' | 'requested' | 'following' = 'none';
   requestId: string | null = null;
-
+  showReportModal = false;
+  reportModalData: ReportModalData | null = null;
   currentUser: any;
 
   constructor(
@@ -475,5 +477,85 @@ export class ReseniaDetallesComponent implements OnInit {
       },
       error: (error) => console.error('Error al eliminar reseña:', error)
     });
+  }
+
+
+  reportReview(): void {
+    if (!this.currentUser || !this.review) {
+      alert('Debes iniciar sesión para reportar contenido');
+      return;
+    }
+
+    // No permitir auto-reportes
+    if (this.currentUser.id === this.review.userId) {
+      return;
+    }
+
+    this.reportModalData = {
+      targetUser: {
+        _id: this.review.userId,
+        username: this.review.username,
+        avatar: this.review.avatar
+      },
+      contentType: 'review',
+      contentId: this.review._id
+    };
+
+    this.showReportModal = true;
+  }
+
+
+  reportComment(comment: Comment): void {
+    if (!this.currentUser || !comment._id) {
+      alert('Debes iniciar sesión para reportar contenido');
+      return;
+    }
+
+    // No permitir auto-reportes
+    if (this.currentUser.id === comment.userId) {
+      return;
+    }
+
+    this.reportModalData = {
+      targetUser: {
+        _id: comment.userId,
+        username: comment.username,
+        avatar: comment.avatar
+      },
+      contentType: 'comment',
+      contentId: comment._id
+    };
+
+    this.showReportModal = true;
+  }
+
+
+  canReportReview(): boolean {
+    return this.currentUser &&
+      this.review &&
+      this.currentUser.id !== this.review.userId;
+  }
+
+  /**
+   * Verifica si el usuario puede reportar un comentario
+   */
+  canReportComment(comment: Comment): boolean {
+    return this.currentUser &&
+      comment._id &&
+      this.currentUser.id !== comment.userId;
+  }
+
+  onReportModalClosed(): void {
+    this.showReportModal = false;
+    this.reportModalData = null;
+  }
+
+  /**
+   * Maneja cuando se envía un reporte exitosamente
+   */
+  onReportSubmitted(): void {
+    console.log('Reporte enviado exitosamente');
+    // Aquí podrías mostrar una notificación de éxito
+    // o hacer alguna acción adicional si es necesaria
   }
 }

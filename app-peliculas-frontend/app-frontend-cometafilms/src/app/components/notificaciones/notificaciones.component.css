@@ -273,6 +273,216 @@
   transform: translateY(-1px);
 }
 
+
+/* Añadir al CSS existente del componente de notificaciones */
+
+/* === ACTIONS BAR === */
+.notifications__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  border: 1px solid var(--border-color);
+}
+
+.action-btn--secondary {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.action-btn--secondary:hover {
+  background: var(--bg-surface-light);
+}
+
+.action-btn--danger {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+.action-btn--danger:hover {
+  background: #dc2626;
+}
+
+/* === SYSTEM NOTIFICATIONS === */
+.notifications__system-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+  background: transparent;
+}
+
+.notifications__system-item:last-child {
+  border-bottom: none;
+}
+
+.notifications__system-item:hover {
+  background: var(--bg-surface-light);
+}
+
+.notifications__system-item--unread {
+  background: rgba(107, 119, 229, 0.05);
+  border-left: 3px solid var(--color-primary);
+}
+
+.notifications__system-item--error {
+  border-left-color: var(--color-danger);
+}
+
+.notifications__system-item--warning {
+  border-left-color: var(--color-warning);
+}
+
+.system-notification__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+}
+
+.system-notification__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.system-notification__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+}
+
+.system-notification__title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.system-notification__time {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.system-notification__message {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin: 0 0 0.75rem 0;
+}
+
+.system-notification__reason {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+
+.system-notification__action-required {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+  font-weight: var(--font-weight-medium);
+}
+
+.system-notification__unread-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+}
+
+/* === RESPONSIVE UPDATES === */
+@media (max-width: 768px) {
+  .notifications__actions {
+    justify-content: center;
+  }
+  
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 140px;
+  }
+  
+  .notifications__system-item {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  
+  .system-notification__icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+  
+  .system-notification__header {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+  
+  .system-notification__time {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .notifications__actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+  }
+  
+  .system-notification__icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+  
+  .system-notification__title {
+    font-size: var(--font-size-sm);
+  }
+  
+  .system-notification__message {
+    font-size: var(--font-size-xs);
+  }
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   .notifications {

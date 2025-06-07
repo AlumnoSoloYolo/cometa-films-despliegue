@@ -95,8 +95,17 @@
                 {{ review.comment }}
             </div>
 
-            <div class="review-details__like-section">
+
+            <div class="review-details__actions">
                 <app-like-button [contentType]="'review'" [contentId]="review._id"></app-like-button>
+
+                @if (canReportReview()) {
+                <button class="review-details__report-button" (click)="reportReview()" type="button"
+                    title="Reportar reseña">
+                    <i class="bi bi-flag"></i>
+                    <span class="review-details__report-text"> Reportar</span>
+                </button>
+                }
             </div>
         </div>
     </div>
@@ -232,6 +241,15 @@
                                     Eliminar
                                 </button>
                                 }
+
+                                @if (canReportComment(comment)) {
+                                <button class="review-details__comment-action review-details__comment-action--report"
+                                    (click)="reportComment(comment)" type="button" title="Reportar comentario">
+                                    <i class="bi bi-flag"></i>
+                                    Reportar
+                                </button>
+                                }
+
                             </div>
                         </div>
                     </div>
@@ -285,6 +303,15 @@
                                             Eliminar
                                         </button>
                                         }
+
+                                        @if (canReportComment(reply)) {
+                                        <button
+                                            class="review-details__comment-action review-details__comment-action--report"
+                                            (click)="reportComment(reply)" type="button" title="Reportar respuesta">
+                                            <i class="bi bi-flag"></i>
+                                            Reportar
+                                        </button>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -307,3 +334,9 @@
     </div>
     }
 </div>
+
+
+<!-- Modal de reporte -->
+<app-report-modal [showModal]="showReportModal" [reportData]="reportModalData" (modalClosed)="onReportModalClosed()"
+    (reportSubmitted)="onReportSubmitted()">
+</app-report-modal>

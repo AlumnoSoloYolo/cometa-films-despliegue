@@ -10,11 +10,12 @@ import { io, Socket } from 'socket.io-client';
 export class SocketService {
   private socket: Socket | null = null;
   private connected = false;
-  
+
   // Subjects para actividades
   private newActivitySubject = new BehaviorSubject<any>(null);
   private newFollowRequestSubject = new BehaviorSubject<any>(null);
-  
+  private systemNotificationSubject = new BehaviorSubject<any>(null);
+
   // Subjects para chat
   private newMessageSubject = new BehaviorSubject<any>(null);
   private userTypingSubject = new BehaviorSubject<any>(null);
@@ -41,7 +42,7 @@ export class SocketService {
     }
 
     // Configurar URL de Socket.IO para producción
-    const socketUrl = environment.production 
+    const socketUrl = environment.production
       ? `http://${window.location.hostname}:3000`
       : 'http://localhost:3000';
 
@@ -66,7 +67,7 @@ export class SocketService {
       console.log('Socket.IO: Conectado exitosamente');
       console.log('Socket.IO: ID de conexión:', this.socket?.id);
       this.connected = true;
-      
+
       // Enviar test de conexión
       this.testConnection();
     });
@@ -116,7 +117,7 @@ export class SocketService {
 
       // Mostrar notificación del navegador si el chat no está activo
       if (data.message && data.chat && data.chat.otherParticipant) {
-        const messagePreview = data.message.messageType === 'movie' 
+        const messagePreview = data.message.messageType === 'movie'
           ? ` ${data.message.movieData?.title}`
           : data.message.text || 'Nuevo mensaje';
 
@@ -132,6 +133,20 @@ export class SocketService {
       console.log('Socket.IO: Usuario escribiendo:', data);
       this.userTypingSubject.next(data);
     });
+
+    this.socket.on('system_notification', (notification) => {
+      console.log('Socket.IO: Notificación del sistema recibida:', notification);
+      this.systemNotificationSubject.next(notification);
+
+      // Confirmar recepción al servidor
+      this.socket?.emit('system_notification_received', {
+        notificationId: notification.id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Mostrar notificación del navegador según el tipo
+      this.showSystemNotification(notification);
+    });
   }
 
   private disconnect(): void {
@@ -146,9 +161,9 @@ export class SocketService {
   testConnection(): void {
     if (this.socket && this.connected) {
       console.log('Socket.IO: Enviando test de conexión...');
-      this.socket.emit('test_connection', { 
-        message: 'Test desde frontend', 
-        timestamp: new Date().toISOString() 
+      this.socket.emit('test_connection', {
+        message: 'Test desde frontend',
+        timestamp: new Date().toISOString()
       });
     }
   }
@@ -188,7 +203,7 @@ export class SocketService {
 
   private showBrowserNotification(title: string, body: string): void {
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { 
+      new Notification(title, {
         body,
         icon: '/favicon.ico',
         badge: '/favicon.ico'
@@ -196,7 +211,7 @@ export class SocketService {
     } else if ('Notification' in window && Notification.permission !== 'denied') {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          new Notification(title, { 
+          new Notification(title, {
             body,
             icon: '/favicon.ico',
             badge: '/favicon.ico'
@@ -204,6 +219,53 @@ export class SocketService {
         }
       });
     }
+  }
+
+  private showSystemNotification(notification: any): void {
+    const data = notification.data;
+
+    if (!data) return;
+
+    const title = data.title || 'Notificación del sistema';
+    const message = data.message || '';
+
+    // Determinar el icono según la severidad
+    let icon = '/favicon.ico';
+    if (data.severity === 'warning' || data.severity === 'error') {
+      icon = '/favicon.ico'; // Podrías tener iconos específicos
+    }
+
+    this.showBrowserNotification(title, message);
+  }
+
+  /**
+   * Marca una notificación del sistema como leída
+   */
+  markSystemNotificationAsRead(notificationId: string): void {
+    if (this.socket && this.connected) {
+      this.socket.emit('mark_notification_read', {
+        notificationId: notificationId,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Envía una notificación de prueba del sistema
+   */
+  testSystemNotification(): void {
+    if (this.socket && this.connected) {
+      console.log('Socket.IO: Solicitando notificación de prueba del sistema...');
+      this.socket.emit('test_system_notification', {
+        message: 'Prueba de notificación del sistema',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  // Getter para el observable de notificaciones del sistema
+  get systemNotification$(): Observable<any> {
+    return this.systemNotificationSubject.asObservable();
   }
 
   // Getters para los observables

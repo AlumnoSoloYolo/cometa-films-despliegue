@@ -84,13 +84,84 @@
             <div class="notifications__section">
                 <h1 class="notifications__title">Notificaciones del sistema</h1>
 
+                <!-- Acciones de notificaciones del sistema -->
+                @if (systemNotifications.length > 0) {
+                <div class="notifications__actions">
+                    <button class="action-btn action-btn--secondary" (click)="markAllSystemNotificationsAsRead()">
+                        <i class="bi bi-check-all"></i>
+                        Marcar todas como leídas
+                    </button>
+                    <button class="action-btn action-btn--danger" (click)="clearSystemNotifications()">
+                        <i class="bi bi-trash"></i>
+                        Limpiar todas
+                    </button>
+                </div>
+                }
+
+                @if (loadingSystemNotifications) {
+                <div class="notifications__loading">
+                    <div class="notifications__spinner" role="status" aria-label="Cargando"></div>
+                    <span>Cargando notificaciones...</span>
+                </div>
+                }
+
+                @if (!loadingSystemNotifications && systemNotifications.length === 0) {
                 <div class="notifications__empty">
                     <i class="notifications__empty-icon bi bi-bell-slash" aria-hidden="true"></i>
                     <h2 class="notifications__empty-title">No hay notificaciones</h2>
                     <p class="notifications__empty-description">
-                        Aquí aparecerán las notificaciones importantes del sistema
+                        Aquí aparecerán las notificaciones importantes del sistema, como moderación de contenido y
+                        cambios en tu cuenta
                     </p>
                 </div>
+                }
+
+                @if (!loadingSystemNotifications && systemNotifications.length > 0) {
+                <ul class="notifications__list" role="list">
+                    @for (notification of systemNotifications; track notification.id) {
+                    <li class="notifications__system-item"
+                        [class.notifications__system-item--unread]="!notification.read"
+                        [class.notifications__system-item--error]="notification.data.severity === 'error'"
+                        [class.notifications__system-item--warning]="notification.data.severity === 'warning'"
+                        (click)="markSystemNotificationAsRead(notification.id)">
+
+                        <div class="system-notification__icon" [style.color]="getSystemNotificationColor(notification)">
+                            <i [class]="getSystemNotificationIcon(notification)"></i>
+                        </div>
+
+                        <div class="system-notification__content">
+                            <div class="system-notification__header">
+                                <h3 class="system-notification__title">{{ notification.data.title }}</h3>
+                                <time class="system-notification__time">
+                                    {{ formatTimestamp(notification.timestamp) }}
+                                </time>
+                            </div>
+
+                            <p class="system-notification__message">
+                                {{ notification.data.message }}
+                            </p>
+
+                            @if (notification.data.reason) {
+                            <div class="system-notification__reason">
+                                <strong>Motivo:</strong> {{ notification.data.reason }}
+                            </div>
+                            }
+
+                            @if (notification.data.actionRequired) {
+                            <div class="system-notification__action-required">
+                                <i class="bi bi-exclamation-circle"></i>
+                                Acción requerida
+                            </div>
+                            }
+                        </div>
+
+                        @if (!notification.read) {
+                        <div class="system-notification__unread-indicator"></div>
+                        }
+                    </li>
+                    }
+                </ul>
+                }
             </div>
             }
         </div>

@@ -17,6 +17,8 @@ const activityRoutes = require('./routes/activityRoutes');
 const premiumRoutes = require('./routes/premiumRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const adminRoutes = require('./routes/admin.routes');
+const reportRoutes = require('./routes/reportRoutes');
+
 
 
 const app = express();
@@ -58,6 +60,7 @@ app.use('/activity', activityRoutes);
 app.use('/api/premium', premiumRoutes);
 app.use('/chat', chatRoutes);
 app.use('/admin', adminRoutes);
+app.use('/reports', reportRoutes);
 
 // Ruta para prueba de salud del API
 app.get('/', (req, res) => {

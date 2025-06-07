@@ -1,0 +1,94 @@
+<div class="modal-overlay" *ngIf="showModal" (click)="onOverlayClick($event)">
+    <div class="modal-container-report" (click)="preventPropagation($event)">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="bi bi-flag-fill modal-icon"></i>
+                Reportar {{ getContentTypeText() }}
+            </h2>
+            <button class="modal-close" (click)="closeModal()" type="button">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Información del contenido/usuario a reportar -->
+            <div class="report-target">
+                <div class="target-info">
+                    <div class="target-avatar">
+                        <img [src]="getAvatarPath(targetUser.avatar)" [alt]="targetUser.username" />
+                    </div>
+                    <div class="target-details">
+                        <div class="target-username">{{ targetUser.username }}</div>
+                        <div class="target-content-type">{{ getContentTypeText() }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <form [formGroup]="reportForm" (ngSubmit)="submitReport()">
+                <!-- Selección de motivo -->
+                <div class="form-group">
+                    <label for="reason" class="form-label">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Motivo del reporte *
+                    </label>
+                    <select id="reason" class="form-select" formControlName="reason" required>
+                        <option style="background-color: #222222;" value="">Selecciona un motivo</option>
+                        <option value="inappropriate_language">Lenguaje inapropiado</option>
+                        <option value="harassment">Acoso</option>
+                        <option value="discrimination">Discriminación</option>
+                        <option value="spam">Spam</option>
+                        <option value="inappropriate_content">Contenido inapropiado</option>
+                        <option value="violence_threats">Amenazas de violencia</option>
+                        <option value="false_information">Información falsa</option>
+                        <option value="hate_speech">Discurso de odio</option>
+                        <option value="sexual_content">Contenido sexual</option>
+                        <option value="copyright_violation">Violación de derechos de autor</option>
+                        <option value="impersonation">Suplantación de identidad</option>
+                        <option value="other">Otro</option>
+                    </select>
+                    <div class="form-error"
+                        *ngIf="reportForm.get('reason')?.invalid && reportForm.get('reason')?.touched">
+                        Por favor selecciona un motivo
+                    </div>
+                </div>
+
+                <!-- Descripción adicional -->
+                <div class="form-group">
+                    <label for="description" class="form-label">
+                        <i class="bi bi-chat-left-text"></i>
+                        Descripción adicional (opcional)
+                    </label>
+                    <textarea id="description" class="form-textarea" formControlName="description"
+                        placeholder="Proporciona más detalles sobre el problema (máximo 1000 caracteres)"
+                        maxlength="1000" rows="4">
+          </textarea>
+                    <div class="character-count">
+                        {{ reportForm.get('description')?.value?.length || 0 }} / 1000
+                    </div>
+                </div>
+
+                <!-- Advertencia -->
+                <div class="report-warning">
+                    <i class="bi bi-info-circle"></i>
+                    <div class="warning-text">
+                        <strong>Importante:</strong> Los reportes falsos o maliciosos pueden resultar en acciones contra
+                        tu cuenta.
+                        Asegúrate de reportar solo contenido que realmente viole nuestras normas de la comunidad.
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" (click)="closeModal()" [disabled]="submitting">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-danger" [disabled]="reportForm.invalid || submitting">
+                        <span *ngIf="submitting" class="loading-spinner"></span>
+                        <i class="bi bi-flag-fill" *ngIf="!submitting"></i>
+                        {{ submitting ? 'Enviando...' : 'Enviar Reporte' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
