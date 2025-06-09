@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject, of } from 'rxjs';
@@ -27,7 +26,6 @@ export interface AdminUser {
     reason?: string;
     timestamp: Date;
   }[];
-  // Indica si el usuario ha editado su perfil
 }
 
 export interface AdminReview {
@@ -94,7 +92,6 @@ export interface SystemStats {
   };
 }
 
-// Interfaz para la respuesta del backend de permisos
 export interface PermissionsResponse {
   success: boolean;
   user: {
@@ -189,6 +186,7 @@ export interface ReportStats {
     pending: number;
     underReview: number;
     resolved: number;
+    dismissed: number;
     resolutionRate: string;
   };
   byStatus: Array<{ _id: string; count: number }>;
@@ -214,6 +212,7 @@ export interface UpdateReportStatusRequest {
 })
 export class AdminService {
   private readonly apiUrl = `${environment.apiUrl}/admin`;
+  private readonly reportsApiUrl = `${environment.apiUrl}/reports`;
 
   // Subject para notificar cambios
   private refreshDataSubject = new BehaviorSubject<string>('');
@@ -439,31 +438,7 @@ export class AdminService {
     );
   }
 
-  // ===== UTILIDADES =====
-
-  /**
-   * Notifica que los datos han cambiado para refrescar las vistas
-   */
-  notifyDataRefresh(dataType: string): void {
-    this.refreshDataSubject.next(dataType);
-  }
-
-  /**
-   * Verifica si el usuario actual tiene permisos de administrador
-   */
-  hasAdminAccess(): Observable<boolean> {
-    return this.getUserPermissions().pipe(
-      map(response => {
-        // Acceder a response.permissions.can.accessAdminPanel
-        return response?.permissions?.can?.accessAdminPanel === true;
-      }),
-      catchError(() => {
-        return of(false);
-      })
-    );
-  }
-
-  // ===== GESTIÓN DE REPORTES =====
+  // ===== GESTIÓN DE REPORTES MEJORADA =====
 
   /**
    * Obtener reportes para el panel de administración
@@ -501,13 +476,18 @@ export class AdminService {
   }
 
   /**
-   * Resolver un reporte específico
+   * Resolver un reporte específico con notificaciones mejoradas
    */
   resolveReport(reportId: string, resolution: ResolveReportRequest): Observable<any> {
+    console.log('AdminService: Resolviendo reporte', reportId, resolution);
+
     return this.http.patch(`${this.apiUrl}/reports/${reportId}/resolve`, resolution, {
       headers: this.getHeaders()
     }).pipe(
-      tap(() => this.refreshDataSubject.next('reports')),
+      tap((response) => {
+        console.log('AdminService: Reporte resuelto exitosamente', response);
+        this.refreshDataSubject.next('reports');
+      }),
       catchError(this.handleError)
     );
   }
@@ -516,10 +496,15 @@ export class AdminService {
    * Actualizar el estado de un reporte
    */
   updateReportStatus(reportId: string, update: UpdateReportStatusRequest): Observable<any> {
+    console.log('AdminService: Actualizando estado del reporte', reportId, update);
+
     return this.http.patch(`${this.apiUrl}/reports/${reportId}/status`, update, {
       headers: this.getHeaders()
     }).pipe(
-      tap(() => this.refreshDataSubject.next('reports')),
+      tap((response) => {
+        console.log('AdminService: Estado del reporte actualizado', response);
+        this.refreshDataSubject.next('reports');
+      }),
       catchError(this.handleError)
     );
   }
@@ -550,7 +535,7 @@ export class AdminService {
     }).pipe(
       map(response => ({
         success: response.success,
-        data: response.data,
+        reports: response.reports,
         pagination: response.pagination
       })),
       catchError(this.handleError)
@@ -561,13 +546,53 @@ export class AdminService {
    * Obtener reportes de contenido específico
    */
   getReportsForContent(contentType: string, contentId: string): Observable<AdminReport[]> {
-    return this.http.get<{ success: boolean; data: AdminReport[] }>(`${this.apiUrl}/reports/content/${contentType}/${contentId}`, {
+    return this.http.get<{ success: boolean; reports: AdminReport[] }>(`${this.apiUrl}/reports/content/${contentType}/${contentId}`, {
       headers: this.getHeaders()
     }).pipe(
-      map(response => response.data),
+      map(response => response.reports),
       catchError(this.handleError)
     );
   }
+
+  // ===== UTILIDADES =====
+
+  /**
+   * Notifica que los datos han cambiado para refrescar las vistas
+   */
+  notifyDataRefresh(dataType: string): void {
+    this.refreshDataSubject.next(dataType);
+  }
+
+  /**
+   * Verifica si el usuario actual tiene permisos de administrador
+   */
+  hasAdminAccess(): Observable<boolean> {
+    return this.getUserPermissions().pipe(
+      map(response => {
+        return response?.permissions?.can?.accessAdminPanel === true;
+      }),
+      catchError(() => {
+        return of(false);
+      })
+    );
+  }
+
+  /**
+   * Verificar si el usuario puede gestionar reportes
+   */
+  canManageReports(): Observable<boolean> {
+    return this.getUserPermissions().pipe(
+      map(response => {
+        return response?.permissions?.can?.manageReports === true ||
+          response?.permissions?.permissions?.includes('moderate.reports.manage') === true;
+      }),
+      catchError(() => {
+        return of(false);
+      })
+    );
+  }
+
+  // ===== MÉTODOS AUXILIARES PARA REPORTES =====
 
   /**
    * Obtener el texto de display para el motivo del reporte
@@ -641,20 +666,5 @@ export class AdminService {
       'dismissed': 'status-dismissed'
     };
     return statusClasses[status] || 'status-pending';
-  }
-
-  /**
-   * Verificar si el usuario puede gestionar reportes
-   */
-  canManageReports(): Observable<boolean> {
-    return this.getUserPermissions().pipe(
-      map(response => {
-        return response?.permissions?.can?.manageReports === true ||
-          response?.permissions?.permissions?.includes('moderate.reports.manage') === true;
-      }),
-      catchError(() => {
-        return of(false);
-      })
-    );
   }
 }

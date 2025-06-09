@@ -13,7 +13,10 @@
             <button class="notifications__tab" [class.notifications__tab--active]="activeTab === 'notificaciones'"
                 (click)="cambiarTab('notificaciones')" type="button">
                 <i class="notifications__tab-icon bi bi-bell"></i>
-                Notificaciones
+                Notificaciones del sistema
+                @if (getUnreadSystemNotificationsCount() > 0) {
+                <span class="notifications__tab-badge">{{ getUnreadSystemNotificationsCount() }}</span>
+                }
             </button>
         </div>
 
@@ -85,12 +88,14 @@
                 <h1 class="notifications__title">Notificaciones del sistema</h1>
 
                 <!-- Acciones de notificaciones del sistema -->
-                @if (systemNotifications.length > 0) {
+                @if (hasSystemNotifications()) {
                 <div class="notifications__actions">
+                    @if (getUnreadSystemNotificationsCount() > 0) {
                     <button class="action-btn action-btn--secondary" (click)="markAllSystemNotificationsAsRead()">
                         <i class="bi bi-check-all"></i>
-                        Marcar todas como leídas
+                        Marcar todas como leídas ({{ getUnreadSystemNotificationsCount() }})
                     </button>
+                    }
                     <button class="action-btn action-btn--danger" (click)="clearSystemNotifications()">
                         <i class="bi bi-trash"></i>
                         Limpiar todas
@@ -105,25 +110,28 @@
                 </div>
                 }
 
-                @if (!loadingSystemNotifications && systemNotifications.length === 0) {
+                @if (!loadingSystemNotifications && !hasSystemNotifications()) {
                 <div class="notifications__empty">
                     <i class="notifications__empty-icon bi bi-bell-slash" aria-hidden="true"></i>
                     <h2 class="notifications__empty-title">No hay notificaciones</h2>
                     <p class="notifications__empty-description">
-                        Aquí aparecerán las notificaciones importantes del sistema, como moderación de contenido y
-                        cambios en tu cuenta
+                        Aquí aparecerán las notificaciones importantes del sistema, como resolución de reportes,
+                        moderación de contenido y cambios en tu cuenta
                     </p>
                 </div>
                 }
 
-                @if (!loadingSystemNotifications && systemNotifications.length > 0) {
+                @if (!loadingSystemNotifications && hasSystemNotifications()) {
                 <ul class="notifications__list" role="list">
                     @for (notification of systemNotifications; track notification.id) {
                     <li class="notifications__system-item"
                         [class.notifications__system-item--unread]="!notification.read"
                         [class.notifications__system-item--error]="notification.data.severity === 'error'"
                         [class.notifications__system-item--warning]="notification.data.severity === 'warning'"
-                        (click)="markSystemNotificationAsRead(notification.id)">
+                        [class.notifications__system-item--success]="notification.data.severity === 'success'"
+                        [class.notifications__system-item--reports]="notification.data.category === 'reports'"
+                        [class.notifications__system-item--moderation]="notification.data.category === 'moderation'"
+                        (click)="onSystemNotificationClick(notification)">
 
                         <div class="system-notification__icon" [style.color]="getSystemNotificationColor(notification)">
                             <i [class]="getSystemNotificationIcon(notification)"></i>
@@ -138,12 +146,58 @@
                             </div>
 
                             <p class="system-notification__message">
-                                {{ notification.data.message }}
+                                {{ getNotificationDisplayMessage(notification) }}
                             </p>
 
                             @if (notification.data.reason) {
                             <div class="system-notification__reason">
-                                <strong>Motivo:</strong> {{ notification.data.reason }}
+                                <strong>Detalles:</strong> {{ notification.data.reason }}
+                            </div>
+                            }
+
+                            <!-- Información específica para reportes -->
+                            @if (notification.data.category === 'reports' && notification.data.metadata) {
+                            <div class="system-notification__report-details">
+                                @if (notification.data.metadata.reportedContentType) {
+                                <div class="report-detail-item">
+                                    <i class="bi bi-file-text"></i>
+                                    <span>Tipo: {{
+                                        getContentTypeDisplayText(notification.data.metadata.reportedContentType)
+                                        }}</span>
+                                </div>
+                                }
+                                @if (notification.data.metadata.reportedUser) {
+                                <div class="report-detail-item">
+                                    <i class="bi bi-person"></i>
+                                    <span>Usuario: {{ notification.data.metadata.reportedUser }}</span>
+                                </div>
+                                }
+                                @if (notification.data.metadata.action) {
+                                <div class="report-detail-item">
+                                    <i class="bi bi-gear"></i>
+                                    <span>Acción: {{ getActionDisplayText(notification.data.metadata.action) }}</span>
+                                </div>
+                                }
+                            </div>
+                            }
+
+                            <!-- Información específica para moderación -->
+                            @if (notification.data.category === 'moderation' && notification.data.metadata) {
+                            <div class="system-notification__moderation-details">
+                                @if (notification.data.metadata.contentType) {
+                                <div class="moderation-detail-item">
+                                    <i class="bi bi-shield-exclamation"></i>
+                                    <span>Contenido: {{
+                                        getContentTypeDisplayText(notification.data.metadata.contentType) }}</span>
+                                </div>
+                                }
+                                @if (notification.data.metadata.reportReason) {
+                                <div class="moderation-detail-item">
+                                    <i class="bi bi-flag"></i>
+                                    <span>Motivo: {{ getReportReasonDisplayText(notification.data.metadata.reportReason)
+                                        }}</span>
+                                </div>
+                                }
                             </div>
                             }
 

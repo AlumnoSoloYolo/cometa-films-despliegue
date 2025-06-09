@@ -26,6 +26,19 @@
                     </button>
                 </div>
                 }
+
+                <!-- NUEVO: Banner para notificaciones del sistema -->
+                @if(systemNotificationsCount > 0 && showSystemBanner) {
+                <div class="notification-item" (click)="navigateTo('/notificaciones')">
+                    <i class="bi bi-bell"></i>
+                    <span>Tienes {{ systemNotificationsCount }}
+                        {{ systemNotificationsCount === 1 ? 'notificación del sistema' : 'notificaciones del sistema'
+                        }}</span>
+                    <button class="notification-close" (click)="dismissSystemBanner($event)">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                }
             </div>
         </div>
     </div>
@@ -37,7 +50,6 @@
             <a class="brand-logo" routerLink="/" (click)="isMenuOpen = false">
                 <img src="images/logo.png" alt="CometaCine Logo" class="logo-image">
             </a>
-
 
             <button class="menu-toggle" [class.active]="isMenuOpen" (click)="toggleMenu()" type="button"
                 aria-label="Toggle navigation">
@@ -75,7 +87,6 @@
                     </ul>
                 </nav>
 
-
                 <div class="user-actions ms-4">
 
                     @if (shouldShowPremiumButton()) {
@@ -87,7 +98,6 @@
                     </div>
                     }
 
-
                     <form [formGroup]="searchForm" (ngSubmit)="buscar()" class="search-form">
                         <div class="search-wrapper">
                             <input class="search-input" type="search" formControlName="query"
@@ -97,8 +107,6 @@
                             </button>
                         </div>
                     </form>
-
-
 
                     <div class="dropdown user-dropdown">
                         <button class="profile-toggle dropdown-toggle" type="button" id="userDropdown"
@@ -126,8 +134,9 @@
                                 <a class="dropdown-item dropdown-item--notifications" routerLink="/notificaciones"
                                     (click)="navigateTo('/notificaciones')">
                                     <i class="bi bi-bell me-2"></i>Notificaciones
-                                    @if (pendingRequestsCount > 0) {
-                                    <span class="notify-badge animated-badge">{{ pendingRequestsCount }}</span>
+                                    @if (pendingRequestsCount > 0 || systemNotificationsCount > 0) {
+                                    <span class="notify-badge animated-badge">{{ pendingRequestsCount +
+                                        systemNotificationsCount }}</span>
                                     }
                                 </a>
                             </li>
@@ -141,7 +150,6 @@
                                     }
                                 </a>
                             </li>
-
 
                             @if (isPremiumUser) {
                             <li>
