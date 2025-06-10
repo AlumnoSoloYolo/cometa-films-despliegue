@@ -1,8 +1,32 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subscription, interval, debounceTime, distinctUntilChanged } from 'rxjs';
+
+// PrimeNG Imports
+import { CardModule } from 'primeng/card';
+import { ChartModule } from 'primeng/chart';
+import { ButtonModule } from 'primeng/button';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { TagModule } from 'primeng/tag';
+import { SkeletonModule } from 'primeng/skeleton';
+import { DividerModule } from 'primeng/divider';
+import { TableModule } from 'primeng/table';
+import { BadgeModule } from 'primeng/badge';
+import { ToolbarModule } from 'primeng/toolbar';
+import { PanelModule } from 'primeng/panel';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessagesModule } from 'primeng/messages';
+import { MessageModule } from 'primeng/message';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputTextarea } from 'primeng/inputtextarea';
+import { DropdownModule } from 'primeng/dropdown';
+import { CheckboxModule } from 'primeng/checkbox';
+
+// Services
 import {
   AdminService,
   AdminUser,
@@ -10,13 +34,16 @@ import {
   AdminComment,
   AdminList,
   AdminReport,
-  ReportStats,
+  DashboardMetrics,
+  RealtimeMetrics,
   SystemStats,
   UserPermissions,
-  PermissionsResponse
+  PermissionsResponse,
+  ReportStats
 } from '../../../services/admin.service';
 import { AuthService } from '../../../services/auth.service';
 
+// Interfaces
 interface TabState {
   activeTab: string;
   activeContentTab: string;
@@ -31,6 +58,7 @@ interface PaginationState {
 }
 
 interface LoadingState {
+  dashboard: boolean;
   stats: boolean;
   users: boolean;
   reviews: boolean;
@@ -41,9 +69,12 @@ interface LoadingState {
   reports: boolean;
   resolvingReport: boolean;
   reportStats: boolean;
+  charts: boolean;
+  realtime: boolean;
 }
 
 interface ErrorState {
+  dashboard: string | null;
   stats: string | null;
   users: string | null;
   reviews: string | null;
@@ -52,19 +83,44 @@ interface ErrorState {
   permissions: string | null;
   reports: string | null;
   reportStats: string | null;
+  charts: string | null;
 }
 
 @Component({
   selector: 'app-admin-panel',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule,
+    FormsModule,
+    CardModule,
+    ChartModule,
+    ButtonModule,
+    SelectButtonModule,
+    ProgressBarModule,
+    TagModule,
+    SkeletonModule,
+    DividerModule,
+    TableModule,
+    BadgeModule,
+    ToolbarModule,
+    PanelModule,
+    TooltipModule,
+    MessagesModule,
+    MessageModule,
+    DialogModule,
+    InputTextModule,
+    InputTextarea,
+    DropdownModule,
+    CheckboxModule
+  ],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminPanelComponent implements OnInit, OnDestroy {
 
-  // Estado de la aplicación
+  // ===== ESTADO DE LA APLICACIÓN =====
   currentUser: any = null;
   userPermissions: UserPermissions | null = null;
 
@@ -75,6 +131,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   };
 
   loading: LoadingState = {
+    dashboard: false,
     stats: false,
     users: false,
     reviews: false,
@@ -84,10 +141,13 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     banning: false,
     reports: false,
     resolvingReport: false,
-    reportStats: false
+    reportStats: false,
+    charts: false,
+    realtime: false
   };
 
   errors: ErrorState = {
+    dashboard: null,
     stats: null,
     users: null,
     reviews: null,
@@ -95,7 +155,8 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     lists: null,
     permissions: null,
     reports: null,
-    reportStats: null
+    reportStats: null,
+    charts: null
   };
 
   pagination: PaginationState = {
@@ -106,7 +167,9 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     reports: { page: 1, total: 0, hasMore: false }
   };
 
-  // Datos
+  // ===== DATOS =====
+  dashboardData: DashboardMetrics | null = null;
+  realtimeMetrics: RealtimeMetrics | null = null;
   stats: SystemStats | null = null;
   users: AdminUser[] = [];
   reviews: AdminReview[] = [];
@@ -115,12 +178,42 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   reports: AdminReport[] = [];
   reportStats: ReportStats | null = null;
 
-  // Formularios de búsqueda y filtros
+  // ===== PELÍCULAS POPULARES =====
+  private _topMovies: any[] = [];
+  private _enhancedTopMovies: any[] = [];
+
+  // ===== CACHE DE POSTERS =====
+  private moviePostersCache = new Map<string, string>();
+  private posterErrors = new Set<string>();
+
+  // ===== DATOS PARA GRÁFICAS =====
+  userGrowthChartData: any;
+  userGrowthChartOptions: any;
+  activityTrendsChartData: any;
+  activityTrendsChartOptions: any;
+  contentDistributionChartData: any;
+  contentDistributionChartOptions: any;
+  moderationChartData: any;
+  moderationChartOptions: any;
+
+  // ===== CONFIGURACIÓN UI =====
+  selectedTimeRange = 'week';
+  timeRangeOptions = [
+    { label: 'Hoy', value: 'today' },
+    { label: '7 días', value: 'week' },
+    { label: '30 días', value: 'month' }
+  ];
+
+  // ===== FORMULARIOS =====
   userSearchForm!: FormGroup;
   contentSearchForm!: FormGroup;
   reportSearchForm!: FormGroup;
+  banForm!: FormGroup;
+  roleForm!: FormGroup;
+  deleteForm!: FormGroup;
+  resolveReportForm!: FormGroup;
 
-  // BÚSQUEDA DE CONTENIDO
+  // ===== BÚSQUEDA DE CONTENIDO =====
   isContentFiltered = false;
   originalContentData = {
     reviews: [] as any[],
@@ -131,7 +224,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   filteredComments: any[] = [];
   filteredLists: any[] = [];
 
-  // Modales
+  // ===== MODALES =====
   showBanModal = false;
   showRoleModal = false;
   showDeleteModal = false;
@@ -140,14 +233,14 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   showResolveReportModal = false;
   showReportDetailModal = false;
 
-  // BÚSQUEDA GLOBAL
+  // ===== BÚSQUEDA GLOBAL =====
   isGlobalSearch = false;
   originalUsers: any[] = [];
   originalReviews: any[] = [];
   originalComments: any[] = [];
   originalLists: any[] = [];
 
-  // Estado del modal actual
+  // ===== ESTADO DEL MODAL ACTUAL =====
   modalData: {
     userId?: string;
     username?: string;
@@ -160,12 +253,9 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     report?: AdminReport;
   } = {};
 
-  // Formularios de modal
-  banForm!: FormGroup;
-  roleForm!: FormGroup;
-  deleteForm!: FormGroup;
-  resolveReportForm!: FormGroup;
-
+  // ===== AUTO-REFRESH =====
+  private realtimeSubscription?: Subscription;
+  private refreshInterval = 30000; // 30 segundos
   private subscriptions = new Subscription();
 
   constructor(
@@ -176,6 +266,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {
     this.createForms();
+    this.initializeChartOptions();
   }
 
   ngOnInit(): void {
@@ -184,26 +275,65 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
+    this.cleanupResources();
+  }
+
+  // ===== GETTERS PARA PELÍCULAS =====
+
+  /**
+   * Getter para obtener las películas populares
+   */
+  get topMovies(): any[] {
+    return this._enhancedTopMovies.length > 0 ? this._enhancedTopMovies : this._topMovies;
+  }
+
+  /**
+   * Verifica si hay datos de películas disponibles
+   */
+  get hasMoviesData(): boolean {
+    return this.topMovies.length > 0;
+  }
+
+  /**
+   * Obtiene el número total de películas populares
+   */
+  get totalPopularMovies(): number {
+    return this.topMovies.length;
+  }
+
+  /**
+   * Obtiene estadísticas resumidas de las películas
+   */
+  get moviesStats(): { totalReviews: number; averageRating: number; totalLikes: number } {
+    if (!this.hasMoviesData) {
+      return { totalReviews: 0, averageRating: 0, totalLikes: 0 };
+    }
+    
+    const totalReviews = this.topMovies.reduce((sum, movie) => sum + (movie.reviewCount || 0), 0);
+    const totalLikes = this.topMovies.reduce((sum, movie) => sum + (movie.totalLikes || 0), 0);
+    const averageRating = this.topMovies.reduce((sum, movie) => sum + (movie.averageRating || 0), 0) / this.topMovies.length;
+    
+    return {
+      totalReviews,
+      averageRating: Math.round(averageRating * 10) / 10,
+      totalLikes
+    };
   }
 
   // ===== INICIALIZACIÓN =====
-
+  
   private createForms(): void {
-    // Formulario de búsqueda de usuarios
     this.userSearchForm = this.fb.group({
       search: [''],
       role: [''],
       status: ['']
     });
 
-    // Formulario de búsqueda de contenido
     this.contentSearchForm = this.fb.group({
       username: [''],
       userRole: ['']
     });
 
-    // Formulario de búsqueda de reportes
     this.reportSearchForm = this.fb.group({
       status: [''],
       priority: [''],
@@ -212,24 +342,20 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       reason: ['']
     });
 
-    // Formulario de ban
     this.banForm = this.fb.group({
       reason: ['', [Validators.required, Validators.minLength(10)]],
       duration: ['']
     });
 
-    // Formulario de cambio de rol
     this.roleForm = this.fb.group({
       newRole: ['', Validators.required],
       reason: ['']
     });
 
-    // Formulario de eliminación
     this.deleteForm = this.fb.group({
       reason: ['']
     });
 
-    // Formulario de resolución de reportes
     this.resolveReportForm = this.fb.group({
       action: ['', Validators.required],
       notes: [''],
@@ -243,6 +369,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.loadDashboard();
     this.loadUsers();
     this.setupSearchSubscription();
+    this.startRealtimeUpdates();
   }
 
   private setupSubscriptions(): void {
@@ -293,13 +420,360 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ===== CARGA DE DATOS =====
+  // ===== MÉTODOS PARA PELÍCULAS =====
+
+  /**
+   * Setter para establecer las películas populares
+   */
+  private setTopMovies(movies: any[]): void {
+    this._topMovies = movies || [];
+    this.enhanceMovieStats();
+  }
+
+  /**
+   * Actualiza los datos de películas desde el dashboard
+   */
+  private updateTopMoviesFromDashboard(): void {
+    if (this.dashboardData?.charts?.topMovies) {
+      this.setTopMovies(this.dashboardData.charts.topMovies);
+      this.preloadMoviePosters();
+      console.log('Lista de películas populares actualizada:', this.topMovies.length);
+    } else {
+      this._topMovies = [];
+      this._enhancedTopMovies = [];
+    }
+  }
+
+  /**
+   * Mejora las estadísticas de películas
+   */
+  private enhanceMovieStats(): void {
+    if (!this._topMovies.length) {
+      this._enhancedTopMovies = [];
+      return;
+    }
+    
+    this._enhancedTopMovies = this._topMovies.map((movie, index) => {
+      const baseScore = (this._topMovies.length - index) * 10;
+      const randomVariation = Math.floor(Math.random() * 20);
+      const trendingScore = Math.max(0, baseScore + randomVariation);
+      
+      const ratingFactor = movie.averageRating ? (movie.averageRating / 10) : 0.5;
+      const estimatedLikes = Math.floor((movie.reviewCount || 0) * ratingFactor * 1.5);
+      
+      return {
+        ...movie,
+        trendingScore,
+        totalLikes: movie.totalLikes || estimatedLikes,
+        position: index + 1,
+        isTopThree: index < 3,
+        popularityScore: this.calculatePopularityScore(movie, index)
+      };
+    });
+    
+    console.log('Estadísticas de películas mejoradas:', this._enhancedTopMovies.length);
+  }
+
+  /**
+   * Calcula un score de popularidad para la película
+   */
+  private calculatePopularityScore(movie: any, position: number): number {
+    const reviewWeight = 0.4;
+    const ratingWeight = 0.3;
+    const positionWeight = 0.3;
+    
+    const reviewScore = Math.min((movie.reviewCount || 0) / 10, 100);
+    const ratingScore = (movie.averageRating || 0) * 10;
+    const positionScore = Math.max(0, 100 - (position * 10));
+    
+    return Math.round(
+      (reviewScore * reviewWeight) + 
+      (ratingScore * ratingWeight) + 
+      (positionScore * positionWeight)
+    );
+  }
+
+  /**
+   * Obtiene la URL del poster de una película
+   */
+getMoviePoster(movieId: string | number): string | null {
+  const id = movieId.toString();
+  console.log('🎭 Obteniendo poster para película:', id);
+  
+  // Si ya falló antes, no intentar de nuevo
+  if (this.posterErrors.has(id)) {
+    console.log('❌ Poster marcado como error:', id);
+    return null;
+  }
+  
+  // Si está en cache, devolverlo
+  if (this.moviePostersCache.has(id)) {
+    const cachedUrl = this.moviePostersCache.get(id) || null;
+    console.log('💾 Poster desde cache:', cachedUrl);
+    return cachedUrl;
+  }
+  
+  // Construir URL del poster
+  const posterUrl = this.buildPosterUrl(id);
+  
+  // Guardar en cache
+  if (posterUrl) {
+    this.moviePostersCache.set(id, posterUrl);
+    console.log('✅ Poster guardado en cache:', posterUrl);
+  } else {
+    console.warn('⚠️ No se pudo generar URL de poster para:', id);
+  }
+  
+  return posterUrl;
+}
+
+  /**
+   * Construye la URL del poster basado en el ID de la película
+   */
+  private buildPosterUrl(movieId: string): string | null {
+    if (movieId) {
+      const colors = ['4338ca', '059669', 'dc2626', 'ea580c', '7c3aed', 'db2777'];
+      const colorIndex = parseInt(movieId) % colors.length;
+      const color = colors[colorIndex];
+      
+      return `https://via.placeholder.com/300x450/${color}/ffffff?text=Movie+${movieId}`;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Maneja errores al cargar posters
+   */
+  onPosterError(event: any, movieId: string | number): void {
+    const id = movieId.toString();
+    console.warn(`Error cargando poster para película ${id}`);
+    
+    this.posterErrors.add(id);
+    this.moviePostersCache.delete(id);
+    
+    if (event?.target) {
+      event.target.style.display = 'none';
+    }
+  }
+
+  /**
+   * Pre-carga los posters de las películas populares
+   */
+  private preloadMoviePosters(): void {
+    if (!this.topMovies.length) return;
+    
+    this.topMovies.forEach(movie => {
+      const posterUrl = this.getMoviePoster(movie.movieId);
+      if (posterUrl) {
+        const img = new Image();
+        img.src = posterUrl;
+        img.onload = () => {
+          console.log(`Poster cargado para película ${movie.movieId}`);
+        };
+        img.onerror = () => {
+          this.onPosterError(null, movie.movieId);
+        };
+      }
+    });
+  }
+
+  /**
+   * Limpia el cache de posters
+   */
+  clearPosterCache(): void {
+    this.moviePostersCache.clear();
+    this.posterErrors.clear();
+    console.log('Cache de posters limpiado');
+  }
+
+  /**
+   * Ver detalles de una película específica
+   */
+  viewMovieDetails(movieId: string | number): void {
+    console.log(`Viendo detalles de la película ${movieId}`);
+    this.openMovieDetailModal(movieId);
+  }
+
+  /**
+   * Abre un modal con detalles de la película
+   */
+  private openMovieDetailModal(movieId: string | number): void {
+    const movie = this.topMovies.find(m => m.movieId.toString() === movieId.toString());
+    
+    if (movie) {
+      const message = `
+Película: ${movie.title || `ID ${movie.movieId}`}
+Rating: ${movie.averageRating.toFixed(1)}/10
+Reseñas: ${movie.reviewCount}
+${movie.totalLikes ? `Likes: ${movie.totalLikes}` : ''}
+${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
+      `.trim();
+      
+      alert(message);
+    }
+  }
+
+  /**
+   * Ver todas las películas populares
+   */
+  viewAllPopularMovies(): void {
+    console.log('Navegando a todas las películas populares');
+    this.showTab('content');
+    this.showContentTab('reviews');
+  }
+
+  /**
+   * Exportar datos de películas populares
+   */
+  exportPopularMovies(): void {
+    console.log('Exportando datos de películas populares');
+    
+    if (!this.topMovies.length) {
+      alert('No hay datos de películas para exportar');
+      return;
+    }
+    
+    try {
+      const exportData = this.topMovies.map((movie, index) => ({
+        ranking: index + 1,
+        movieId: movie.movieId,
+        title: movie.title || `Película ${movie.movieId}`,
+        averageRating: movie.averageRating.toFixed(1),
+        reviewCount: movie.reviewCount,
+        totalLikes: movie.totalLikes || 0,
+        trendingScore: movie.trendingScore || 0
+      }));
+      
+      const csvContent = this.convertToCSV(exportData);
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `peliculas-populares-${this.getCurrentDateString()}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Archivo CSV descargado exitosamente');
+      
+    } catch (error) {
+      console.error('Error exportando datos:', error);
+      alert('Error al exportar los datos. Intenta de nuevo.');
+    }
+  }
+
+  /**
+   * Convierte un array de objetos a formato CSV
+   */
+  private convertToCSV(data: any[]): string {
+    if (!data.length) return '';
+    
+    const headers = Object.keys(data[0]);
+    const headerRow = headers.join(',');
+    
+    const rows = data.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',')
+    );
+    
+    return [headerRow, ...rows].join('\n');
+  }
+
+  /**
+   * Obtiene la fecha actual como string para nombres de archivo
+   */
+  private getCurrentDateString(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // ===== CARGA DE DATOS DASHBOARD =====
+
+  loadDashboard(): void {
+    this.loading.dashboard = true;
+    this.errors.dashboard = null;
+    this.loading.charts = true;
+
+    this.adminService.getDashboardMetrics(this.selectedTimeRange).subscribe({
+      next: (data) => {
+        this.dashboardData = data;
+        this.prepareChartsData();
+        
+        setTimeout(() => {
+          this.preloadMoviePosters();
+        }, 100);
+        
+        console.log('Dashboard data loaded:', data);
+      },
+      error: (error) => {
+        this.errors.dashboard = error.message || 'Error cargando dashboard';
+        this.errors.charts = error.message || 'Error cargando gráficas';
+        console.error('Error loading dashboard:', error);
+        this.loadBasicStats();
+      },
+      complete: () => {
+        this.loading.dashboard = false;
+        this.loading.charts = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private loadBasicStats(): void {
+    this.loading.stats = true;
+    
+    this.adminService.getSystemStats().subscribe({
+      next: (stats) => {
+        this.stats = stats;
+        console.log('Basic stats loaded:', stats);
+      },
+      error: (error) => {
+        this.errors.stats = error.message;
+        console.error('Error loading basic stats:', error);
+      },
+      complete: () => {
+        this.loading.stats = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  loadRealtimeMetrics(): void {
+    this.loading.realtime = true;
+
+    this.adminService.getRealtimeMetrics().subscribe({
+      next: (data) => {
+        this.realtimeMetrics = data;
+        console.log('Realtime metrics updated:', data);
+      },
+      error: (error) => {
+        console.error('Error loading realtime metrics:', error);
+      },
+      complete: () => {
+        this.loading.realtime = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
   private loadUserPermissions(): void {
     this.loading.permissions = true;
     this.errors.permissions = null;
 
-    const permissionsSub = this.adminService.getUserPermissions().subscribe({
+    this.adminService.getUserPermissions().subscribe({
       next: (response) => {
         this.userPermissions = response?.permissions || null;
         console.log('Permisos cargados:', this.userPermissions);
@@ -313,31 +787,260 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }
     });
-
-    this.subscriptions.add(permissionsSub);
   }
 
-  loadDashboard(): void {
-    this.loading.stats = true;
-    this.errors.stats = null;
+  // ===== PREPARACIÓN DE GRÁFICAS =====
 
-    const statsSub = this.adminService.getSystemStats().subscribe({
-      next: (stats) => {
-        this.stats = stats;
-        console.log('Estadísticas cargadas:', this.stats);
+  private prepareChartsData(): void {
+    if (!this.dashboardData) return;
+
+    this.userGrowthChartData = {
+      labels: this.dashboardData.charts.userGrowth.map(item => item.date),
+      datasets: [
+        {
+          label: 'Nuevos Usuarios',
+          data: this.dashboardData.charts.userGrowth.map(item => item.count),
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    };
+
+    this.activityTrendsChartData = {
+      labels: this.dashboardData.charts.activityTrends.map(item => item.date),
+      datasets: [
+        {
+          label: 'Reseñas',
+          data: this.dashboardData.charts.activityTrends.map(item => item.reviews),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          tension: 0.3
+        },
+        {
+          label: 'Comentarios',
+          data: this.dashboardData.charts.activityTrends.map(item => item.comments),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          tension: 0.3
+        },
+        {
+          label: 'Likes',
+          data: this.dashboardData.charts.activityTrends.map(item => item.likes),
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.8)',
+          tension: 0.3
+        }
+      ]
+    };
+
+    this.contentDistributionChartData = {
+      labels: ['Reseñas', 'Comentarios', 'Listas', 'Usuarios Premium'],
+      datasets: [
+        {
+          data: [
+            this.dashboardData.overview.totalReviews,
+            this.dashboardData.overview.totalComments,
+            this.dashboardData.overview.totalLists,
+            this.dashboardData.overview.premiumUsers
+          ],
+          backgroundColor: [
+            '#6366f1',
+            '#10b981',
+            '#f59e0b',
+            '#8b5cf6'
+          ],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }
+      ]
+    };
+
+    // Actualizar películas populares
+    this.updateTopMoviesFromDashboard();
+  }
+
+  private initializeChartOptions(): void {
+    const textColor = '#374151';
+    const borderColor = '#e5e7eb';
+
+    const baseLineOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top' as const,
+          labels: {
+            color: textColor,
+            font: {
+              size: 12,
+              weight: 500
+            }
+          }
+        }
       },
-      error: (error: any) => {
-        this.errors.stats = error.message;
-        console.error('Error cargando estadísticas:', error);
-      },
-      complete: () => {
-        this.loading.stats = false;
-        this.cdr.markForCheck();
+      scales: {
+        x: {
+          ticks: {
+            color: textColor,
+            font: {
+              size: 11
+            }
+          },
+          grid: {
+            color: borderColor
+          }
+        },
+        y: {
+          ticks: {
+            color: textColor,
+            font: {
+              size: 11
+            }
+          },
+          grid: {
+            color: borderColor
+          }
+        }
       }
+    };
+
+    this.userGrowthChartOptions = {
+      ...baseLineOptions,
+      plugins: {
+        ...baseLineOptions.plugins,
+        title: {
+          display: true,
+          text: 'Crecimiento de Usuarios',
+          color: textColor,
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        }
+      }
+    };
+
+    this.activityTrendsChartOptions = {
+      ...baseLineOptions,
+      plugins: {
+        ...baseLineOptions.plugins,
+        title: {
+          display: true,
+          text: 'Tendencias de Actividad',
+          color: textColor,
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        }
+      }
+    };
+
+    this.contentDistributionChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom' as const,
+          labels: {
+            color: textColor,
+            font: {
+              size: 12
+            },
+            padding: 20
+          }
+        },
+        title: {
+          display: true,
+          text: 'Distribución de Contenido',
+          color: textColor,
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        }
+      }
+    };
+  }
+
+  // ===== EVENTOS Y ACCIONES =====
+
+  onTimeRangeChange(): void {
+    console.log('Time range changed to:', this.selectedTimeRange);
+    this.loadDashboard();
+  }
+
+  refreshDashboard(): void {
+    this.loadDashboard();
+    this.loadRealtimeMetrics();
+  }
+
+  private startRealtimeUpdates(): void {
+    this.realtimeSubscription = interval(this.refreshInterval).subscribe(() => {
+      this.loadRealtimeMetrics();
     });
 
-    this.subscriptions.add(statsSub);
+    this.loadRealtimeMetrics();
   }
+
+  // ===== NAVEGACIÓN =====
+
+  showTab(tabName: string): void {
+    this.tabState.activeTab = tabName;
+
+    switch (tabName) {
+      case 'users':
+        if (this.users.length === 0) this.loadUsers();
+        break;
+      case 'content':
+        if (this.reviews.length === 0) this.loadReviews();
+        break;
+      case 'reports':
+        if (this.reports.length === 0) {
+          this.loadReports();
+          this.loadReportStats();
+        }
+        break;
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  showContentTab(contentType: string): void {
+    console.log('Cambiando a pestaña de contenido:', contentType);
+    this.tabState.activeContentTab = contentType;
+
+    switch (contentType) {
+      case 'reviews':
+        if (this.reviews.length === 0) this.loadReviews();
+        break;
+      case 'comments':
+        if (this.comments.length === 0) this.loadComments();
+        break;
+      case 'lists':
+        if (this.lists.length === 0) this.loadLists();
+        break;
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  navigateToReports(): void {
+    this.showTab('reports');
+  }
+
+  navigateToUsers(): void {
+    this.showTab('users');
+  }
+
+  navigateToContent(): void {
+    this.showTab('content');
+  }
+
+  // ===== MÉTODOS DE CARGA =====
 
   loadUsers(page: number = 1): void {
     if (this.loading.users && page !== 1) return;
@@ -590,46 +1293,199 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.subscriptions.add(statsSub);
   }
 
-  // ===== NAVEGACIÓN DE TABS =====
+  // ===== UTILIDADES Y GETTERS =====
 
-  showTab(tabName: string): void {
-    this.tabState.activeTab = tabName;
-
-    switch (tabName) {
-      case 'users':
-        if (this.users.length === 0) this.loadUsers();
-        break;
-      case 'content':
-        if (this.reviews.length === 0) this.loadReviews();
-        break;
-      case 'reports':
-        if (this.reports.length === 0) {
-          this.loadReports();
-          this.loadReportStats();
-        }
-        break;
-    }
-
-    this.cdr.markForCheck();
+  get userGrowthPercentage(): number {
+    if (!this.dashboardData) return 0;
+    
+    const todayUsers = this.dashboardData.today.newUsers;
+    const periodAverage = this.dashboardData.period.newUsers / this.getPeriodDays();
+    
+    if (periodAverage === 0) return 0;
+    return Math.round(((todayUsers / periodAverage) - 1) * 100);
   }
 
-  showContentTab(contentType: string): void {
-    console.log('Cambiando a pestaña de contenido:', contentType);
-    this.tabState.activeContentTab = contentType;
+  get activityGrowthPercentage(): number {
+    if (!this.dashboardData) return 0;
+    
+    const todayActivity = this.dashboardData.today.newReviews + this.dashboardData.today.newComments;
+    const periodActivity = this.dashboardData.period.newReviews + this.dashboardData.period.newComments;
+    const periodAverage = periodActivity / this.getPeriodDays();
+    
+    if (periodAverage === 0) return 0;
+    return Math.round(((todayActivity / periodAverage) - 1) * 100);
+  }
 
-    switch (contentType) {
-      case 'reviews':
-        if (this.reviews.length === 0) this.loadReviews();
-        break;
-      case 'comments':
-        if (this.comments.length === 0) this.loadComments();
-        break;
-      case 'lists':
-        if (this.lists.length === 0) this.loadLists();
-        break;
+  get moderationEfficiency(): number {
+    if (!this.dashboardData) return 100;
+    return this.dashboardData.moderation.efficiency;
+  }
+
+  private getPeriodDays(): number {
+    switch (this.selectedTimeRange) {
+      case 'today': return 1;
+      case 'week': return 7;
+      case 'month': return 30;
+      default: return 7;
     }
+  }
 
-    this.cdr.markForCheck();
+  getTrendClass(percentage: number): string {
+    if (percentage > 10) return 'trend-positive';
+    if (percentage < -10) return 'trend-negative';
+    return 'trend-neutral';
+  }
+
+  getModerationSeverity(): 'success' | 'info' | 'warn' | 'danger' {
+    if (!this.dashboardData) return 'success';
+    
+    const pending = this.dashboardData.moderation.pendingReports;
+    if (pending === 0) return 'success';
+    if (pending <= 5) return 'info';
+    if (pending <= 15) return 'warn';
+    return 'danger';
+  }
+
+  getActivityLevel(): 'success' | 'info' | 'warn' | 'danger' {
+    if (!this.dashboardData) return 'info';
+    
+    const totalToday = this.dashboardData.today.newReviews + 
+                      this.dashboardData.today.newComments + 
+                      this.dashboardData.today.newUsers;
+    
+    if (totalToday >= 50) return 'success';
+    if (totalToday >= 20) return 'info';
+    if (totalToday >= 10) return 'warn';
+    return 'danger';
+  }
+
+  // ===== PROPIEDADES PARA TEMPLATE =====
+
+  get isLoading(): boolean {
+    return this.loading.dashboard || this.loading.charts;
+  }
+
+  get hasError(): boolean {
+    return !!(this.errors.dashboard || this.errors.charts);
+  }
+
+  get canShowCharts(): boolean {
+    return !this.isLoading && !this.hasError && !!this.dashboardData;
+  }
+
+  get mostActiveUser(): any {
+    return this.dashboardData?.content.mostActiveUser;
+  }
+
+  get systemHealth(): string {
+    if (!this.realtimeMetrics?.systemHealth) return 'unknown';
+    return this.realtimeMetrics.systemHealth.status;
+  }
+
+  // ===== UTILIDADES DE FORMATEO =====
+
+  formatNumber(num: number): string {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  }
+
+  formatPercentage(num: number): string {
+    const sign = num > 0 ? '+' : '';
+    return `${sign}${num}%`;
+  }
+
+  formatTime(hours: number): string {
+    if (hours < 1) {
+      return `${Math.round(hours * 60)}m`;
+    }
+    if (hours < 24) {
+      return `${Math.round(hours)}h`;
+    }
+    return `${Math.round(hours / 24)}d`;
+  }
+
+  getLastUpdated(): string {
+    if (!this.realtimeMetrics?.timestamp) return '';
+    
+    const now = new Date();
+    const updated = new Date(this.realtimeMetrics.timestamp);
+    const diffMs = now.getTime() - updated.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    
+    if (diffMinutes < 1) return 'Ahora mismo';
+    if (diffMinutes === 1) return 'Hace 1 minuto';
+    return `Hace ${diffMinutes} minutos`;
+  }
+
+  formatDate(date: Date | string): string {
+    return new Date(date).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  capitalizeFirst(str: string): string {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  getUserAvatarPath(avatar: string): string {
+    return `/avatares/${avatar}.gif`;
+  }
+
+  getRoleClass(role: string): string {
+    const roleClasses: { [key: string]: string } = {
+      'admin': 'badge-admin',
+      'moderator': 'badge-moderator',
+      'premium': 'badge-premium',
+      'user': 'badge-user'
+    };
+    return roleClasses[role] || 'badge-user';
+  }
+
+  // ===== GETTERS PARA PERMISOS =====
+
+  get canManageUsers(): boolean {
+    return this.userPermissions?.can.manageUsers || this.userPermissions?.can.banUsers || false;
+  }
+
+  get canBanUsers(): boolean {
+    return this.userPermissions?.can.banUsers || false;
+  }
+
+  get canModerateContent(): boolean {
+    return this.userPermissions?.can.moderateContent || false;
+  }
+
+  get isAdmin(): boolean {
+    return this.userPermissions?.role === 'admin';
+  }
+
+  get isModerator(): boolean {
+    return this.userPermissions?.role === 'moderator' || this.isAdmin;
+  }
+
+  // ===== MÉTODOS AUXILIARES =====
+
+  private getCurrentUser(): any {
+    try {
+      const user = localStorage.getItem('user');
+      return user ? JSON.parse(user) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  getReasonDisplayText(reason: string): string {
+    return this.adminService.getReasonDisplayText(reason);
   }
 
   // ===== BÚSQUEDA DE CONTENIDO =====
@@ -825,6 +1681,11 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.reports = [];
   }
 
+  private resetUsersPagination(): void {
+    this.pagination.users = { page: 1, total: 0, hasMore: false };
+    this.users = [];
+  }
+
   // ===== GESTIÓN DE MODALES =====
 
   openBanModal(user: AdminUser): void {
@@ -894,8 +1755,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.closeOtherModals(['review']);
     this.cdr.markForCheck();
   }
-
-  // ===== MODALES DE REPORTES =====
 
   openResolveReportModal(report: AdminReport): void {
     this.modalData = { report };
@@ -1141,9 +2000,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     this.subscriptions.add(deleteSub);
   }
 
-  // ===== GESTIÓN DE REPORTES =====
-
-
   // ===== PAGINACIÓN =====
 
   loadMoreUsers(): void {
@@ -1176,9 +2032,125 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  private resetUsersPagination(): void {
-    this.pagination.users = { page: 1, total: 0, hasMore: false };
-    this.users = [];
+  // ===== GESTIÓN DE REPORTES =====
+
+  resolveReport(): void {
+    if (this.resolveReportForm.invalid || !this.modalData.report) {
+      console.log('❌ Formulario de resolución inválido o falta reporte');
+      return;
+    }
+
+    this.loading.resolvingReport = true;
+
+    const formValue = this.resolveReportForm.value;
+    const reportId = this.modalData.report._id;
+
+    console.log('🔧 Resolviendo reporte:', {
+      reportId: reportId,
+      action: formValue.action,
+      notes: formValue.notes,
+      shouldNotify: formValue.shouldNotify
+    });
+
+    const resolveSub = this.adminService.resolveReport(reportId, {
+      action: formValue.action,
+      notes: formValue.notes,
+      shouldNotify: formValue.shouldNotify
+    }).subscribe({
+      next: (response) => {
+        this.closeReportModals();
+        console.log('✅ Reporte resuelto correctamente:', response);
+
+        const reportIndex = this.reports.findIndex(r => r._id === reportId);
+        if (reportIndex !== -1) {
+          this.reports[reportIndex].status = 'resolved';
+          this.reports[reportIndex].resolution = {
+            action: formValue.action,
+            notes: formValue.notes,
+            resolvedBy: {
+              _id: this.currentUser?._id || '',
+              username: this.currentUser?.username || ''
+            },
+            resolvedAt: new Date()
+          };
+        }
+
+        let actionMessage = 'Reporte resuelto correctamente.';
+        
+        if (response.data?.actionTaken) {
+          const actionDetails = [];
+          
+          if (response.data.notificationsSent?.includes('content_deletion')) {
+            actionDetails.push('✅ Contenido eliminado');
+          }
+          if (response.data.notificationsSent?.includes('user_warning')) {
+            actionDetails.push('⚠️ Usuario advertido');
+          }
+          if (response.data.notificationsSent?.includes('user_ban')) {
+            actionDetails.push('🚫 Usuario baneado');
+          }
+          if (response.data.notificationsSent?.includes('reporter_resolution')) {
+            actionDetails.push('📧 Reporter notificado');
+          }
+
+          if (actionDetails.length > 0) {
+            actionMessage += '\n\nAcciones ejecutadas:\n' + actionDetails.join('\n');
+          }
+        }
+
+        this.showSuccessNotification(actionMessage);
+        this.loadReportStats();
+        this.cdr.markForCheck();
+      },
+      error: (error: any) => {
+        console.error('❌ Error resolviendo reporte:', error);
+        this.showErrorNotification(`Error al resolver reporte: ${error.message}`);
+      },
+      complete: () => {
+        this.loading.resolvingReport = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.subscriptions.add(resolveSub);
+  }
+
+  updateReportStatus(reportId: string, newStatus: string): void {
+    console.log('🔄 Actualizando estado del reporte:', reportId, 'a', newStatus);
+
+    const updateSub = this.adminService.updateReportStatus(reportId, {
+      status: newStatus as any,
+      notes: `Estado cambiado a ${newStatus} por ${this.currentUser?.username}`
+    }).subscribe({
+      next: (response) => {
+        console.log('✅ Estado del reporte actualizado:', response);
+
+        const reportIndex = this.reports.findIndex(r => r._id === reportId);
+        if (reportIndex !== -1) {
+          this.reports[reportIndex].status = newStatus as any;
+          this.cdr.markForCheck();
+        }
+
+        this.loadReportStats();
+        this.showSuccessNotification(`Estado del reporte actualizado a: ${this.getStatusDisplayText(newStatus)}`);
+      },
+      error: (error: any) => {
+        console.error('❌ Error actualizando estado del reporte:', error);
+        this.showErrorNotification(`Error al actualizar estado: ${error.message}`);
+      }
+    });
+
+    this.subscriptions.add(updateSub);
+  }
+
+  private showSuccessNotification(message: string): void {
+    console.log('✅ Éxito:', message);
+    alert(message);
+  }
+
+  private showErrorNotification(message: string): void {
+    console.error('❌ Error:', message);
+    alert(message);
   }
 
   // ===== MÉTODOS AUXILIARES PARA REPORTES =====
@@ -1191,24 +2163,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
       'list': 'Lista personalizada'
     };
     return typeMap[contentType] || contentType;
-  }
-
-  getReasonDisplayText(reason: string): string {
-    const reasonMap: { [key: string]: string } = {
-      'inappropriate_language': 'Lenguaje inapropiado',
-      'harassment': 'Acoso',
-      'discrimination': 'Discriminación',
-      'spam': 'Spam',
-      'inappropriate_content': 'Contenido inapropiado',
-      'violence_threats': 'Amenazas de violencia',
-      'false_information': 'Información falsa',
-      'hate_speech': 'Discurso de odio',
-      'sexual_content': 'Contenido sexual',
-      'copyright_violation': 'Violación de derechos de autor',
-      'impersonation': 'Suplantación de identidad',
-      'other': 'Otro'
-    };
-    return reasonMap[reason] || reason;
   }
 
   getActionDisplayText(action: string): string {
@@ -1252,8 +2206,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     return statusClasses[status] || 'status-pending';
   }
 
-  // ===== FUNCIÓN PARA OBTENER TEXTO DE ACCIÓN DE HISTORIAL =====
-
   getActionText(action: string): string {
     const actions: { [key: string]: string } = {
       'ban': 'Usuario Baneado',
@@ -1275,69 +2227,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     };
 
     return actions[action] || this.capitalizeFirst(action.replace('_', ' '));
-  }
-
-  // ===== UTILIDADES =====
-
-  private getCurrentUser(): any {
-    try {
-      const user = localStorage.getItem('user');
-      return user ? JSON.parse(user) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  public capitalizeFirst(str: string): string {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
-  // ===== GETTERS PARA TEMPLATES =====
-
-  get canManageUsers(): boolean {
-    return this.userPermissions?.can.manageUsers || this.userPermissions?.can.banUsers || false;
-  }
-
-  get canBanUsers(): boolean {
-    return this.userPermissions?.can.banUsers || false;
-  }
-
-  get canModerateContent(): boolean {
-    return this.userPermissions?.can.moderateContent || false;
-  }
-
-  get isAdmin(): boolean {
-    return this.userPermissions?.role === 'admin';
-  }
-
-  get isModerator(): boolean {
-    return this.userPermissions?.role === 'moderator' || this.isAdmin;
-  }
-
-  // Métodos auxiliares para templates
-  formatDate(date: Date | string): string {
-    return new Date(date).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  getBadgeRoleClass(role: string): string {
-    const roleClasses: { [key: string]: string } = {
-      'admin': 'badge-role-admin',
-      'moderator': 'badge-role-moderator',
-      'premium': 'badge-role-premium',
-      'user': 'badge-role-user'
-    };
-    return roleClasses[role] || 'badge-role-user';
-  }
-
-  getUserAvatarPath(avatar: string): string {
-    return `/avatares/${avatar}.gif`;
   }
 
   logout(): void {
@@ -1364,16 +2253,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     });
   }
 
-  getRoleClass(role: string): string {
-    const roleClasses: { [key: string]: string } = {
-      'admin': 'badge-admin',
-      'moderator': 'badge-moderator',
-      'premium': 'badge-premium',
-      'user': 'badge-user'
-    };
-    return roleClasses[role] || 'badge-user';
-  }
-
   getRoleDisplayName(role: string): string {
     const roleNames: { [key: string]: string } = {
       'admin': 'Admin',
@@ -1384,147 +2263,101 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     return roleNames[role] || role;
   }
 
+  // ===== MÉTODOS DE LIMPIEZA Y OPTIMIZACIÓN =====
 
-  resolveReport(): void {
-  if (this.resolveReportForm.invalid || !this.modalData.report) {
-    console.log('❌ Formulario de resolución inválido o falta reporte');
-    return;
+  /**
+   * Limpia recursos para evitar memory leaks
+   */
+  private cleanupResources(): void {
+    this.clearPosterCache();
+    this.subscriptions.unsubscribe();
+    
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+
+    // Limpiar datos de películas
+    this._topMovies = [];
+    this._enhancedTopMovies = [];
+    
+    console.log('Dashboard component destroyed, resources cleaned');
   }
 
-  this.loading.resolvingReport = true;
+  /**
+   * Método para limpiar datos de películas
+   */
+  clearMoviesData(): void {
+    this._topMovies = [];
+    this._enhancedTopMovies = [];
+    this.clearPosterCache();
+  }
 
-  const formValue = this.resolveReportForm.value;
-  const reportId = this.modalData.report._id;
-
-  console.log('🔧 Resolviendo reporte:', {
-    reportId: reportId,
-    action: formValue.action,
-    notes: formValue.notes,
-    shouldNotify: formValue.shouldNotify
-  });
-
-  const resolveSub = this.adminService.resolveReport(reportId, {
-    action: formValue.action,
-    notes: formValue.notes,
-    shouldNotify: formValue.shouldNotify
-  }).subscribe({
-    next: (response) => {
-      this.closeReportModals();
-      console.log('✅ Reporte resuelto correctamente:', response);
-
-      // Actualizar el reporte en la lista local
-      const reportIndex = this.reports.findIndex(r => r._id === reportId);
-      if (reportIndex !== -1) {
-        this.reports[reportIndex].status = 'resolved';
-        this.reports[reportIndex].resolution = {
-          action: formValue.action,
-          notes: formValue.notes,
-          resolvedBy: {
-            _id: this.currentUser?._id || '',
-            username: this.currentUser?.username || ''
-          },
-          resolvedAt: new Date()
-        };
-      }
-
-      // 📊 Mostrar información detallada de las acciones tomadas
-      let actionMessage = 'Reporte resuelto correctamente.';
+  /**
+   * Método para obtener películas con filtros
+   */
+  getFilteredTopMovies(filter?: 'trending' | 'highest-rated' | 'most-reviewed'): any[] {
+    if (!filter) return this.topMovies;
+    
+    const movies = [...this.topMovies];
+    
+    switch (filter) {
+      case 'trending':
+        return movies.sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0));
       
-      if (response.data?.actionTaken) {
-        const actionDetails = [];
-        
-        if (response.data.notificationsSent?.includes('content_deletion')) {
-          actionDetails.push('✅ Contenido eliminado');
-        }
-        if (response.data.notificationsSent?.includes('user_warning')) {
-          actionDetails.push('⚠️ Usuario advertido');
-        }
-        if (response.data.notificationsSent?.includes('user_ban')) {
-          actionDetails.push('🚫 Usuario baneado');
-        }
-        if (response.data.notificationsSent?.includes('reporter_resolution')) {
-          actionDetails.push('📧 Reporter notificado');
-        }
-
-        if (actionDetails.length > 0) {
-          actionMessage += '\n\nAcciones ejecutadas:\n' + actionDetails.join('\n');
-        }
-      }
-
-      // 🎯 Mostrar notificación de éxito detallada
-      this.showSuccessNotification(actionMessage);
-
-      // Recargar estadísticas de reportes
-      this.loadReportStats();
-      this.cdr.markForCheck();
-    },
-    error: (error: any) => {
-      console.error('❌ Error resolviendo reporte:', error);
-      this.showErrorNotification(`Error al resolver reporte: ${error.message}`);
-    },
-    complete: () => {
-      this.loading.resolvingReport = false;
-      this.cdr.markForCheck();
-    }
-  });
-
-  this.subscriptions.add(resolveSub);
-}
-
-// 🆕 MÉTODO AUXILIAR PARA NOTIFICACIONES DE ÉXITO
-private showSuccessNotification(message: string): void {
-  // Implementar según tu sistema de notificaciones
-  // Puede ser un toast, modal, o simplemente console.log
-  console.log('✅ Éxito:', message);
-  
-  // Si tienes un servicio de notificaciones/toasts:
-  // this.notificationService.showSuccess(message);
-  
-  // O usar alert como fallback:
-  alert(message);
-}
-
-// 🆕 MÉTODO AUXILIAR PARA NOTIFICACIONES DE ERROR
-private showErrorNotification(message: string): void {
-  console.error('❌ Error:', message);
-  
-  // Si tienes un servicio de notificaciones/toasts:
-  // this.notificationService.showError(message);
-  
-  // O usar alert como fallback:
-  alert(message);
-}
-
-// 🔧 MÉTODO MEJORADO PARA ACTUALIZAR ESTADO DE REPORTE
-updateReportStatus(reportId: string, newStatus: string): void {
-  console.log('🔄 Actualizando estado del reporte:', reportId, 'a', newStatus);
-
-  const updateSub = this.adminService.updateReportStatus(reportId, {
-    status: newStatus as any,
-    notes: `Estado cambiado a ${newStatus} por ${this.currentUser?.username}`
-  }).subscribe({
-    next: (response) => {
-      console.log('✅ Estado del reporte actualizado:', response);
-
-      // Actualizar en la lista local
-      const reportIndex = this.reports.findIndex(r => r._id === reportId);
-      if (reportIndex !== -1) {
-        this.reports[reportIndex].status = newStatus as any;
-        this.cdr.markForCheck();
-      }
-
-      // Recargar estadísticas
-      this.loadReportStats();
+      case 'highest-rated':
+        return movies.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
       
-      // Notificación de éxito
-      this.showSuccessNotification(`Estado del reporte actualizado a: ${this.getStatusDisplayText(newStatus)}`);
-    },
-    error: (error: any) => {
-      console.error('❌ Error actualizando estado del reporte:', error);
-      this.showErrorNotification(`Error al actualizar estado: ${error.message}`);
+      case 'most-reviewed':
+        return movies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+      
+      default:
+        return movies;
     }
-  });
+  }
 
-  this.subscriptions.add(updateSub);
-}
+  /**
+   * Método para buscar una película específica
+   */
+  findMovieById(movieId: string | number): any | null {
+    return this.topMovies.find(movie => 
+      movie.movieId.toString() === movieId.toString()
+    ) || null;
+  }
+
+  /**
+   * Método para refrescar solo las películas sin recargar todo el dashboard
+   */
+  refreshMoviesOnly(): void {
+    if (this.dashboardData?.charts?.topMovies) {
+      this.updateTopMoviesFromDashboard();
+      console.log('Películas populares refrescadas');
+    }
+  }
+
+  /**
+   * Obtiene el color del badge de ranking basado en la posición
+   */
+  getRankingBadgeSeverity(position: number): 'success' | 'info' | 'warn' | 'danger' {
+    if (position === 1) return 'warn'; // Oro
+    if (position <= 3) return 'info';  // Plata/Bronce
+    if (position <= 5) return 'success'; // Verde
+    return 'danger'; // Resto
+  }
+
+  /**
+   * Obtiene la clase CSS para el icono de tendencia
+   */
+  getTrendingIconClass(trendingScore: number): string {
+    if (trendingScore > 50) return 'pi pi-arrow-up text-green-500';
+    if (trendingScore > 20) return 'pi pi-arrow-up text-yellow-500';
+    if (trendingScore > 0) return 'pi pi-minus text-blue-500';
+    return 'pi pi-arrow-down text-red-500';
+  }
+
+  /**
+   * Verifica si una película está en tendencia
+   */
+  isMovieTrending(movie: any): boolean {
+    return movie.trendingScore && movie.trendingScore > 30;
+  }
 }

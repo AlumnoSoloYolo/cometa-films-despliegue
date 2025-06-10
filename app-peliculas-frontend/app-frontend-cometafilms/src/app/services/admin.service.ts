@@ -750,62 +750,68 @@ export class AdminService {
   }
 
 
-    /**
-   * Obtener métricas completas del dashboard
-   */
-  getDashboardMetrics(timeRange: string = 'week'): Observable<DashboardMetrics> {
-    return this.http.get<any>(`${this.apiUrl}/dashboard/metrics?timeRange=${timeRange}`)
-      .pipe(
-        map(response => {
-          if (response.success) {
-            return response.data;
-          }
-          throw new Error(response.message || 'Error obteniendo métricas');
-        }),
-        catchError(error => {
-          console.error('Error obteniendo métricas del dashboard:', error);
-          return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
-        })
-      );
-  }
-
   /**
-   * Obtener datos específicos para gráficas
-   */
-  getChartData(type: string, timeRange: string = 'week'): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/dashboard/charts/${type}?timeRange=${timeRange}`)
-      .pipe(
-        map(response => {
-          if (response.success) {
-            return response.data;
-          }
-          throw new Error(response.message || 'Error obteniendo datos de gráfica');
-        }),
-        catchError(error => {
-          console.error('Error obteniendo datos de gráfica:', error);
-          return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
-        })
-      );
-  }
+ * Obtener métricas completas del dashboard
+ */
+getDashboardMetrics(timeRange: string = 'week'): Observable<DashboardMetrics> {
+  return this.http.get<any>(`${this.apiUrl}/dashboard/metrics?timeRange=${timeRange}`, {
+    headers: this.getHeaders() // ✅ AGREGADO: headers con autenticación
+  })
+    .pipe(
+      map(response => {
+        if (response.success) {
+          return response.data;
+        }
+        throw new Error(response.message || 'Error obteniendo métricas');
+      }),
+      catchError(error => {
+        console.error('Error obteniendo métricas del dashboard:', error);
+        return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
+      })
+    );
+}
 
-  /**
-   * Obtener métricas en tiempo real
-   */
-  getRealtimeMetrics(): Observable<RealtimeMetrics> {
-    return this.http.get<any>(`${this.apiUrl}/dashboard/realtime`)
-      .pipe(
-        map(response => {
-          if (response.success) {
-            return response.realtime;
-          }
-          throw new Error(response.message || 'Error obteniendo métricas en tiempo real');
-        }),
-        catchError(error => {
-          console.error('Error obteniendo métricas en tiempo real:', error);
-          return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
-        })
-      );
-  }
+/**
+ * Obtener datos específicos para gráficas
+ */
+getChartData(type: string, timeRange: string = 'week'): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}/dashboard/charts/${type}?timeRange=${timeRange}`, {
+    headers: this.getHeaders() // ✅ AGREGADO: headers con autenticación
+  })
+    .pipe(
+      map(response => {
+        if (response.success) {
+          return response.data;
+        }
+        throw new Error(response.message || 'Error obteniendo datos de gráfica');
+      }),
+      catchError(error => {
+        console.error('Error obteniendo datos de gráfica:', error);
+        return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
+      })
+    );
+}
+
+/**
+ * Obtener métricas en tiempo real
+ */
+getRealtimeMetrics(): Observable<RealtimeMetrics> {
+  return this.http.get<any>(`${this.apiUrl}/dashboard/realtime`, {
+    headers: this.getHeaders() // ✅ AGREGADO: headers con autenticación
+  })
+    .pipe(
+      map(response => {
+        if (response.success) {
+          return response.realtime;
+        }
+        throw new Error(response.message || 'Error obteniendo métricas en tiempo real');
+      }),
+      catchError(error => {
+        console.error('Error obteniendo métricas en tiempo real:', error);
+        return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
+      })
+    );
+}
 
 
   // ==========================================
