@@ -241,7 +241,7 @@ const resolveReport = async (req, res) => {
         const { action, notes } = req.body;
         const moderatorId = req.user.id;
 
-        console.log(`Resolviendo reporte ${reportId} con acción: ${action}`);
+        console.log(`🔧 Resolviendo reporte ${reportId} con acción: ${action}`);
 
         const report = await Report.findById(reportId)
             .populate('reporter', 'username')
@@ -278,7 +278,7 @@ const resolveReport = async (req, res) => {
         let actionTaken = false;
         let notificationsSent = [];
 
-        // Ejecutar acciones según la resolución
+        // EJECUTAR ACCIONES SEGÚN LA RESOLUCIÓN
         switch (action) {
             case 'content_deleted':
                 const contentDeleted = await deleteReportedContent(
@@ -289,87 +289,193 @@ const resolveReport = async (req, res) => {
                 if (contentDeleted) {
                     actionTaken = true;
                     
-                    // Notificar al usuario reportado sobre la eliminación de contenido
-                    console.log(`Enviando notificación de eliminación a usuario ${report.reportedUser._id}`);
-                    const deletionNotificationSent = await sendContentDeletionByReportNotification(
-                        report.reportedUser._id,
-                        report.reportedContent.contentType,
-                        report.reason,
-                        notes || 'Tu contenido ha sido eliminado tras una revisión de moderación'
-                    );
-                    
-                    if (deletionNotificationSent.success) {
-                        notificationsSent.push('content_deletion');
-                        console.log('✅ Notificación de eliminación enviada correctamente');
-                    } else {
-                        console.log('❌ Error enviando notificación de eliminación:', deletionNotificationSent.error);
+                    // Notificar al usuario reportado
+                    try {
+                        const deletionNotificationSent = await sendSystemNotificationToUser(report.reportedUser._id, {
+                            notificationType: 'content_deleted_by_report',
+                            title: 'Contenido eliminado',
+                            message: `Tu ${getContentTypeName(report.reportedContent.contentType)} ha sido eliminado tras una revisión de moderación.`,
+                            reason: `Motivo: ${getReportReasonDisplayName(report.reason)}. ${notes || ''}`,
+                            severity: 'warning',
+                            category: 'moderation',
+                            actionRequired: false,
+                            metadata: {
+                                contentType: report.reportedContent.contentType,
+                                action: 'deleted',
+                                reportReason: report.reason
+                            }
+                        });
+                        
+                        if (deletionNotificationSent) {
+                            notificationsSent.push('content_deletion');
+                            console.log('✅ Notificación de eliminación enviada al usuario reportado');
+                        }
+                    } catch (error) {
+                        console.log('⚠️ Error enviando notificación de eliminación:', error.message);
                     }
-                } else {
-                    console.log('⚠️ No se pudo eliminar el contenido');
                 }
                 break;
 
             case 'user_warned':
                 actionTaken = true;
                 
-                // Notificar al usuario reportado sobre la advertencia
-                console.log(`Enviando advertencia a usuario ${report.reportedUser._id}`);
-                const warningNotificationSent = await sendWarningByReportNotification(
-                    report.reportedUser._id,
-                    report.reason,
-                    notes || 'Has recibido una advertencia tras la revisión de un reporte'
-                );
-                
-                if (warningNotificationSent.success) {
-                    notificationsSent.push('user_warning');
-                    console.log('✅ Notificación de advertencia enviada correctamente');
-                } else {
-                    console.log('❌ Error enviando notificación de advertencia:', warningNotificationSent.error);
+                try {
+                    const warningNotificationSent = await sendSystemNotificationToUser(report.reportedUser._id, {
+                        notificationType: 'warning_by_report',
+                        title: 'Advertencia por reporte',
+                        message: 'Has recibido una advertencia tras la revisión de un reporte sobre tu actividad.',
+                        reason: `Motivo: ${getReportReasonDisplayName(report.reason)}. ${notes || ''}`,
+                        severity: 'warning',
+                        category: 'moderation',
+                        actionRequired: false,
+                        metadata: {
+                            action: 'warning',
+                            reportReason: report.reason
+                        }
+                    });
+                    
+                    if (warningNotificationSent) {
+                        notificationsSent.push('user_warning');
+                        console.log('✅ Notificación de advertencia enviada al usuario reportado');
+                    }
+                } catch (error) {
+                    console.log('⚠️ Error enviando notificación de advertencia:', error.message);
                 }
                 break;
 
             case 'user_banned':
-                // El ban debe ser manejado por el controlador de admin
-                // Aquí solo registramos que se decidió banear
                 actionTaken = true;
-                console.log(`Reporte resuelto con decisión de ban para usuario ${report.reportedUser.username}`);
                 
-                // Enviar notificación de que se ha tomado acción de ban
-                const banNotificationSent = await sendUserBanNotification(
-                    report.reportedUser._id,
-                    notes || `Tu cuenta ha sido suspendida tras la revisión de un reporte. Motivo: ${getReportReasonDisplayName(report.reason)}`,
-                    null // Ban permanente por defecto desde reportes
-                );
-                
-                if (banNotificationSent.success) {
-                    notificationsSent.push('user_ban_notification');
-                    console.log('✅ Notificación de ban enviada correctamente');
+                try {
+                    const userToBan = await User.findById(report.reportedUser._id);
+                    if (userToBan && !userToBan.isBanned) {
+                        // BANEAR AL USUARIO REALMENTE
+                        userToBan.isBanned = true;
+                        userToBan.banReason = `Reporte resuelto: ${getReportReasonDisplayName(report.reason)}. ${notes || ''}`;
+                        userToBan.bannedAt = new Date();
+                        userToBan.bannedBy = moderatorId;
+                        userToBan.banExpiresAt = null;
+
+                        // Agregar al historial
+                        userToBan.moderationHistory.push({
+                            action: 'ban',
+                            reason: userToBan.banReason,
+                            moderator: moderatorId,
+                            date: new Date(),
+                            details: `Ban por reporte resuelto`
+                        });
+
+                        await userToBan.save();
+
+                        // Invalidar sesiones
+                        try {
+                            const TokenBlacklist = require('../models/tokenBlackList.model');
+                            await TokenBlacklist.create({
+                                userId: userToBan._id,
+                                reason: 'user_banned_by_report',
+                                invalidatedBy: moderatorId,
+                                invalidatedAt: new Date()
+                            });
+                        } catch (tokenError) {
+                            console.log('⚠️ Error invalidando tokens:', tokenError.message);
+                        }
+
+                        console.log(`🚫 Usuario ${userToBan.username} baneado por reporte`);
+                        
+                        // Notificar ban al usuario reportado
+                        try {
+                            const banNotificationSent = await sendSystemNotificationToUser(userToBan._id, {
+                                notificationType: 'account_banned_by_report',
+                                title: 'Cuenta suspendida',
+                                message: 'Tu cuenta ha sido suspendida permanentemente.',
+                                reason: userToBan.banReason,
+                                severity: 'error',
+                                category: 'account',
+                                actionRequired: true,
+                                metadata: {
+                                    banType: 'permanent',
+                                    banReason: userToBan.banReason
+                                }
+                            });
+                            
+                            if (banNotificationSent) {
+                                notificationsSent.push('user_ban');
+                                console.log('✅ Notificación de ban enviada al usuario reportado');
+                            }
+                        } catch (error) {
+                            console.log('⚠️ Error enviando notificación de ban:', error.message);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Error baneando usuario:', error);
                 }
                 break;
 
             case 'no_action':
                 actionTaken = true;
-                console.log(`Reporte resuelto sin acción para reporte ${reportId}`);
+                console.log('ℹ️ Reporte resuelto sin acción');
                 break;
 
             default:
-                console.log(`Acción personalizada: ${action} para reporte ${reportId}`);
                 actionTaken = true;
+                console.log(`🔧 Acción personalizada: ${action}`);
                 break;
         }
 
-        // SIEMPRE notificar al reporter sobre la resolución
-        const reporterNotificationSent = await sendReportResolutionNotification(
-            report.reporter._id,
-            report,
-            action,
-            notes
-        );
-        
-        if (reporterNotificationSent) {
-            notificationsSent.push('reporter_resolution');
+        // 🔥 NOTIFICAR AL REPORTER SIEMPRE (ESTO ES LO CRÍTICO)
+        try {
+            console.log(`📧 Enviando notificación de resolución al reporter: ${report.reporter._id} (${report.reporter.username})`);
+            
+            // Mensajes específicos según la acción tomada
+            const actionMessages = {
+                'no_action': 'Tu reporte ha sido revisado y analizado. No se encontraron violaciones de las normas de la comunidad en este caso.',
+                'content_deleted': 'Tu reporte ha sido revisado y confirmado. El contenido reportado ha sido eliminado por violar nuestras normas.',
+                'user_warned': 'Tu reporte ha sido revisado y confirmado. Se ha enviado una advertencia oficial al usuario reportado.',
+                'user_banned': 'Tu reporte ha sido revisado y confirmado. Se han tomado medidas disciplinarias severas contra la cuenta del usuario reportado.',
+                'other': 'Tu reporte ha sido revisado y se han tomado las medidas apropiadas según nuestras políticas.'
+            };
+
+            // Información detallada para el reporter
+            const detailedMessage = actionMessages[action] || 'Tu reporte ha sido procesado por nuestro equipo de moderación.';
+            
+            // Agregar contexto sobre qué se reportó
+            const contentTypeText = getContentTypeName(report.reportedContent.contentType);
+            const reasonText = getReportReasonDisplayName(report.reason);
+            
+            const contextualReason = `Reporte sobre ${contentTypeText} por "${reasonText}" - ${detailedMessage}` + 
+                (notes ? ` Notas del moderador: ${notes}` : '');
+
+            const reporterNotificationSent = await sendSystemNotificationToUser(report.reporter._id, {
+                notificationType: 'report_resolved',
+                title: 'Reporte resuelto',
+                message: detailedMessage,
+                reason: contextualReason,
+                severity: action === 'no_action' ? 'info' : 'success',
+                category: 'reports',
+                actionRequired: false,
+                metadata: {
+                    reportId: report._id,
+                    reportedContentType: report.reportedContent.contentType,
+                    reportedUser: report.reportedUser.username,
+                    reportReason: report.reason,
+                    action: action,
+                    moderatorNotes: notes,
+                    actionTaken: actionTaken,
+                    resolvedAt: new Date().toISOString()
+                }
+            });
+            
+            if (reporterNotificationSent) {
+                notificationsSent.push('reporter_resolution');
+                console.log('✅ Notificación de resolución enviada al reporter exitosamente');
+            } else {
+                console.log('❌ Falló el envío de notificación al reporter');
+            }
+        } catch (error) {
+            console.error('❌ Error crítico enviando notificación al reporter:', error);
         }
 
+        // Respuesta exitosa
         res.json({
             success: true,
             message: 'Reporte resuelto correctamente',
@@ -378,21 +484,56 @@ const resolveReport = async (req, res) => {
                 action,
                 actionTaken,
                 notificationsSent,
-                contentDeleted: action === 'content_deleted' && actionTaken
+                userBanned: action === 'user_banned' && actionTaken,
+                reporterNotified: notificationsSent.includes('reporter_resolution')
             }
         });
 
-        console.log(`Reporte ${reportId} resuelto por moderador ${moderatorId} con acción: ${action}`);
-        console.log(`Notificaciones enviadas: ${notificationsSent.join(', ')}`);
+        console.log(`✨ Reporte ${reportId} resuelto completamente:`);
+        console.log(`   - Acción: ${action}`);
+        console.log(`   - Notificaciones enviadas: ${notificationsSent.join(', ')}`);
+        console.log(`   - Reporter notificado: ${notificationsSent.includes('reporter_resolution') ? 'SÍ' : 'NO'}`);
 
     } catch (error) {
-        console.error('Error al resolver reporte:', error);
+        console.error('❌ Error al resolver reporte:', error);
         res.status(500).json({
             success: false,
-            message: 'Error al resolver el reporte'
+            message: 'Error al resolver el reporte',
+            error: error.message
         });
     }
 };
+
+// FUNCIÓN AUXILIAR para nombres de contenido
+// 🔥 FUNCIÓN AUXILIAR MEJORADA para nombres de contenido
+function getContentTypeName(contentType) {
+    const names = {
+        'review': 'reseña',
+        'comment': 'comentario', 
+        'list': 'lista personalizada',
+        'user': 'perfil de usuario'
+    };
+    return names[contentType] || 'contenido';
+}
+
+// 🔥 FUNCIÓN AUXILIAR MEJORADA para razones de reporte
+function getReportReasonDisplayName(reason) {
+    const reasonMap = {
+        'inappropriate_language': 'Lenguaje inapropiado',
+        'harassment': 'Acoso',
+        'discrimination': 'Discriminación',
+        'spam': 'Spam',
+        'inappropriate_content': 'Contenido inapropiado',
+        'violence_threats': 'Amenazas de violencia',
+        'false_information': 'Información falsa',
+        'hate_speech': 'Discurso de odio',
+        'sexual_content': 'Contenido sexual',
+        'copyright_violation': 'Violación de derechos de autor',
+        'impersonation': 'Suplantación de identidad',
+        'other': 'Otro motivo'
+    };
+    return reasonMap[reason] || reason;
+}
 
 // ========================================
 // FUNCIONES AUXILIARES MEJORADAS
@@ -590,26 +731,6 @@ const sendWarningByReportNotification = async (userId, reportReason, moderatorNo
     }
 };
 
-/**
- * Obtener nombre de display para motivos de reporte
- */
-const getReportReasonDisplayName = (reason) => {
-    const reasonMap = {
-        'inappropriate_language': 'Lenguaje inapropiado',
-        'harassment': 'Acoso',
-        'discrimination': 'Discriminación',
-        'spam': 'Spam',
-        'inappropriate_content': 'Contenido inapropiado',
-        'violence_threats': 'Amenazas de violencia',
-        'false_information': 'Información falsa',
-        'hate_speech': 'Discurso de odio',
-        'sexual_content': 'Contenido sexual',
-        'copyright_violation': 'Violación de derechos de autor',
-        'impersonation': 'Suplantación de identidad',
-        'other': 'Otro'
-    };
-    return reasonMap[reason] || reason;
-};
 
 // ========================================
 // ACTUALIZAR ESTADO DEL REPORTE - MEJORADO
@@ -627,7 +748,7 @@ const updateReportStatus = async (req, res) => {
                 ...(status === 'under_review' && { updatedAt: new Date() })
             },
             { new: true }
-        ).populate('reporter', 'username');
+        ).populate('reporter', 'username').populate('reportedUser', 'username');
 
         if (!report) {
             return res.status(404).json({
@@ -636,13 +757,34 @@ const updateReportStatus = async (req, res) => {
             });
         }
 
-        // Si se marca como "en revisión", notificar al reporter
+        // 🔥 NOTIFICAR AL REPORTER SOBRE CAMBIO DE ESTADO
         if (status === 'under_review') {
-            await sendReportStatusUpdateNotification(
-                report.reporter._id,
-                report,
-                'under_review'
-            );
+            try {
+                console.log(`📧 Notificando cambio de estado a reporter: ${report.reporter._id}`);
+                
+                const statusNotificationSent = await sendSystemNotificationToUser(report.reporter._id, {
+                    notificationType: 'report_status_update',
+                    title: 'Reporte en revisión',
+                    message: 'Tu reporte está siendo revisado por nuestro equipo de moderación.',
+                    reason: `Reporte sobre ${getContentTypeName(report.reportedContent.contentType)} por "${getReportReasonDisplayName(report.reason)}" ahora está en revisión.` + 
+                            (notes ? ` Notas: ${notes}` : ''),
+                    severity: 'info',
+                    category: 'reports',
+                    actionRequired: false,
+                    metadata: {
+                        reportId: report._id,
+                        newStatus: status,
+                        reportedContentType: report.reportedContent.contentType,
+                        reportedUser: report.reportedUser.username
+                    }
+                });
+                
+                if (statusNotificationSent) {
+                    console.log('✅ Notificación de cambio de estado enviada al reporter');
+                }
+            } catch (error) {
+                console.log('⚠️ Error enviando notificación de estado:', error.message);
+            }
         }
 
         res.json({
@@ -659,6 +801,7 @@ const updateReportStatus = async (req, res) => {
         });
     }
 };
+
 
 /**
  * Notificar cambio de estado del reporte

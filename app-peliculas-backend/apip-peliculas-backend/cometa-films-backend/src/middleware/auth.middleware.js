@@ -5,7 +5,7 @@ const config = require('../config/config');
 const auth = async (req, res, next) => {
     try {
         const token = req.header('Authorization')?.replace('Bearer ', '');
-
+        
         if (!token) {
             return res.status(401).json({
                 success: false,
@@ -16,10 +16,10 @@ const auth = async (req, res, next) => {
 
         // Verificar el token
         const decoded = jwt.verify(token, config.jwt.secret);
-
+        
         // Buscar el usuario en la base de datos
         const user = await User.findById(decoded.id).select('-password');
-
+        
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -40,14 +40,14 @@ const auth = async (req, res, next) => {
             // Si es un ban temporal, verificar si ya expiró
             if (user.banExpiresAt && new Date() > user.banExpiresAt) {
                 console.log(`Ban temporal expirado para usuario ${user.username}, desbaneando automáticamente`);
-
+                
                 // Desbanear automáticamente
                 user.isBanned = false;
                 user.banReason = null;
                 user.bannedAt = null;
                 user.banExpiresAt = null;
                 user.bannedBy = null;
-
+                
                 // Agregar al historial
                 user.moderationHistory.push({
                     action: 'auto_unban',
@@ -55,20 +55,20 @@ const auth = async (req, res, next) => {
                     date: new Date(),
                     details: 'Sistema desbaneó automáticamente al expirar el ban temporal'
                 });
-
+                
                 await user.save();
-
+                
                 // Continuar con la autenticación normal
                 req.user = user;
                 next();
             } else {
                 // Usuario aún está baneado
                 console.log(`Usuario baneado intentando acceso: ${user.username}`);
-
+                
                 return res.status(403).json({
                     success: false,
-                    message: banInfo.isPermanent
-                        ? 'Tu cuenta ha sido suspendida permanentemente'
+                    message: banInfo.isPermanent 
+                        ? 'Tu cuenta ha sido suspendida permanentemente' 
                         : 'Tu cuenta está temporalmente suspendida',
                     code: 'USER_BANNED',
                     banInfo: banInfo
@@ -82,7 +82,7 @@ const auth = async (req, res, next) => {
 
     } catch (error) {
         console.error('Error en middleware de autenticación:', error);
-
+        
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({
                 success: false,
@@ -90,7 +90,7 @@ const auth = async (req, res, next) => {
                 code: 'INVALID_TOKEN'
             });
         }
-
+        
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({
                 success: false,
@@ -98,7 +98,7 @@ const auth = async (req, res, next) => {
                 code: 'TOKEN_EXPIRED'
             });
         }
-
+        
         res.status(500).json({
             success: false,
             message: 'Error interno en autenticación',
@@ -116,7 +116,7 @@ const checkBanStatus = async (req, res, next) => {
 
         // Re-verificar el estado de ban del usuario en tiempo real
         const user = await User.findById(req.user._id).select('isBanned banReason bannedAt banExpiresAt');
-
+        
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -157,11 +157,11 @@ const checkBanStatus = async (req, res, next) => {
             } else {
                 // Usuario aún baneado
                 console.log(`Usuario baneado bloqueado en acción: ${req.user.username}`);
-
+                
                 return res.status(403).json({
                     success: false,
-                    message: banInfo.isPermanent
-                        ? 'Tu cuenta ha sido suspendida permanentemente'
+                    message: banInfo.isPermanent 
+                        ? 'Tu cuenta ha sido suspendida permanentemente' 
                         : 'Tu cuenta está temporalmente suspendida',
                     code: 'ACCOUNT_BANNED',
                     banInfo: banInfo
@@ -185,7 +185,7 @@ const checkBanStatus = async (req, res, next) => {
 const invalidateBannedUserSessions = async (userId) => {
     try {
         const TokenBlacklist = require('../models/tokenBlackList.model');
-
+        
         // Agregar todas las sesiones del usuario a la blacklist
         await TokenBlacklist.create({
             userId: userId,

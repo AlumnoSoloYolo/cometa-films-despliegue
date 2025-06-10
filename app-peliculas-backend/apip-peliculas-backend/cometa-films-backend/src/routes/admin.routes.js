@@ -6,6 +6,12 @@ const {
     requirePermission,
     canBanUser
 } = require('../middleware/permissions.middleware');
+const {
+    getDashboardMetrics,
+    getChartData,
+    getRealtimeMetrics
+} = require('../controllers/dashboard.controller');
+
 const PermissionsService = require('../services/permissions.service');
 
 const {
@@ -230,7 +236,7 @@ router.get('/reports/stats',
             const resolvedReports = await Report.countDocuments({ status: 'resolved' });
             const dismissedReports = await Report.countDocuments({ status: 'dismissed' });
 
-            const resolutionRate = totalReports > 0 ?
+            const resolutionRate = totalReports > 0 ? 
                 ((resolvedReports / totalReports) * 100).toFixed(1) : 0;
 
             res.json({
@@ -555,5 +561,35 @@ router.use((error, req, res, next) => {
         ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
     });
 });
+
+
+// ===== RUTAS DEL DASHBOARD =====
+
+/**
+ * GET /admin/dashboard/metrics
+ * Obtiene métricas completas del dashboard
+ */
+router.get('/dashboard/metrics',
+    requirePermission('admin.system.view'),
+    getDashboardMetrics
+);
+
+/**
+ * GET /admin/dashboard/charts/:type
+ * Obtiene datos específicos para gráficas
+ */
+router.get('/dashboard/charts/:type',
+    requirePermission('admin.system.view'),
+    getChartData
+);
+
+/**
+ * GET /admin/dashboard/realtime
+ * Obtiene métricas en tiempo real
+ */
+router.get('/dashboard/realtime',
+    requirePermission('admin.system.view'),
+    getRealtimeMetrics
+);
 
 module.exports = router;
