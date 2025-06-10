@@ -246,7 +246,7 @@ export class PeliculasService {
   }
 
 
-  // NUEVO método específico para detalles COMPLETOS con llamadas separadas
+  // método específico para detalles COMPLETOS con llamadas separadas
   getDetallesCompletaPelicula(id: string): Observable<any> {
     console.log('Haciendo llamadas separadas para película:', id);
 

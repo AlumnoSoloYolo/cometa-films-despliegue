@@ -227,6 +227,7 @@ export interface DashboardMetrics {
     newLists: number;
     newReports: number;
     newBans: number;
+    totalLikes: number;
   };
   today: {
     newUsers: number;
@@ -236,6 +237,7 @@ export interface DashboardMetrics {
     newReports: number;
     newBans: number;
     totalLikes: number;
+
   };
   moderation: {
     pendingReports: number;

@@ -33,7 +33,7 @@
   --bg-card: rgba(10, 10, 10, 0.8);
   --bg-overlay: rgba(0, 0, 0, 0.85);
   --bg-glass: rgba(13, 17, 23, 0.95);
-  --bg-input: rgba(255, 255, 255, 0.1);
+  --bg-input:  #1a1a1a;
   --bg-input-focus: rgba(255, 255, 255, 0.15);
   --bg-modal: rgba(10, 10, 10, 0.9);
   

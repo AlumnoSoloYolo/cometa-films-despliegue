@@ -40,6 +40,14 @@
                         <i class="bi bi-chat-dots-fill"></i>
                         <span>Mensaje</span>
                     </button>
+
+                       @if (canReportUser()) {
+                    <button class="btn-report-compact" (click)="reportUser()" 
+                        title="Reportar usuario {{userProfile.username}}">
+                        <i class="bi bi-flag-fill"></i>
+                        <span>Reportar</span>
+                    </button>
+                    }
                 </div>
                 }
 
@@ -478,8 +486,11 @@
             </div>
             <div class="form-group">
                 <label for="coverImageInput">Portada (opcional)</label>
-                <input type="file" class="form-control" id="coverImageInput" (change)="onFileSelected($event)"
-                    accept="image/*">
+                 <input 
+                        type="file" 
+                        class="webkit-file-input"
+                        accept="image/*"
+                        (change)="onFileSelected($event)">
                 @if (coverImagePreview) {
                 <div class="image-preview my-2 text-center">
                     <img [src]="coverImagePreview" alt="Previsualización de portada"
@@ -664,3 +675,10 @@
     </form>
   </div>
 }
+
+<app-report-modal 
+    [showModal]="showReportModal" 
+    [reportData]="reportModalData" 
+    (modalClosed)="onReportModalClosed()"
+    (reportSubmitted)="onReportSubmitted()">
+</app-report-modal>

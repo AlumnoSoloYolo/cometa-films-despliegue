@@ -732,6 +732,7 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
     });
   }
 
+
   private loadBasicStats(): void {
     this.loading.stats = true;
     
@@ -968,10 +969,10 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
 
   // ===== EVENTOS Y ACCIONES =====
 
-  onTimeRangeChange(): void {
-    console.log('Time range changed to:', this.selectedTimeRange);
-    this.loadDashboard();
-  }
+    onTimeRangeChange(): void {
+      console.log('Time range changed to:', this.selectedTimeRange);
+      this.loadDashboard(); // ← Aquí se queda en loading
+    }
 
   refreshDashboard(): void {
     this.loadDashboard();
@@ -985,6 +986,8 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
 
     this.loadRealtimeMetrics();
   }
+
+  
 
   // ===== NAVEGACIÓN =====
 
@@ -2360,4 +2363,59 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
   isMovieTrending(movie: any): boolean {
     return movie.trendingScore && movie.trendingScore > 30;
   }
+
+  // Métodos necesarios para la nueva sección
+getReviewTrend(): number {
+  // Calcular tendencia de reseñas vs período anterior
+  return Math.random() * 20 - 10; // Placeholder
+}
+
+getCommentTrend(): number {
+  // Calcular tendencia de comentarios vs período anterior  
+  return Math.random() * 30 - 15; // Placeholder
+}
+
+getPeriodMultiplier(): number {
+  switch(this.selectedTimeRange) {
+    case 'today': return 1;
+    case 'week': return 7;
+    case 'month': return 30;
+    default: return 7;
+  }
+}
+
+getLikesPerDay(): number {
+  const total = this.dashboardData?.today.totalLikes || 0;
+  const multiplier = this.getPeriodMultiplier();
+  return Math.round((total * multiplier) / multiplier);
+}
+
+getEngagementRate(): number {
+  const reviews = this.dashboardData?.period.newReviews || 0;
+  const users = this.dashboardData?.overview.totalUsers || 1;
+  return Math.round((reviews / users) * 100);
+}
+
+getActivityScore(): number {
+  const engagement = this.getEngagementRate();
+  const growth = Math.abs(this.activityGrowthPercentage);
+  return Math.min(100, Math.round((engagement + growth) / 2));
+}
+
+getMostActiveDay(): string {
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  return days[Math.floor(Math.random() * days.length)];
+}
+
+getDailyAverage(): number {
+  const reviews = this.dashboardData?.period.newReviews || 0;
+  const comments = this.dashboardData?.period.newComments || 0;
+  const days = this.getPeriodMultiplier();
+  return Math.round((reviews + comments) / days);
+}
+
+exportActivityData(): void {
+  console.log('Exportando datos de actividad...');
+  // Implementar exportación de datos de actividad
+}
 }

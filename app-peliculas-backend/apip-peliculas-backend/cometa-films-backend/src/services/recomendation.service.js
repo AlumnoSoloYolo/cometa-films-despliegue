@@ -12,7 +12,7 @@ const recommendationCache = new Map();
 const CACHE_EXPIRY = 365 * 24 * 60 * 60 * 1000; // 1 año
 
 /**
- * Obtiene recomendaciones personalizadas para un usuario premium
+ *  recomendaciones personalizadas para un usuario premium
  */
 exports.getPersonalizedRecommendations = async (userId, limit = 15, forceRefresh = false) => {
     try {
@@ -65,7 +65,7 @@ exports.getPersonalizedRecommendations = async (userId, limit = 15, forceRefresh
             ...similarRecs
         ];
 
-        // 5. IMPORTANTE: Eliminar duplicados por ID antes de continuar
+        // 5. Eliminar duplicados por ID antes de continuar
         allRecommendations = removeDuplicateMovies(allRecommendations);
 
         console.log(`Recomendaciones después de eliminar duplicados: ${allRecommendations.length}`);
@@ -384,9 +384,7 @@ async function buildUserProfile(userId) {
     }
 }
 
-/**
- * Obtiene recomendaciones basadas en géneros favoritos
- */
+/* recomendaciones basadas en géneros favoritos */
 async function getGenreBasedRecommendations(topGenres, excludedIds, limit = 15) {
     try {
         if (!topGenres || topGenres.length === 0) {
@@ -429,9 +427,7 @@ async function getGenreBasedRecommendations(topGenres, excludedIds, limit = 15) 
     }
 }
 
-/**
- * Obtiene recomendaciones basadas en personas favoritas (directores/actores)
- */
+/* recomendaciones basadas en personas favoritas (directores/actores) */
 async function getPersonBasedRecommendations(topPeople, excludedIds, limit = 15) {
     try {
         if (!topPeople || topPeople.length === 0) {
@@ -474,9 +470,7 @@ async function getPersonBasedRecommendations(topPeople, excludedIds, limit = 15)
     }
 }
 
-/**
- * Obtiene recomendaciones similares a películas favoritas
- */
+/* recomendaciones similares a películas favoritas */
 async function getSimilarToFavoritesRecommendations(favoriteMovies, excludedIds, limit = 15) {
     try {
         if (!favoriteMovies || favoriteMovies.length === 0) {
@@ -510,9 +504,7 @@ async function getSimilarToFavoritesRecommendations(favoriteMovies, excludedIds,
 
 
 
-/**
- * Puntúa las recomendaciones basadas en el perfil del usuario
- */
+/* Puntúa las recomendaciones basadas en el perfil del usuario */
 function scoreRecommendations(recommendations, userProfile) {
     // Extraer preferencias de género del usuario
     const genrePreferences = {};
@@ -560,9 +552,7 @@ function scoreRecommendations(recommendations, userProfile) {
     }).sort((a, b) => b.recommendationScore - a.recommendationScore);
 }
 
-/**
- * Invalida la caché de recomendaciones para un usuario
- */
+/* Invalida la caché de recomendaciones para un usuari  */
 exports.invalidateCache = (userId) => {
     const cacheKey = `recommendations_${userId}`;
     if (recommendationCache.has(cacheKey)) {

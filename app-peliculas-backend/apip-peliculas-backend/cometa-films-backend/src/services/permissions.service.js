@@ -225,6 +225,37 @@ function canViewUserReports(currentUser, targetUser) {
     return false;
 }
 
+
+/**
+ * Verifica si un usuario puede crear listas ilimitadas
+ * Solo usuarios premium pueden crear listas ilimitadas
+ */
+function canCreateUnlimitedLists(user) {
+    // Solo usuarios premium (que tienen el permiso específico) pueden crear listas ilimitadas
+    return hasPermission(user, 'premium.lists.unlimited');
+}
+
+/**
+ * Verifica si un usuario puede crear contenido básico
+ */
+function canCreateContent(user) {
+    return hasPermission(user, 'content.create');
+}
+
+/**
+ * Verifica si un usuario puede editar su propio contenido
+ */
+function canEditOwnContent(user) {
+    return hasPermission(user, 'content.own.edit');
+}
+
+/**
+ * Verifica si un usuario puede eliminar su propio contenido
+ */
+function canDeleteOwnContent(user) {
+    return hasPermission(user, 'content.own.delete');
+}
+
 // ========================================
 // EXPORTAR TODAS LAS FUNCIONES
 // ========================================
@@ -243,6 +274,11 @@ module.exports = {
     canDeleteComment,
     canDeleteList,
     canViewModerationHistory,
+
+    canCreateUnlimitedLists,
+    canCreateContent,
+    canEditOwnContent,
+    canDeleteOwnContent,
 
     // Permisos de reportes
     canCreateReport,

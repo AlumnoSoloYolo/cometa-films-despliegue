@@ -9,48 +9,54 @@ exports.createList = async (req, res) => {
     try {
         const { title, description, isPublic, coverImage, movies } = req.body;
         const userId = req.user.id;
-        const LISTS_LIMIT = 5; // Límite para usuarios no premium
+
+        console.log(`[CREATE LIST] Usuario: ${req.user.username} (Premium: ${req.user.isPremium})`);
+        console.log(`[CREATE LIST] Datos recibidos:`, { title, description, isPublic });
 
         // Validaciones básicas
-        if (!title) {
-            return res.status(400).json({ message: 'El título es obligatorio' });
+        if (!title || title.trim() === '') {
+            return res.status(400).json({ 
+                message: 'El título es obligatorio',
+                error: 'VALIDATION_ERROR'
+            });
         }
 
-        // Verificar límite para usuarios no premium
-        if (!req.user.isPremium) {
-            const listsCount = await MovieList.countDocuments({ userId });
-
-            if (listsCount >= LISTS_LIMIT) {
-                return res.status(403).json({
-                    message: `Has alcanzado el límite de ${LISTS_LIMIT} listas para usuarios gratuitos. Actualiza a Premium para crear listas ilimitadas.`,
-                    error: 'PREMIUM_REQUIRED',
-                    currentCount: listsCount,
-                    limit: LISTS_LIMIT
-                });
-            }
-        }
-
-        // Continuar con la creación de la lista
+        // El middleware checkListLimit ya verificó el límite para usuarios no-premium
+        // Solo llegamos aquí si:
+        // 1. El usuario es premium (listas ilimitadas), O
+        // 2. El usuario no es premium pero aún no ha alcanzado el límite de 5
+        
+        console.log(`[CREATE LIST] Procediendo a crear lista para usuario ${req.user.username}`);
+        
+        // Crear la nueva lista
         const newList = await MovieList.create({
             userId,
-            title,
-            description: description || '',
+            title: title.trim(),
+            description: description ? description.trim() : '',
             isPublic: isPublic !== undefined ? isPublic : true,
             coverImage: coverImage || null,
             movies: movies || []
         });
 
+        console.log(`[CREATE LIST] Lista creada exitosamente: ${newList._id}`);
+
         // Registrar actividad si es pública
-        if (newList.isPublic) { // Asegurarse de usar el valor final de isPublic
-            await activityService.registerActivity({
-                userId,
-                actionType: 'created_public_list',
-                movieList: {
-                    listId: newList._id,
-                    title: newList.title,
-                    coverImage: newList.coverImage
-                }
-            });
+        if (newList.isPublic) {
+            try {
+                await activityService.registerActivity({
+                    userId,
+                    actionType: 'created_public_list',
+                    movieList: {
+                        listId: newList._id,
+                        title: newList.title,
+                        coverImage: newList.coverImage
+                    }
+                });
+                console.log(`[CREATE LIST] Actividad registrada para lista pública`);
+            } catch (activityError) {
+                // No fallar si hay error en la actividad, solo loguear
+                console.error('[CREATE LIST] Error registrando actividad:', activityError);
+            }
         }
 
         res.status(201).json({
@@ -59,9 +65,19 @@ exports.createList = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error al crear lista:', error);
+        console.error('[CREATE LIST] Error detallado:', error);
+        
+        // Manejar errores específicos de MongoDB
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Datos de la lista inválidos',
+                error: 'VALIDATION_ERROR',
+                details: error.message
+            });
+        }
+
         res.status(500).json({
-            message: 'Error al crear la lista',
+            message: 'Error interno del servidor al crear la lista',
             error: error.message
         });
     }

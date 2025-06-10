@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-
 import { UserMovieService } from '../../services/user.service';
 import { PeliculasService } from '../../services/peliculas.service';
 import { UserSocialService } from '../../services/social.service';
@@ -15,6 +14,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MovieListsService } from '../../services/movie-lists.service';
 import { MovieList } from '../../models/movie-list.model';
 import { ChatService } from '../../services/chat.service';
+import { ReportModalComponent, ReportModalData } from '../report/report.component';
 
 // INTERFACES
 interface UserProfile {
@@ -51,10 +51,10 @@ interface Review {
   imports: [
     CommonModule,
     RouterModule,
-    VotoColorPipe,
     PeliculaCardComponent,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
+    ReportModalComponent
   ],
   templateUrl: './perfil.component.html',
   styleUrl: './perfil.component.css'
@@ -125,6 +125,10 @@ export class PerfilComponent implements OnInit, OnDestroy {
     lists: false
   };
 
+  showReportModal = false;
+  reportModalData: ReportModalData | null = null;
+  currentUser: any;
+
   constructor(
     private userMovieService: UserMovieService,
     private movieService: PeliculasService,
@@ -154,6 +158,10 @@ export class PerfilComponent implements OnInit, OnDestroy {
      this.deleteAccountForm = this.fb.group({
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmText: ['', [Validators.required]]
+    });
+
+    this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
     });
   }
 
@@ -1361,5 +1369,57 @@ export class PerfilComponent implements OnInit, OnDestroy {
       }
     }
     return '';
+  }
+
+
+  /**
+ * Reportar usuario del perfil
+ */
+  reportUser(): void {
+    if (!this.currentUser || !this.userProfile) {
+      alert('Debes iniciar sesión para reportar contenido');
+      return;
+    }
+
+    // No permitir auto-reportes
+    if (this.currentUser.id === this.userProfile._id) {
+      return;
+    }
+
+    this.reportModalData = {
+      targetUser: {
+        _id: this.userProfile._id!,
+        username: this.userProfile.username,
+        avatar: this.userProfile.avatar
+      },
+      contentType: 'user'
+      // No se pasa contentId para reportes de usuario
+    };
+
+    this.showReportModal = true;
+  }
+
+  /**
+   * Verificar si se puede reportar el usuario
+   */
+  canReportUser(): boolean {
+    return this.currentUser &&
+      this.userProfile &&
+      this.currentUser.id !== this.userProfile._id;
+  }
+
+  /**
+   * Cerrar modal de reporte
+   */
+  onReportModalClosed(): void {
+    this.showReportModal = false;
+    this.reportModalData = null;
+  }
+
+  /**
+   * Manejar cuando se envía un reporte exitosamente
+   */
+  onReportSubmitted(): void {
+    console.log('Reporte de usuario enviado exitosamente');
   }
 }

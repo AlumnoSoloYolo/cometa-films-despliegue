@@ -46,975 +46,701 @@
       </button>
     </nav>
 
-   <!-- ==========================================
-     PASO 4: REEMPLAZAR EL CONTENIDO DEL DASHBOARD TAB 
-     en src/app/components/admin-panel/admin-panel/admin-panel.component.html
-     ========================================== -->
 
-<!-- Dashboard Tab - REEMPLAZAR solo esta sección -->
+
+<!-- Dashboard Tab -  -->
 <div class="tab-content" [class.active]="tabState.activeTab === 'dashboard'">
+  <div class="dashboard-container">
+    <div class="dashboard-wrapper">
 
-  <!-- Header del Dashboard -->
-  <div class="dashboard-header-prime">
-    <p-toolbar styleClass="border-noround">
-      <ng-template pTemplate="start">
-        <div class="dashboard-title-section">
-          <h2 class="dashboard-main-title">
-            <i class="pi pi-chart-line mr-2"></i>
-            Dashboard de Administración
-          </h2>
-          <p class="dashboard-subtitle">
-            Vista general de la actividad y salud de la plataforma
+      <!-- HEADER MODERNO -->
+      <header class="dashboard-header-modern">
+        <div class="header-content">
+          <div class="header-info">
+            <h1 class="dashboard-title">
+              <i class="pi pi-chart-line"></i>
+              Panel de Control
+            </h1>
+            <p class="dashboard-subtitle">
+              Monitoreo en tiempo real de la plataforma y métricas clave de rendimiento
+            </p>
             @if (dashboardData?.generatedAt) {
-            <span class="last-updated">
-              • Última actualización: {{ getLastUpdated() }}
-            </span>
-            }
-          </p>
-        </div>
-      </ng-template>
-
-      <ng-template pTemplate="end">
-        <div class="dashboard-controls">
-          <!-- Selector de tiempo -->
-          <p-selectButton 
-            [options]="timeRangeOptions" 
-            [(ngModel)]="selectedTimeRange"
-            (onChange)="onTimeRangeChange()"
-            styleClass="time-selector">
-          </p-selectButton>
-
-          <!-- Botón de refresh -->
-          <p-button 
-            icon="pi pi-refresh" 
-            label="Actualizar"
-            [loading]="loading.dashboard"
-            (onClick)="refreshDashboard()"
-            styleClass="ml-2">
-          </p-button>
-        </div>
-      </ng-template>
-    </p-toolbar>
-  </div>
-
-  <!-- Loading State -->
-  @if (loading.dashboard && !dashboardData) {
-  <div class="dashboard-loading">
-    <p-card>
-      <div class="text-center py-6">
-        <i class="pi pi-spin pi-spinner text-4xl text-primary mb-4"></i>
-        <h3>Cargando métricas del dashboard...</h3>
-        <p class="text-muted">Esto puede tomar unos segundos</p>
-      </div>
-    </p-card>
-  </div>
-  }
-
-  <!-- Error State -->
-  @if (hasError && !dashboardData) {
-  <div class="dashboard-error">
-    <p-message severity="error" [closable]="false">
-      <div class="flex align-items-center">
-        <i class="pi pi-exclamation-triangle text-2xl mr-3"></i>
-        <div>
-          <h4 class="m-0 mb-2">Error al cargar el dashboard</h4>
-          <p class="m-0">{{ errors.dashboard || 'Error desconocido' }}</p>
-          <p-button 
-            label="Reintentar" 
-            icon="pi pi-refresh"
-            size="small"
-            (onClick)="refreshDashboard()"
-            styleClass="mt-2">
-          </p-button>
-        </div>
-      </div>
-    </p-message>
-  </div>
-  }
-
-  <!-- Dashboard Content -->
-  @if (dashboardData) {
-
-  <!-- SECCIÓN 1: WIDGETS DE MÉTRICAS PRINCIPALES -->
-  <div class="metrics-overview-section mb-4">
-    <h3 class="section-title mb-3">
-      <i class="pi pi-bolt text-primary"></i>
-      Resumen Ejecutivo
-    </h3>
-
-    <div class="grid">
-      
-      <!-- Widget de Moderación (Crítico) -->
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="dashboard-card priority-card">
-          <ng-template pTemplate="header">
-            <div class="card-header-custom" [ngClass]="getModerationSeverity()">
-              <i class="pi pi-shield text-2xl"></i>
-              <span class="header-title">Moderación</span>
-            </div>
-          </ng-template>
-
-          <div class="metric-content">
-            <div class="primary-metric-large">
-              {{ dashboardData.moderation.pendingReports }}
-              <small>Reportes Pendientes</small>
-            </div>
-
-            <p-divider></p-divider>
-
-            <div class="flex justify-content-between">
-              <div class="metric-small">
-                <span class="metric-value">{{ dashboardData.today.newReports }}</span>
-                <small>Nuevos hoy</small>
-              </div>
-              <div class="metric-small">
-                <span class="metric-value">{{ moderationEfficiency }}%</span>
-                <small>Eficiencia</small>
-              </div>
-            </div>
-          </div>
-
-          <ng-template pTemplate="footer">
-            @if (dashboardData.moderation.pendingReports > 0) {
-            <p-button 
-              label="Ver Reportes" 
-              icon="pi pi-arrow-right"
-              size="small"
-              severity="warn"
-              (onClick)="navigateToReports()"
-              styleClass="w-full">
-            </p-button>
-            } @else {
-            <p-tag value="Todo al día" severity="success" styleClass="w-full justify-content-center"></p-tag>
-            }
-          </ng-template>
-        </p-card>
-      </div>
-
-      <!-- Widget de Usuarios -->
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="dashboard-card users-card">
-          <ng-template pTemplate="header">
-            <div class="card-header-custom info">
-              <i class="pi pi-users text-2xl"></i>
-              <span class="header-title">Usuarios</span>
-            </div>
-          </ng-template>
-
-          <div class="metric-content">
-            <div class="primary-metric-large">
-              {{ formatNumber(dashboardData.overview.totalUsers) }}
-              <small>Total Registrados</small>
-            </div>
-
-            <p-divider></p-divider>
-
-            <div class="flex justify-content-between mb-2">
-              <div class="metric-small">
-                <span class="metric-value text-green-500">+{{ dashboardData.today.newUsers }}</span>
-                <small>Nuevos hoy</small>
-              </div>
-              <div class="metric-small">
-                <span class="metric-value text-purple-500">{{ dashboardData.overview.premiumUsers }}</span>
-                <small>Premium</small>
-              </div>
-            </div>
-
-            <div class="trend-indicator">
-              <p-tag 
-                [value]="formatPercentage(userGrowthPercentage)" 
-                [severity]="userGrowthPercentage > 0 ? 'success' : 'danger'"
-                styleClass="trend-tag">
-              </p-tag>
-              <small class="ml-2">vs. promedio {{ selectedTimeRange === 'today' ? 'por hora' : 'diario' }}</small>
-            </div>
-          </div>
-        </p-card>
-      </div>
-
-      <!-- Widget de Actividad -->
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="dashboard-card activity-card">
-          <ng-template pTemplate="header">
-            <div class="card-header-custom" [ngClass]="getActivityLevel()">
-              <i class="pi pi-chart-bar text-2xl"></i>
-              <span class="header-title">Actividad</span>
-            </div>
-          </ng-template>
-
-          <div class="metric-content">
-            <div class="primary-metric-large">
-              {{ formatNumber(dashboardData.today.newReviews + dashboardData.today.newComments) }}
-              <small>Interacciones Hoy</small>
-            </div>
-
-            <p-divider></p-divider>
-
-            <div class="flex justify-content-between mb-2">
-              <div class="metric-small">
-                <span class="metric-value">{{ dashboardData.today.newReviews }}</span>
-                <small>Reseñas</small>
-              </div>
-              <div class="metric-small">
-                <span class="metric-value">{{ dashboardData.today.newComments }}</span>
-                <small>Comentarios</small>
-              </div>
-            </div>
-
-            <div class="trend-indicator">
-              <p-tag 
-                [value]="formatPercentage(activityGrowthPercentage)" 
-                [severity]="activityGrowthPercentage > 0 ? 'success' : 'warn'"
-                styleClass="trend-tag">
-              </p-tag>
-              <small class="ml-2">vs. promedio semanal</small>
-            </div>
-          </div>
-        </p-card>
-      </div>
-
-      <!-- Widget de Engagement -->
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="dashboard-card engagement-card">
-          <ng-template pTemplate="header">
-            <div class="card-header-custom warning">
-              <i class="pi pi-heart text-2xl"></i>
-              <span class="header-title">Engagement</span>
-            </div>
-          </ng-template>
-
-          <div class="metric-content">
-            <div class="primary-metric-large">
-              {{ formatNumber(dashboardData.today.totalLikes) }}
-              <small>Likes Hoy</small>
-            </div>
-
-            <p-divider></p-divider>
-
-            <div class="flex justify-content-between mb-2">
-              <div class="metric-small">
-                <span class="metric-value">{{ dashboardData.content.averageRating.toFixed(1) }}/10</span>
-                <small>Rating Promedio</small>
-              </div>
-              <div class="metric-small">
-                <span class="metric-value">{{ realtimeMetrics?.activeUsersNow || 0 }}</span>
-                <small>Activos ahora</small>
-              </div>
-            </div>
-
-            <div class="progress-indicator">
-              <small class="block mb-1">Calidad del contenido</small>
-              <p-progressBar 
-                [value]="(dashboardData.content.averageRating / 10) * 100"
-                [showValue]="false"
-                styleClass="rating-progress">
-              </p-progressBar>
-            </div>
-          </div>
-        </p-card>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- SECCIÓN 2: GRÁFICAS PRINCIPALES -->
-  @if (canShowCharts) {
-  <div class="charts-section mb-4">
-    <h3 class="section-title mb-3">
-      <i class="pi pi-chart-line text-primary"></i>
-      Tendencias y Análisis
-    </h3>
-
-    <div class="grid">
-      
-      <!-- Gráfica de Crecimiento de Usuarios -->
-      <div class="col-12 xl:col-6">
-        <p-card styleClass="chart-card">
-          <ng-template pTemplate="header">
-            <div class="chart-header">
-              <h4 class="chart-title">
-                <i class="pi pi-arrow-up-right mr-2"></i>
-                Crecimiento de Usuarios
-              </h4>
-              @if (loading.charts) {
-              <p-progressBar mode="indeterminate" styleClass="chart-loading"></p-progressBar>
-              }
-            </div>
-          </ng-template>
-
-          @if (userGrowthChartData && !loading.charts) {
-          <p-chart 
-            type="line" 
-            [data]="userGrowthChartData" 
-            [options]="userGrowthChartOptions"
-            height="300px">
-          </p-chart>
-          } @else {
-          <div class="chart-placeholder">
-            <p-skeleton height="300px"></p-skeleton>
-          </div>
-          }
-        </p-card>
-      </div>
-
-      <!-- Gráfica de Actividad -->
-      <div class="col-12 xl:col-6">
-        <p-card styleClass="chart-card">
-          <ng-template pTemplate="header">
-            <div class="chart-header">
-              <h4 class="chart-title">
-                <i class="pi pi-chart-bar mr-2"></i>
-                Tendencias de Actividad
-              </h4>
-            </div>
-          </ng-template>
-
-          @if (activityTrendsChartData && !loading.charts) {
-          <p-chart 
-            type="bar" 
-            [data]="activityTrendsChartData" 
-            [options]="activityTrendsChartOptions"
-            height="300px">
-          </p-chart>
-          } @else {
-          <div class="chart-placeholder">
-            <p-skeleton height="300px"></p-skeleton>
-          </div>
-          }
-        </p-card>
-      </div>
-
-    </div>
-  </div>
-  }
-
-  <!-- SECCIÓN 3: ESTADÍSTICAS DETALLADAS -->
-  <div class="detailed-stats-section mb-4">
-    <h3 class="section-title mb-3">
-      <i class="pi pi-table text-primary"></i>
-      Estadísticas Detalladas
-    </h3>
-
-    <div class="grid">
-      
-      <!-- Panel de Estadísticas de Contenido -->
-      <div class="col-12 lg:col-8">
-        <p-card styleClass="stats-card">
-          <ng-template pTemplate="header">
-            <h4 class="card-title">
-              <i class="pi pi-file-text mr-2"></i>
-              Estadísticas de Contenido
-            </h4>
-          </ng-template>
-
-          <div class="grid stats-grid">
-            <div class="col-6 md:col-3">
-              <div class="stat-item">
-                <div class="stat-number text-blue-500">{{ formatNumber(dashboardData.overview.totalReviews) }}</div>
-                <div class="stat-label">Total Reseñas</div>
-              </div>
-            </div>
-            <div class="col-6 md:col-3">
-              <div class="stat-item">
-                <div class="stat-number text-green-500">{{ formatNumber(dashboardData.overview.totalComments) }}</div>
-                <div class="stat-label">Total Comentarios</div>
-              </div>
-            </div>
-            <div class="col-6 md:col-3">
-              <div class="stat-item">
-                <div class="stat-number text-yellow-500">{{ formatNumber(dashboardData.overview.totalLists) }}</div>
-                <div class="stat-label">Listas Creadas</div>
-              </div>
-            </div>
-            <div class="col-6 md:col-3">
-              <div class="stat-item">
-                <div class="stat-number text-red-500">{{ formatNumber(dashboardData.content.totalLikes) }}</div>
-                <div class="stat-label">Total Likes</div>
-              </div>
-            </div>
-          </div>
-
-          <p-divider></p-divider>
-
-          <!-- Usuario más activo -->
-          @if (mostActiveUser) {
-          <div class="highlight-section">
-            <div class="flex align-items-center justify-content-between">
-              <div>
-                <h5 class="m-0 mb-1">
-                  <i class="pi pi-star-fill text-yellow-500 mr-2"></i>
-                  Usuario Más Activo
-                </h5>
-                <p class="m-0 text-lg font-bold">{{ mostActiveUser.username }}</p>
-              </div>
-              <div class="text-right">
-                <p-tag 
-                  [value]="mostActiveUser.activityScore + ' puntos'"
-                  severity="info"
-                  styleClass="activity-score-tag">
-                </p-tag>
-              </div>
-            </div>
-          </div>
-          }
-        </p-card>
-      </div>
-
-      <!-- Gráfica de Distribución -->
-      <div class="col-12 lg:col-4">
-        <p-card styleClass="chart-card pie-chart-card">
-          <ng-template pTemplate="header">
-            <h4 class="card-title">
-              <i class="pi pi-chart-pie mr-2"></i>
-              Distribución
-            </h4>
-          </ng-template>
-
-          @if (contentDistributionChartData && !loading.charts) {
-          <p-chart 
-            type="doughnut" 
-            [data]="contentDistributionChartData" 
-            [options]="contentDistributionChartOptions"
-            height="250px">
-          </p-chart>
-          } @else {
-          <div class="chart-placeholder">
-            <p-skeleton height="250px" shape="circle"></p-skeleton>
-          </div>
-          }
-        </p-card>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- SECCIÓN 4: PELÍCULAS POPULARES -->
- @if (topMovies.length > 0) {
-<div class="popular-content-section mb-4">
-  <h3 class="section-title mb-3">
-    <i class="pi pi-trophy text-primary"></i>
-    Contenido Más Popular
-  </h3>
-
-  <p-card styleClass="popular-movies-card">
-    <div class="grid">
-      @for (movie of topMovies; track movie.movieId) {
-      <div class="col-12 md:col-6 lg:col-4 xl:col-2-4">
-        <div class="movie-rank-card">
-          
-          <!-- Badge de ranking -->
-          <div class="movie-rank-badge">
-            <p-tag [value]="'#' + ($index + 1)" severity="warn"></p-tag>
-          </div>
-          
-          <!-- Poster de la película -->
-          <div class="movie-poster-container">
-            @if (getMoviePoster(movie.movieId)) {
-            <img 
-              [src]="getMoviePoster(movie.movieId)" 
-              [alt]="movie.title || 'Película ' + movie.movieId"
-              class="movie-poster"
-              (error)="onPosterError($event, movie.movieId)"
-              loading="lazy">
-            <div class="movie-poster-overlay"></div>
-            } @else {
-            <div class="movie-poster-placeholder">
-              <i class="pi pi-image"></i>
+            <div class="last-update-badge">
+              <i class="pi pi-clock"></i>
+              <span>Actualizado {{ getLastUpdated() }}</span>
             </div>
             }
           </div>
           
-          <!-- Información de la película -->
-          <div class="movie-info">
-            <h5 class="movie-title">
-              @if (movie.title) {
-              {{ movie.title }}
-              } @else {
-              Película ID: {{ movie.movieId }}
-              }
-            </h5>
+          <div class="header-controls">
+            <!-- Selector de tiempo moderno -->
+            <div class="time-selector">
+              <button 
+                class="time-option" 
+                [class.active]="selectedTimeRange === 'today'"
+                (click)="selectedTimeRange = 'today'; onTimeRangeChange()">
+                Hoy
+              </button>
+              <button 
+                class="time-option" 
+                [class.active]="selectedTimeRange === 'week'"
+                (click)="selectedTimeRange = 'week'; onTimeRangeChange()">
+                7 días
+              </button>
+              <button 
+                class="time-option" 
+                [class.active]="selectedTimeRange === 'month'"
+                (click)="selectedTimeRange = 'month'; onTimeRangeChange()">
+                30 días
+              </button>
+            </div>
             
-            <div class="movie-stats">
-              <!-- Estadística de reseñas -->
-              <div class="stat-badge">
-                <div class="flex align-items-center">
-                  <i class="pi pi-comment"></i>
-                  <span>Reseñas</span>
-                </div>
-                <span>{{ formatNumber(movie.reviewCount) }}</span>
-              </div>
-              
-              <!-- Estadística de rating -->
-              <div class="stat-badge">
-                <div class="flex align-items-center">
-                  <i class="pi pi-star-fill"></i>
-                  <span>Rating</span>
-                </div>
-                <span>{{ movie.averageRating.toFixed(1) }}/10</span>
-              </div>
-              
-              <!-- Estadística adicional: engagement -->
-              @if (movie.totalLikes) {
-              <div class="stat-badge">
-                <div class="flex align-items-center">
-                  <i class="pi pi-heart-fill"></i>
-                  <span>Likes</span>
-                </div>
-                <span>{{ formatNumber(movie.totalLikes) }}</span>
-              </div>
-              }
-              
-              <!-- Estadística adicional: tendencia -->
-              @if (movie.trendingScore) {
-              <div class="stat-badge">
-                <div class="flex align-items-center">
-                  <i class="pi pi-arrow-up"></i>
-                  <span>Tendencia</span>
-                </div>
-                <span>+{{ movie.trendingScore }}%</span>
-              </div>
-              }
-              
-              <!-- Botón para ver más detalles -->
-              <p-button 
-                label="Ver Detalles" 
-                icon="pi pi-external-link"
-                size="small"
-                severity="secondary"
-                styleClass="w-full mt-2"
-                (onClick)="viewMovieDetails(movie.movieId)"
-                pTooltip="Ver detalles completos de la película">
-              </p-button>
+            <!-- Botón de actualizar -->
+            <button 
+              class="modern-button"
+              [disabled]="loading.dashboard"
+              (click)="refreshDashboard()">
+              <i class="pi" [class.pi-refresh]="!loading.dashboard" [class.pi-spin]="loading.dashboard" [class.pi-spinner]="loading.dashboard"></i>
+              {{ loading.dashboard ? 'Cargando...' : 'Actualizar' }}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ESTADO DE CARGA -->
+      @if (loading.dashboard && !dashboardData) {
+      <div class="dashboard-section">
+        <div class="metrics-grid">
+          <div class="loading-skeleton skeleton-metric"></div>
+          <div class="loading-skeleton skeleton-metric"></div>
+          <div class="loading-skeleton skeleton-metric"></div>
+          <div class="loading-skeleton skeleton-metric"></div>
+        </div>
+        <div class="charts-grid">
+          <div class="loading-skeleton skeleton-chart"></div>
+          <div class="loading-skeleton skeleton-chart"></div>
+        </div>
+      </div>
+      }
+
+      <!-- ERROR STATE -->
+      @if (hasError && !dashboardData) {
+      <div class="dashboard-section">
+        <div class="alert-item danger">
+          <div class="alert-icon danger">
+            <i class="pi pi-exclamation-triangle"></i>
+          </div>
+          <div class="alert-content">
+            <div class="alert-title">Error al cargar el dashboard</div>
+            <div class="alert-description">
+              {{ errors.dashboard || 'Error desconocido' }}
+              <button class="modern-button" (click)="refreshDashboard()" style="margin-left: 1rem;">
+                Reintentar
+              </button>
             </div>
           </div>
         </div>
       </div>
       }
+
+      <!-- CONTENIDO PRINCIPAL DEL DASHBOARD -->
+      @if (dashboardData) {
+
+      <!-- SECCIÓN 1: MÉTRICAS PRINCIPALES -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">
+              <i class="pi pi-chart-bar"></i>
+              Métricas Principales
+            </h2>
+            <p class="section-subtitle">Indicadores clave de rendimiento en tiempo real</p>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <!-- Métrica de Moderación -->
+          <div class="metric-card priority">
+            <div class="metric-icon priority">
+              <i class="pi pi-shield"></i>
+            </div>
+            <div class="metric-value">{{ dashboardData.moderation.pendingReports }}</div>
+            <div class="metric-label">Reportes Pendientes</div>
+            <div class="metric-stats">
+              <div class="metric-change" [class.positive]="dashboardData.today.newReports === 0" [class.negative]="dashboardData.today.newReports > 0">
+                <i class="pi" [class.pi-arrow-up]="dashboardData.today.newReports > 0" [class.pi-check]="dashboardData.today.newReports === 0"></i>
+                <span>{{ dashboardData.today.newReports }} nuevos hoy</span>
+              </div>
+              <div class="metric-secondary">{{ moderationEfficiency }}% eficiencia</div>
+            </div>
+          </div>
+
+          <!-- Métrica de Usuarios -->
+          <div class="metric-card users">
+            <div class="metric-icon users">
+              <i class="pi pi-users"></i>
+            </div>
+            <div class="metric-value">{{ formatNumber(dashboardData.overview.totalUsers) }}</div>
+            <div class="metric-label">Total Usuarios</div>
+            <div class="metric-stats">
+              <div class="metric-change positive">
+                <i class="pi pi-arrow-up"></i>
+                <span>+{{ dashboardData.today.newUsers }} hoy</span>
+              </div>
+              <div class="metric-secondary">{{ dashboardData.overview.premiumUsers }} premium</div>
+            </div>
+          </div>
+
+          <!-- Métrica de Actividad -->
+          <div class="metric-card activity">
+            <div class="metric-icon activity">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="metric-value">{{ formatNumber(dashboardData.today.newReviews + dashboardData.today.newComments) }}</div>
+            <div class="metric-label">Interacciones Hoy</div>
+            <div class="metric-stats">
+              <div class="metric-change" [class.positive]="activityGrowthPercentage > 0" [class.negative]="activityGrowthPercentage < 0">
+                <i class="pi" [class.pi-arrow-up]="activityGrowthPercentage > 0" [class.pi-arrow-down]="activityGrowthPercentage < 0"></i>
+                <span>{{ formatPercentage(activityGrowthPercentage) }}</span>
+              </div>
+              <div class="metric-secondary">vs. promedio semanal</div>
+            </div>
+          </div>
+
+          <!-- Métrica de Engagement -->
+          <div class="metric-card engagement">
+            <div class="metric-icon engagement">
+              <i class="pi pi-heart"></i>
+            </div>
+            <div class="metric-value">{{ formatNumber(dashboardData.today.totalLikes) }}</div>
+            <div class="metric-label">Likes Hoy</div>
+            <div class="metric-stats">
+              <div class="metric-change positive">
+                <i class="pi pi-star"></i>
+                <span>{{ dashboardData.content.averageRating.toFixed(1) }}/10 rating</span>
+              </div>
+              <div class="metric-secondary">{{ realtimeMetrics?.activeUsersNow || 0 }} activos</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 2: GRÁFICAS -->
+      @if (canShowCharts) {
+      <section class="dashboard-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">
+              <i class="pi pi-chart-pie"></i>
+              Análisis y Tendencias
+            </h2>
+            <p class="section-subtitle">Visualización de datos y patrones de comportamiento</p>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <!-- Gráfica Principal -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="pi pi-trending-up"></i>
+                Crecimiento de Usuarios
+              </h3>
+            </div>
+            <div class="chart-container">
+              @if (userGrowthChartData && !loading.charts) {
+              <p-chart 
+                type="line" 
+                [data]="userGrowthChartData" 
+                [options]="userGrowthChartOptions"
+                height="300px">
+              </p-chart>
+              } @else {
+              <div class="chart-placeholder">
+                <i class="pi pi-chart-line"></i>
+                <span>Cargando gráfica...</span>
+              </div>
+              }
+            </div>
+          </div>
+
+          <!-- Gráfica Secundaria -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="pi pi-chart-pie"></i>
+                Distribución
+              </h3>
+            </div>
+            <div class="chart-container">
+              @if (contentDistributionChartData && !loading.charts) {
+              <p-chart 
+                type="doughnut" 
+                [data]="contentDistributionChartData" 
+                [options]="contentDistributionChartOptions"
+                height="250px">
+              </p-chart>
+              } @else {
+              <div class="chart-placeholder">
+                <i class="pi pi-chart-pie"></i>
+                <span>Cargando distribución...</span>
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+      }
+
+
+      <section class="dashboard-section">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">
+        <i class="pi pi-chart-bar"></i>
+        Tendencias de Actividad
+      </h2>
+      <p class="section-subtitle">Evolución de reseñas, comentarios y engagement por período</p>
     </div>
-    
-    <!-- Footer con estadísticas generales -->
-    <ng-template pTemplate="footer">
-      <div class="flex justify-content-between align-items-center">
-        <div class="text-sm text-muted">
-          <i class="pi pi-info-circle mr-2"></i>
-          Top {{ topMovies.length }} películas más populares del {{ selectedTimeRange === 'today' ? 'día' : selectedTimeRange === 'week' ? 'última semana' : 'último mes' }}
-        </div>
-        <div class="flex gap-2">
-          <p-button 
-            label="Ver Todas" 
-            icon="pi pi-arrow-right"
-            size="small"
-            severity="secondary"
-            (onClick)="viewAllPopularMovies()">
-          </p-button>
-          <p-button 
-            label="Exportar" 
-            icon="pi pi-download"
-            size="small"
-            severity="secondary"
-            (onClick)="exportPopularMovies()">
-          </p-button>
-        </div>
+    <div class="header-controls">
+      <button class="modern-button secondary" (click)="exportActivityData()">
+        <i class="pi pi-download"></i>
+        Exportar
+      </button>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <!-- Gráfica de Barras de Actividad -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="pi pi-chart-bar"></i>
+          Actividad por Período
+        </h3>
+        @if (loading.charts) {
+        <div class="loading-skeleton" style="width: 80px; height: 4px;"></div>
+        }
       </div>
-    </ng-template>
-  </p-card>
-</div>
-}
+      <div class="chart-container">
+        @if (activityTrendsChartData && !loading.charts) {
+        <p-chart 
+          type="bar" 
+          [data]="activityTrendsChartData" 
+          [options]="activityTrendsChartOptions"
+          height="300px">
+        </p-chart>
+        } @else {
+        <div class="chart-placeholder">
+          <i class="pi pi-chart-bar"></i>
+          <span>Cargando tendencias de actividad...</span>
+        </div>
+        }
+      </div>
+    </div>
 
-  <!-- SECCIÓN 5: MODERACIÓN Y ALERTAS -->
-  <div class="moderation-alerts-section mb-4">
-    <h3 class="section-title mb-3">
-      <i class="pi pi-shield text-primary"></i>
-      Estado del Sistema y Alertas
-    </h3>
-
-    <div class="grid">
-      
-      <!-- Panel de Moderación -->
-      <div class="col-12 lg:col-8">
-        <p-card styleClass="moderation-card">
-          <ng-template pTemplate="header">
-            <h4 class="card-title">
-              <i class="pi pi-shield mr-2"></i>
-              Métricas de Moderación
-            </h4>
-          </ng-template>
-
-          <div class="grid moderation-metrics">
-            <div class="col-6 md:col-3">
-              <div class="moderation-metric-item pending">
-                <div class="metric-icon">
-                  <i class="pi pi-clock"></i>
-                </div>
-                <div class="metric-data">
-                  <span class="metric-number">{{ dashboardData.moderation.pendingReports }}</span>
-                  <span class="metric-label">Pendientes</span>
-                </div>
-              </div>
+    <!-- Métricas de Actividad -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="pi pi-trending-up"></i>
+          Métricas de Engagement
+        </h3>
+      </div>
+      <div class="chart-container" style="padding: var(--spacing-lg);">
+        
+        <!-- Métricas en Grid -->
+        <div class="activity-metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
+          
+          <!-- Reseñas del Período -->
+          <div class="activity-metric-item">
+            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));">
+              <i class="pi pi-comment"></i>
             </div>
-            
-            <div class="col-6 md:col-3">
-              <div class="moderation-metric-item resolved">
-                <div class="metric-icon">
-                  <i class="pi pi-check-circle"></i>
-                </div>
-                <div class="metric-data">
-                  <span class="metric-number">{{ dashboardData.period.newReports - dashboardData.moderation.pendingReports }}</span>
-                  <span class="metric-label">Resueltos</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-6 md:col-3">
-              <div class="moderation-metric-item time">
-                <div class="metric-icon">
-                  <i class="pi pi-stopwatch"></i>
-                </div>
-                <div class="metric-data">
-                  <span class="metric-number">{{ formatTime(dashboardData.moderation.averageResolutionTime) }}</span>
-                  <span class="metric-label">Tiempo Promedio</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-6 md:col-3">
-              <div class="moderation-metric-item bans">
-                <div class="metric-icon">
-                  <i class="pi pi-ban"></i>
-                </div>
-                <div class="metric-data">
-                  <span class="metric-number">{{ dashboardData.today.newBans }}</span>
-                  <span class="metric-label">Bans Hoy</span>
-                </div>
+            <div class="activity-metric-data">
+              <div class="activity-metric-number">{{ formatNumber(dashboardData.period.newReviews) }}</div>
+              <div class="activity-metric-label">Reseñas del Período</div>
+              <div class="activity-metric-change" [class.positive]="getReviewTrend() > 0" [class.negative]="getReviewTrend() < 0">
+                <i class="pi" [class.pi-arrow-up]="getReviewTrend() > 0" [class.pi-arrow-down]="getReviewTrend() < 0"></i>
+                <span>{{ formatPercentage(getReviewTrend()) }} vs anterior</span>
               </div>
             </div>
           </div>
 
-          <p-divider></p-divider>
-
-          <div class="moderation-summary">
-            <div class="flex align-items-center justify-content-between">
-              <div>
-                <h5 class="m-0 mb-1">Eficiencia de Moderación</h5>
-                <p class="m-0 text-sm text-muted">
-                  Tipo más común: <strong>{{ getReasonDisplayText(dashboardData.moderation.mostCommonReportType) }}</strong>
-                </p>
-              </div>
-              <div class="text-right">
-                <p-progressBar 
-                  [value]="moderationEfficiency" 
-                  [showValue]="true"
-                  styleClass="efficiency-progress">
-                </p-progressBar>
+          <!-- Comentarios del Período -->
+          <div class="activity-metric-item">
+            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-success), #059669);">
+              <i class="pi pi-comments"></i>
+            </div>
+            <div class="activity-metric-data">
+              <div class="activity-metric-number">{{ formatNumber(dashboardData.period.newComments) }}</div>
+              <div class="activity-metric-label">Comentarios del Período</div>
+              <div class="activity-metric-change" [class.positive]="getCommentTrend() > 0" [class.negative]="getCommentTrend() < 0">
+                <i class="pi" [class.pi-arrow-up]="getCommentTrend() > 0" [class.pi-arrow-down]="getCommentTrend() < 0"></i>
+                <span>{{ formatPercentage(getCommentTrend()) }} vs anterior</span>
               </div>
             </div>
           </div>
 
-          <ng-template pTemplate="footer">
-            <div class="flex gap-2">
-              <p-button 
-                label="Ver Reportes" 
-                icon="pi pi-external-link"
-                size="small"
-                (onClick)="navigateToReports()">
-              </p-button>
-              <p-button 
-                label="Gestionar Usuarios" 
-                icon="pi pi-users"
-                size="small"
-                severity="secondary"
-                (onClick)="navigateToUsers()">
-              </p-button>
+          <!-- Likes del Período -->
+          <div class="activity-metric-item">
+            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));">
+              <i class="pi pi-heart-fill"></i>
             </div>
-          </ng-template>
-        </p-card>
-      </div>
+            <div class="activity-metric-data">
+              <div class="activity-metric-number">{{ formatNumber(dashboardData.period.totalLikes || (dashboardData.today.totalLikes * getPeriodMultiplier())) }}</div>
+              <div class="activity-metric-label">Likes del Período</div>
+              <div class="activity-metric-change positive">
+                <i class="pi pi-heart"></i>
+                <span>{{ getLikesPerDay() }} promedio/día</span>
+              </div>
+            </div>
+          </div>
 
-      <!-- Panel de Alertas del Sistema -->
-      <div class="col-12 lg:col-4">
-        <p-card styleClass="alerts-card">
-          <ng-template pTemplate="header">
-            <h4 class="card-title">
-              <i class="pi pi-bell mr-2"></i>
-              Alertas del Sistema
+          <!-- Engagement Rate -->
+          <div class="activity-metric-item">
+            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-warning), #d97706);">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="activity-metric-data">
+              <div class="activity-metric-number">{{ getEngagementRate() }}%</div>
+              <div class="activity-metric-label">Tasa de Engagement</div>
+              <div class="activity-metric-change" [class.positive]="getEngagementRate() > 70" [class.negative]="getEngagementRate() < 50">
+                <i class="pi pi-percentage"></i>
+                <span>{{ getEngagementRate() > 70 ? 'Excelente' : getEngagementRate() > 50 ? 'Bueno' : 'Mejorable' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen de Actividad -->
+        <div class="activity-summary" style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-lg); border: var(--border-width) solid var(--border-color);">
+          <div class="activity-summary-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+            <h4 style="margin: 0; color: var(--text-primary); font-size: var(--font-size-base); font-weight: var(--font-weight-semibold);">
+              <i class="pi pi-chart-line" style="color: var(--color-primary); margin-right: var(--spacing-sm);"></i>
+              Resumen de Actividad
             </h4>
-          </ng-template>
+            <div class="activity-score-badge" style="background: var(--gradient-accent); color: white; padding: var(--spacing-xs) var(--spacing-md); border-radius: var(--radius-3xl); font-weight: var(--font-weight-bold); font-size: var(--font-size-sm);">
+              Score: {{ getActivityScore() }}/100
+            </div>
+          </div>
+          
+          <div class="activity-insights" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+            <div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xs);">Día más activo:</div>
+              <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ getMostActiveDay() }}</div>
+            </div>
+            <div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xs);">Promedio diario:</div>
+              <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ getDailyAverage() }} interacciones</div>
+            </div>
+          </div>
+        </div>
 
-          <div class="alerts-list">
-            
+      </div>
+    </div>
+  </div>
+</section>
+
+      <!-- SECCIÓN 3: CONTENIDO POPULAR -->
+      @if (topMovies.length > 0) {
+      <section class="dashboard-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">
+              <i class="pi pi-star"></i>
+              Contenido Más Popular
+            </h2>
+            <p class="section-subtitle">Las películas con mayor engagement del período seleccionado</p>
+          </div>
+          <div class="header-controls">
+            <button class="modern-button secondary" (click)="viewAllPopularMovies()">
+              <i class="pi pi-external-link"></i>
+              Ver Todo
+            </button>
+            <button class="modern-button secondary" (click)="exportPopularMovies()">
+              <i class="pi pi-download"></i>
+              Exportar
+            </button>
+          </div>
+        </div>
+
+        <div class="movies-section">
+          <div class="movies-grid">
+            @for (movie of topMovies; track movie.movieId) {
+            <div class="movie-card" (click)="viewMovieDetails(movie.movieId)">
+              <div class="movie-rank">#{{ $index + 1 }}</div>
+              
+              <div class="movie-poster">
+                @if (getMoviePoster(movie.movieId)) {
+                <img 
+                  [src]="getMoviePoster(movie.movieId)" 
+                  [alt]="movie.title || 'Película ' + movie.movieId"
+                  style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--border-radius);"
+                  (error)="onPosterError($event, movie.movieId)">
+                } @else {
+                <i class="pi pi-image"></i>
+                }
+              </div>
+              
+              <h4 class="movie-title">
+                {{ movie.title || 'Película ID: ' + movie.movieId }}
+              </h4>
+              
+              <div class="movie-stats">
+                <div class="movie-stat">
+                  <span>Rating</span>
+                  <span class="movie-stat-value">{{ movie.averageRating.toFixed(1) }}/10</span>
+                </div>
+                <div class="movie-stat">
+                  <span>Reseñas</span>
+                  <span class="movie-stat-value">{{ formatNumber(movie.reviewCount) }}</span>
+                </div>
+                @if (movie.totalLikes) {
+                <div class="movie-stat">
+                  <span>Likes</span>
+                  <span class="movie-stat-value">{{ formatNumber(movie.totalLikes) }}</span>
+                </div>
+                }
+                @if (movie.trendingScore) {
+                <div class="movie-stat">
+                  <span>Tendencia</span>
+                  <span class="movie-stat-value">+{{ movie.trendingScore }}%</span>
+                </div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+      </section>
+      }
+
+      <!-- SECCIÓN 4: ALERTAS Y SISTEMA -->
+      <section class="dashboard-section">
+        <div class="content-grid">
+          <!-- Alertas del Sistema -->
+          <div class="alerts-section">
+            <div class="section-header">
+              <h3 class="section-title">
+                <i class="pi pi-bell"></i>
+                Alertas del Sistema
+              </h3>
+            </div>
+
             <!-- Alerta de reportes pendientes -->
             @if (dashboardData.moderation.pendingReports > 10) {
-            <p-message severity="warn" [closable]="false" styleClass="mb-3">
-              <div>
-                <strong>Alto volumen de reportes</strong>
-                <p class="m-0 mt-1 text-sm">
+            <div class="alert-item warning">
+              <div class="alert-icon warning">
+                <i class="pi pi-exclamation-triangle"></i>
+              </div>
+              <div class="alert-content">
+                <div class="alert-title">Alto volumen de reportes</div>
+                <div class="alert-description">
                   {{ dashboardData.moderation.pendingReports }} reportes esperando revisión
-                </p>
-                <p-button 
-                  label="Revisar" 
-                  size="small"
-                  severity="warn"
-                  (onClick)="navigateToReports()"
-                  styleClass="mt-2">
-                </p-button>
-              </div>
-            </p-message>
-            }
-
-            <!-- Alerta de actividad de moderación elevada -->
-            @if (dashboardData.today.newBans > 5) {
-            <p-message severity="info" [closable]="false" styleClass="mb-3">
-              <div>
-                <strong>Actividad de moderación elevada</strong>
-                <p class="m-0 mt-1 text-sm">
-                  {{ dashboardData.today.newBans }} usuarios baneados hoy
-                </p>
-              </div>
-            </p-message>
-            }
-
-            <!-- Alerta de crecimiento excepcional -->
-            @if (userGrowthPercentage > 50) {
-            <p-message severity="success" [closable]="false" styleClass="mb-3">
-              <div>
-                <strong>🎉 Crecimiento excepcional</strong>
-                <p class="m-0 mt-1 text-sm">
-                  {{ userGrowthPercentage }}% por encima del promedio
-                </p>
-              </div>
-            </p-message>
-            }
-
-            <!-- Estado de salud del sistema -->
-            @if (realtimeMetrics?.systemHealth) {
-            <div class="system-health-indicator">
-              <div class="flex align-items-center justify-content-between mb-2">
-                <span class="font-medium">Estado del Sistema</span>
-                <p-tag 
-                  [value]="systemHealth" 
-                  [severity]="systemHealth === 'excellent' ? 'success' : systemHealth === 'warn' ? 'warn' : 'danger'">
-                </p-tag>
-              </div>
-              <div class="health-metrics text-sm">
-                <div class="flex justify-content-between">
-                  <span>Conexiones activas:</span>
-                  {{ realtimeMetrics?.systemHealth?.activeConnections || 0 }}
-                </div>
-                <div class="flex justify-content-between">
-                  <span>Tiempo de respuesta:</span>
-                 {{ realtimeMetrics?.systemHealth?.responseTime || 0 }}ms
                 </div>
               </div>
             </div>
             }
 
-            <!-- Sin alertas críticas -->
+            <!-- Alerta de actividad elevada -->
+            @if (dashboardData.today.newBans > 5) {
+            <div class="alert-item info">
+              <div class="alert-icon info">
+                <i class="pi pi-info-circle"></i>
+              </div>
+              <div class="alert-content">
+                <div class="alert-title">Actividad de moderación elevada</div>
+                <div class="alert-description">
+                  {{ dashboardData.today.newBans }} usuarios baneados hoy
+                </div>
+              </div>
+            </div>
+            }
+
+            <!-- Alerta de crecimiento -->
+            @if (userGrowthPercentage > 50) {
+            <div class="alert-item success">
+              <div class="alert-icon success">
+                <i class="pi pi-check-circle"></i>
+              </div>
+              <div class="alert-content">
+                <div class="alert-title">🎉 Crecimiento excepcional</div>
+                <div class="alert-description">
+                  {{ userGrowthPercentage }}% por encima del promedio
+                </div>
+              </div>
+            </div>
+            }
+
+            <!-- Estado saludable -->
             @if (
               dashboardData.moderation.pendingReports <= 10 &&
               dashboardData.today.newBans <= 5 &&
               userGrowthPercentage <= 50
             ) {
-            <p-message severity="success" [closable]="false">
-              <div>
-                <strong>✅ Sistema funcionando correctamente</strong>
-                <p class="m-0 mt-1 text-sm">
-                  No hay alertas críticas en este momento
-                </p>
+            <div class="alert-item success">
+              <div class="alert-icon success">
+                <i class="pi pi-check-circle"></i>
               </div>
-            </p-message>
+              <div class="alert-content">
+                <div class="alert-title">✅ Sistema funcionando correctamente</div>
+                <div class="alert-description">
+                  No hay alertas críticas en este momento
+                </div>
+              </div>
+            </div>
             }
-
           </div>
-        </p-card>
-      </div>
 
-    </div>
-  </div>
-
-  <!-- SECCIÓN 6: ACCIONES RÁPIDAS -->
-  <div class="quick-actions-section">
-    <h3 class="section-title mb-3">
-      <i class="pi pi-bolt text-primary"></i>
-      Acciones Rápidas
-    </h3>
-
-    <div class="grid">
-      
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="quick-action-card reports-action" 
-                (click)="navigateToReports()">
-          <div class="action-content">
-            <div class="action-icon">
-              <i class="pi pi-flag text-3xl"></i>
-              @if (dashboardData.moderation.pendingReports > 0) {
-              <p-badge 
-                [value]="dashboardData.moderation.pendingReports" 
-                severity="danger"
-                styleClass="notification-badge">
-              </p-badge>
-              }
+          <!-- Estadísticas de Moderación -->
+          <div class="alerts-section">
+            <div class="section-header">
+              <h3 class="section-title">
+                <i class="pi pi-shield"></i>
+                Estado de Moderación
+              </h3>
             </div>
-            <div class="action-info">
-              <h5 class="action-title">Revisar Reportes</h5>
-              <p class="action-description">Gestionar reportes pendientes</p>
-            </div>
-          </div>
-        </p-card>
-      </div>
 
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="quick-action-card users-action" 
-                (click)="navigateToUsers()">
-          <div class="action-content">
-            <div class="action-icon">
-              <i class="pi pi-users text-3xl"></i>
-            </div>
-            <div class="action-info">
-              <h5 class="action-title">Gestionar Usuarios</h5>
-              <p class="action-description">Administrar cuentas de usuario</p>
+            <div class="metric-stats" style="flex-direction: column; gap: var(--spacing-lg); padding: 0; border: none;">
+              <div class="flex justify-between items-center" style="width: 100%;">
+                <div>
+                  <div class="font-semibold text-lg">{{ dashboardData.moderation.pendingReports }}</div>
+                  <div class="text-sm opacity-75">Reportes pendientes</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-lg">{{ formatTime(dashboardData.moderation.averageResolutionTime) }}</div>
+                  <div class="text-sm opacity-75">Tiempo promedio</div>
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center" style="width: 100%;">
+                <div>
+                  <div class="font-semibold text-lg">{{ dashboardData.period.newReports - dashboardData.moderation.pendingReports }}</div>
+                  <div class="text-sm opacity-75">Resueltos</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-lg">{{ moderationEfficiency }}%</div>
+                  <div class="text-sm opacity-75">Eficiencia</div>
+                </div>
+              </div>
+
+              <div style="margin-top: var(--spacing-md);">
+                <div class="text-sm opacity-75 mb-2">Tipo más común:</div>
+                <div class="font-semibold">{{ getReasonDisplayText(dashboardData.moderation.mostCommonReportType) }}</div>
+              </div>
             </div>
           </div>
-        </p-card>
-      </div>
-
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="quick-action-card content-action" 
-                (click)="navigateToContent()">
-          <div class="action-content">
-            <div class="action-icon">
-              <i class="pi pi-file-text text-3xl"></i>
-            </div>
-            <div class="action-info">
-              <h5 class="action-title">Moderar Contenido</h5>
-              <p class="action-description">Revisar reseñas y comentarios</p>
-            </div>
-          </div>
-        </p-card>
-      </div>
-
-      <div class="col-12 md:col-6 lg:col-3">
-        <p-card styleClass="quick-action-card refresh-action" 
-                (click)="refreshDashboard()">
-          <div class="action-content">
-            <div class="action-icon">
-              <i class="pi pi-refresh text-3xl"></i>
-            </div>
-            <div class="action-info">
-              <h5 class="action-title">Actualizar Datos</h5>
-              <p class="action-description">Refrescar todas las métricas</p>
-            </div>
-          </div>
-        </p-card>
-      </div>
-
-    </div>
-  </div>
-
-  } <!-- Fin del @if (dashboardData) -->
-
-  <!-- FALLBACK: Estadísticas básicas si no hay datos avanzados -->
-  @if (!dashboardData && stats && !loading.dashboard) {
-  <div class="basic-stats-fallback">
-    <p-card>
-      <ng-template pTemplate="header">
-        <h3>Estadísticas Básicas del Sistema</h3>
-      </ng-template>
-
-      <div class="grid">
-        <div class="col-12 md:col-6 lg:col-4 xl:col-2">
-          <div class="basic-stat-item">
-            <div class="stat-number">{{ stats.overview.totalUsers }}</div>
-            <div class="stat-label">Total Usuarios</div>
-          </div>
         </div>
+      </section>
 
-        <div class="col-12 md:col-6 lg:col-4 xl:col-2">
-          <div class="basic-stat-item">
-            <div class="stat-number">{{ stats.overview.activeUsers }}</div>
-            <div class="stat-label">Usuarios Activos</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-4 xl:col-2">
-          <div class="basic-stat-item">
-            <div class="stat-number">{{ stats.overview.bannedUsers }}</div>
-            <div class="stat-label">Usuarios Baneados</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-4 xl:col-2">
-          <div class="basic-stat-item">
-            <div class="stat-number">{{ stats.overview.totalReviews }}</div>
-            <div class="stat-label">Total Reseñas</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-4 xl:col-2">
-          <div class="basic-stat-item">
-            <div class="stat-number">{{ stats.overview.totalComments }}</div>
-            <div class="stat-label">Total Comentarios</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-4 xl:col-2">
-          <div class="basic-stat-item">
-            <div class="stat-number">{{ stats.overview.totalLists }}</div>
-            <div class="stat-label">Total Listas</div>
-          </div>
-        </div>
-      </div>
-
-      <p-divider></p-divider>
-
-      <!-- Actividad de hoy -->
-      <h4>Actividad de Hoy</h4>
-      <div class="grid">
-        <div class="col-12 md:col-6 lg:col-3">
-          <div class="basic-stat-item today">
-            <div class="stat-number">{{ stats.today.newUsers }}</div>
-            <div class="stat-label">Nuevos Usuarios</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-3">
-          <div class="basic-stat-item today">
-            <div class="stat-number">{{ stats.today.newReviews }}</div>
-            <div class="stat-label">Nuevas Reseñas</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-3">
-          <div class="basic-stat-item today">
-            <div class="stat-number">{{ stats.today.newComments }}</div>
-            <div class="stat-label">Nuevos Comentarios</div>
-          </div>
-        </div>
-
-        <div class="col-12 md:col-6 lg:col-3">
-          <div class="basic-stat-item today">
-            <div class="stat-number">{{ stats.today.newLists }}</div>
-            <div class="stat-label">Nuevas Listas</div>
-          </div>
-        </div>
-      </div>
-
-      <ng-template pTemplate="footer">
-        <p-message severity="info" [closable]="false">
+      <!-- SECCIÓN 5: ACCIONES RÁPIDAS -->
+      <section class="dashboard-section">
+        <div class="section-header">
           <div>
-            <strong>📊 Dashboard Mejorado Disponible</strong>
-            <p class="m-0 mt-1">
-              Actualiza el backend para acceder a métricas avanzadas, gráficas interactivas y alertas en tiempo real.
-            </p>
+            <h2 class="section-title">
+              <i class="pi pi-bolt"></i>
+              Acciones Rápidas
+            </h2>
+            <p class="section-subtitle">Acceso directo a las funciones más utilizadas</p>
           </div>
-        </p-message>
-      </ng-template>
-    </p-card>
+        </div>
+
+        <div class="quick-actions-grid">
+          <!-- Revisar Reportes -->
+          <div class="action-card reports" (click)="navigateToReports()">
+            @if (dashboardData.moderation.pendingReports > 0) {
+            <div class="action-badge">{{ dashboardData.moderation.pendingReports }}</div>
+            }
+            <div class="action-icon-wrapper reports">
+              <i class="pi pi-flag"></i>
+            </div>
+            <h4 class="action-title">Revisar Reportes</h4>
+            <p class="action-description">Gestionar reportes pendientes de moderación</p>
+          </div>
+
+          <!-- Gestionar Usuarios -->
+          <div class="action-card users" (click)="navigateToUsers()">
+            <div class="action-icon-wrapper users">
+              <i class="pi pi-users"></i>
+            </div>
+            <h4 class="action-title">Gestionar Usuarios</h4>
+            <p class="action-description">Administrar cuentas y permisos de usuarios</p>
+          </div>
+
+          <!-- Moderar Contenido -->
+          <div class="action-card content" (click)="navigateToContent()">
+            <div class="action-icon-wrapper content">
+              <i class="pi pi-file-text"></i>
+            </div>
+            <h4 class="action-title">Moderar Contenido</h4>
+            <p class="action-description">Revisar reseñas, comentarios y listas</p>
+          </div>
+
+          <!-- Actualizar Datos -->
+          <div class="action-card refresh" (click)="refreshDashboard()">
+            <div class="action-icon-wrapper refresh">
+              <i class="pi pi-refresh"></i>
+            </div>
+            <h4 class="action-title">Actualizar Datos</h4>
+            <p class="action-description">Refrescar todas las métricas del sistema</p>
+          </div>
+        </div>
+      </section>
+
+      } <!-- Fin del @if (dashboardData) -->
+
+      <!-- FALLBACK: Estadísticas básicas si no hay datos avanzados -->
+      @if (!dashboardData && stats && !loading.dashboard) {
+      <section class="dashboard-section">
+        <div class="alerts-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="pi pi-chart-bar"></i>
+              Estadísticas Básicas del Sistema
+            </h3>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-value">{{ stats.overview.totalUsers }}</div>
+              <div class="metric-label">Total Usuarios</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-value">{{ stats.overview.totalReviews }}</div>
+              <div class="metric-label">Total Reseñas</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-value">{{ stats.overview.totalComments }}</div>
+              <div class="metric-label">Total Comentarios</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-value">{{ stats.today.newUsers }}</div>
+              <div class="metric-label">Nuevos Usuarios Hoy</div>
+            </div>
+          </div>
+
+          <div class="alert-item info" style="margin-top: var(--spacing-xl);">
+            <div class="alert-icon info">
+              <i class="pi pi-info-circle"></i>
+            </div>
+            <div class="alert-content">
+              <div class="alert-title">📊 Dashboard Mejorado Disponible</div>
+              <div class="alert-description">
+                Actualiza el backend para acceder a métricas avanzadas, gráficas interactivas y alertas en tiempo real.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      }
+
+    </div>
   </div>
-  }
-
 </div>
-
-<!-- FIN del contenido del Dashboard Tab -->
 
     <!-- Users Tab -->
     <div class="tab-content" [class.active]="tabState.activeTab === 'users'" *ngIf="canManageUsers">
