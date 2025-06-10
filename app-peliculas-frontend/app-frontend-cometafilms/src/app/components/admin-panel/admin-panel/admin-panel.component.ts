@@ -1143,89 +1143,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
   // ===== GESTIÓN DE REPORTES =====
 
-  updateReportStatus(reportId: string, newStatus: string): void {
-    console.log('Actualizando estado del reporte:', reportId, 'a', newStatus);
-
-    const updateSub = this.adminService.updateReportStatus(reportId, {
-      status: newStatus as any,
-      notes: `Estado cambiado a ${newStatus} por ${this.currentUser?.username}`
-    }).subscribe({
-      next: (response) => {
-        console.log('Estado del reporte actualizado:', response);
-
-        const reportIndex = this.reports.findIndex(r => r._id === reportId);
-        if (reportIndex !== -1) {
-          this.reports[reportIndex].status = newStatus as any;
-          this.cdr.markForCheck();
-        }
-
-        this.loadReportStats();
-      },
-      error: (error: any) => {
-        console.error('Error actualizando estado del reporte:', error);
-        alert(`Error al actualizar estado: ${error.message}`);
-      }
-    });
-
-    this.subscriptions.add(updateSub);
-  }
-
-  resolveReport(): void {
-    if (this.resolveReportForm.invalid || !this.modalData.report) {
-      console.log('Formulario de resolución inválido o falta reporte');
-      return;
-    }
-
-    this.loading.resolvingReport = true;
-
-    const formValue = this.resolveReportForm.value;
-    const reportId = this.modalData.report._id;
-
-    console.log('Resolviendo reporte:', {
-      reportId: reportId,
-      action: formValue.action,
-      notes: formValue.notes,
-      shouldNotify: formValue.shouldNotify
-    });
-
-    const resolveSub = this.adminService.resolveReport(reportId, {
-      action: formValue.action,
-      notes: formValue.notes,
-      shouldNotify: formValue.shouldNotify
-    }).subscribe({
-      next: (response) => {
-        this.closeReportModals();
-        console.log('Reporte resuelto correctamente:', response);
-
-        const reportIndex = this.reports.findIndex(r => r._id === reportId);
-        if (reportIndex !== -1) {
-          this.reports[reportIndex].status = 'resolved';
-          this.reports[reportIndex].resolution = {
-            action: formValue.action,
-            notes: formValue.notes,
-            resolvedBy: {
-              _id: this.currentUser?._id || '',
-              username: this.currentUser?.username || ''
-            },
-            resolvedAt: new Date()
-          };
-        }
-
-        this.loadReportStats();
-        this.cdr.markForCheck();
-      },
-      error: (error: any) => {
-        console.error('Error resolviendo reporte:', error);
-        alert(`Error al resolver reporte: ${error.message}`);
-      },
-      complete: () => {
-        this.loading.resolvingReport = false;
-        this.cdr.markForCheck();
-      }
-    });
-
-    this.subscriptions.add(resolveSub);
-  }
 
   // ===== PAGINACIÓN =====
 
@@ -1466,4 +1383,148 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     };
     return roleNames[role] || role;
   }
+
+
+  resolveReport(): void {
+  if (this.resolveReportForm.invalid || !this.modalData.report) {
+    console.log('❌ Formulario de resolución inválido o falta reporte');
+    return;
+  }
+
+  this.loading.resolvingReport = true;
+
+  const formValue = this.resolveReportForm.value;
+  const reportId = this.modalData.report._id;
+
+  console.log('🔧 Resolviendo reporte:', {
+    reportId: reportId,
+    action: formValue.action,
+    notes: formValue.notes,
+    shouldNotify: formValue.shouldNotify
+  });
+
+  const resolveSub = this.adminService.resolveReport(reportId, {
+    action: formValue.action,
+    notes: formValue.notes,
+    shouldNotify: formValue.shouldNotify
+  }).subscribe({
+    next: (response) => {
+      this.closeReportModals();
+      console.log('✅ Reporte resuelto correctamente:', response);
+
+      // Actualizar el reporte en la lista local
+      const reportIndex = this.reports.findIndex(r => r._id === reportId);
+      if (reportIndex !== -1) {
+        this.reports[reportIndex].status = 'resolved';
+        this.reports[reportIndex].resolution = {
+          action: formValue.action,
+          notes: formValue.notes,
+          resolvedBy: {
+            _id: this.currentUser?._id || '',
+            username: this.currentUser?.username || ''
+          },
+          resolvedAt: new Date()
+        };
+      }
+
+      // 📊 Mostrar información detallada de las acciones tomadas
+      let actionMessage = 'Reporte resuelto correctamente.';
+      
+      if (response.data?.actionTaken) {
+        const actionDetails = [];
+        
+        if (response.data.notificationsSent?.includes('content_deletion')) {
+          actionDetails.push('✅ Contenido eliminado');
+        }
+        if (response.data.notificationsSent?.includes('user_warning')) {
+          actionDetails.push('⚠️ Usuario advertido');
+        }
+        if (response.data.notificationsSent?.includes('user_ban')) {
+          actionDetails.push('🚫 Usuario baneado');
+        }
+        if (response.data.notificationsSent?.includes('reporter_resolution')) {
+          actionDetails.push('📧 Reporter notificado');
+        }
+
+        if (actionDetails.length > 0) {
+          actionMessage += '\n\nAcciones ejecutadas:\n' + actionDetails.join('\n');
+        }
+      }
+
+      // 🎯 Mostrar notificación de éxito detallada
+      this.showSuccessNotification(actionMessage);
+
+      // Recargar estadísticas de reportes
+      this.loadReportStats();
+      this.cdr.markForCheck();
+    },
+    error: (error: any) => {
+      console.error('❌ Error resolviendo reporte:', error);
+      this.showErrorNotification(`Error al resolver reporte: ${error.message}`);
+    },
+    complete: () => {
+      this.loading.resolvingReport = false;
+      this.cdr.markForCheck();
+    }
+  });
+
+  this.subscriptions.add(resolveSub);
+}
+
+// 🆕 MÉTODO AUXILIAR PARA NOTIFICACIONES DE ÉXITO
+private showSuccessNotification(message: string): void {
+  // Implementar según tu sistema de notificaciones
+  // Puede ser un toast, modal, o simplemente console.log
+  console.log('✅ Éxito:', message);
+  
+  // Si tienes un servicio de notificaciones/toasts:
+  // this.notificationService.showSuccess(message);
+  
+  // O usar alert como fallback:
+  alert(message);
+}
+
+// 🆕 MÉTODO AUXILIAR PARA NOTIFICACIONES DE ERROR
+private showErrorNotification(message: string): void {
+  console.error('❌ Error:', message);
+  
+  // Si tienes un servicio de notificaciones/toasts:
+  // this.notificationService.showError(message);
+  
+  // O usar alert como fallback:
+  alert(message);
+}
+
+// 🔧 MÉTODO MEJORADO PARA ACTUALIZAR ESTADO DE REPORTE
+updateReportStatus(reportId: string, newStatus: string): void {
+  console.log('🔄 Actualizando estado del reporte:', reportId, 'a', newStatus);
+
+  const updateSub = this.adminService.updateReportStatus(reportId, {
+    status: newStatus as any,
+    notes: `Estado cambiado a ${newStatus} por ${this.currentUser?.username}`
+  }).subscribe({
+    next: (response) => {
+      console.log('✅ Estado del reporte actualizado:', response);
+
+      // Actualizar en la lista local
+      const reportIndex = this.reports.findIndex(r => r._id === reportId);
+      if (reportIndex !== -1) {
+        this.reports[reportIndex].status = newStatus as any;
+        this.cdr.markForCheck();
+      }
+
+      // Recargar estadísticas
+      this.loadReportStats();
+      
+      // Notificación de éxito
+      this.showSuccessNotification(`Estado del reporte actualizado a: ${this.getStatusDisplayText(newStatus)}`);
+    },
+    error: (error: any) => {
+      console.error('❌ Error actualizando estado del reporte:', error);
+      this.showErrorNotification(`Error al actualizar estado: ${error.message}`);
+    }
+  });
+
+  this.subscriptions.add(updateSub);
+}
 }

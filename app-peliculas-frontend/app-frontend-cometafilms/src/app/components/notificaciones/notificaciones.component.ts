@@ -60,27 +60,36 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.loadStoredSystemNotifications();
+    this.markAllSystemNotificationsAsRead();
     this.cargarSolicitudes();
     this.setupSocketListener();
     this.setupSystemNotificationListener();
-    this.loadStoredSystemNotifications();
+    
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
-  cambiarTab(tab: TabType): void {
+cambiarTab(tab: TabType): void {
+    console.log(`🔄 Cambiando a tab: ${tab}`);
     this.activeTab = tab;
 
     if (tab === 'solicitudes') {
-      this.cargarSolicitudes();
+        this.cargarSolicitudes();
     } else if (tab === 'notificaciones') {
-      this.loadStoredSystemNotifications();
+        // 🎯 AL ENTRAR AL TAB DE NOTIFICACIONES, MARCAR COMO LEÍDAS
+        this.loadStoredSystemNotifications();
+        
+        // Marcar automáticamente como leídas después de un pequeño delay
+        setTimeout(() => {
+            this.markAllSystemNotificationsAsRead();
+        }, 500);
     }
 
     this.cdr.markForCheck();
-  }
+}
 
   aceptarSolicitud(requestId: string): void {
     const acceptSub = this.userSocialService.acceptFollowRequest(requestId)
@@ -180,60 +189,74 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
 
   // ===== MANEJO DE NOTIFICACIONES DEL SISTEMA MEJORADO =====
 
-  private setupSystemNotificationListener(): void {
+private setupSystemNotificationListener(): void {
     const systemNotificationSub = this.socketService.systemNotification$
-      .pipe(
-        catchError(error => {
-          console.error('Error en socket de notificaciones del sistema:', error);
-          return EMPTY;
-        })
-      )
-      .subscribe(notification => {
-        if (notification) {
-          console.log('Nueva notificación del sistema recibida:', notification);
+        .pipe(
+            catchError(error => {
+                console.error('Error en socket de notificaciones del sistema:', error);
+                return EMPTY;
+            })
+        )
+        .subscribe(notification => {
+            if (notification) {
+                console.log('🔔 Nueva notificación del sistema recibida en componente:', notification);
 
-          // Añadir a la lista de notificaciones del sistema
-          const systemNotification: SystemNotification = {
-            id: notification.id,
-            type: notification.type,
-            data: notification.data,
-            timestamp: notification.timestamp,
-            read: false
-          };
+                // Crear notificación estructurada
+                const systemNotification: SystemNotification = {
+                    id: notification.id || `notif_${Date.now()}`,
+                    type: notification.type || 'system_notification',
+                    data: notification.data || {},
+                    timestamp: notification.timestamp || new Date().toISOString(),
+                    read: false // Las nuevas notificaciones empiezan como no leídas
+                };
 
-          // Añadir al principio de la lista
-          this.systemNotifications.unshift(systemNotification);
+                // Verificar si ya existe (evitar duplicados)
+                const exists = this.systemNotifications.find(n => n.id === systemNotification.id);
+                if (!exists) {
+                    // Añadir al principio de la lista
+                    this.systemNotifications.unshift(systemNotification);
 
-          // Limitar a las últimas 50 notificaciones
-          if (this.systemNotifications.length > 50) {
-            this.systemNotifications = this.systemNotifications.slice(0, 50);
-          }
+                    // Limitar a las últimas 100 notificaciones
+                    if (this.systemNotifications.length > 100) {
+                        this.systemNotifications = this.systemNotifications.slice(0, 100);
+                    }
 
-          // Guardar en localStorage para persistencia
-          this.saveSystemNotificationsToStorage();
+                    // Guardar en localStorage
+                    this.saveSystemNotificationsToStorage();
 
-          this.cdr.markForCheck();
-        }
-      });
+                    // 🎯 ACTUALIZAR HEADER CON LA NUEVA NOTIFICACIÓN
+                    this.updateHeaderCounter();
+
+                    this.cdr.markForCheck();
+                    
+                    console.log(`✅ Nueva notificación añadida. Total: ${this.systemNotifications.length}`);
+                }
+            }
+        });
 
     this.subscriptions.add(systemNotificationSub);
-  }
+}
 
   // ===== PERSISTENCIA DE NOTIFICACIONES =====
 
-  private loadStoredSystemNotifications(): void {
+private loadStoredSystemNotifications(): void {
     try {
-      const stored = localStorage.getItem('systemNotifications');
-      if (stored) {
-        this.systemNotifications = JSON.parse(stored);
-        console.log(`Cargadas ${this.systemNotifications.length} notificaciones del sistema desde localStorage`);
-      }
+        const stored = localStorage.getItem('systemNotifications');
+        if (stored) {
+            this.systemNotifications = JSON.parse(stored);
+            console.log(`📥 Cargadas ${this.systemNotifications.length} notificaciones del sistema`);
+            
+            // 🎯 DISPARA EVENTO PARA ACTUALIZAR HEADER INMEDIATAMENTE
+            this.updateHeaderCounter();
+        } else {
+            this.systemNotifications = [];
+        }
     } catch (error) {
-      console.error('Error cargando notificaciones del sistema:', error);
-      this.systemNotifications = [];
+        console.error('❌ Error cargando notificaciones del sistema:', error);
+        this.systemNotifications = [];
     }
     this.cdr.markForCheck();
-  }
+}
 
   private saveSystemNotificationsToStorage(): void {
     try {
@@ -245,31 +268,44 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
 
   // ===== ACCIONES DE NOTIFICACIONES DEL SISTEMA =====
 
-  markSystemNotificationAsRead(notificationId: string): void {
+markSystemNotificationAsRead(notificationId: string): void {
     const notification = this.systemNotifications.find(n => n.id === notificationId);
     if (notification && !notification.read) {
-      notification.read = true;
-      this.socketService.markSystemNotificationAsRead(notificationId);
-      this.saveSystemNotificationsToStorage();
-      this.cdr.markForCheck();
+        console.log(`📖 Marcando notificación como leída: ${notificationId}`);
+        
+        notification.read = true;
+        this.socketService.markSystemNotificationAsRead(notificationId);
+        this.saveSystemNotificationsToStorage();
+        
+        // 🎯 ACTUALIZAR HEADER
+        this.updateHeaderCounter();
+        
+        this.cdr.markForCheck();
     }
-  }
+}
 
-  markAllSystemNotificationsAsRead(): void {
+markAllSystemNotificationsAsRead(): void {
     const unreadNotifications = this.systemNotifications.filter(n => !n.read);
-    unreadNotifications.forEach(notification => {
-      notification.read = true;
-      this.socketService.markSystemNotificationAsRead(notification.id);
-    });
-    this.saveSystemNotificationsToStorage();
-    this.cdr.markForCheck();
-  }
-
-  clearSystemNotifications(): void {
-    this.systemNotifications = [];
-    this.saveSystemNotificationsToStorage();
-    this.cdr.markForCheck();
-  }
+    
+    if (unreadNotifications.length > 0) {
+        console.log(`📖 Marcando ${unreadNotifications.length} notificaciones como leídas`);
+        
+        // Marcar todas como leídas
+        unreadNotifications.forEach(notification => {
+            notification.read = true;
+            // Notificar al socket service
+            this.socketService.markSystemNotificationAsRead(notification.id);
+        });
+        
+        // Guardar cambios
+        this.saveSystemNotificationsToStorage();
+        
+        // 🎯 ACTUALIZAR HEADER INMEDIATAMENTE
+        this.updateHeaderCounter();
+        
+        this.cdr.markForCheck();
+    }
+}
 
   // ===== MÉTODOS DE FORMATEO MEJORADOS =====
 
@@ -428,27 +464,77 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
 
   // ===== MÉTODOS PARA GESTIÓN AVANZADA =====
 
-  onSystemNotificationClick(notification: SystemNotification): void {
-    // Marcar como leída al hacer clic
+onSystemNotificationClick(notification: SystemNotification): void {
+    console.log('🖱️ Click en notificación del sistema:', notification.id);
+    
+    // Marcar como leída al hacer clic (si no estaba leída)
     if (!notification.read) {
-      this.markSystemNotificationAsRead(notification.id);
+        this.markSystemNotificationAsRead(notification.id);
     }
 
     // Navegación específica según el tipo de notificación
     const data = notification.data;
     const metadata = data.metadata;
 
-    // Para reportes, podrías navegar a una página específica
+    // Para reportes, mostrar información en consola (podrías añadir navegación)
     if (data.category === 'reports' && metadata?.reportId) {
-      // Aquí podrías navegar a una vista detallada del reporte si la tienes
-      console.log('Clic en notificación de reporte:', metadata.reportId);
+        console.log('📋 Detalles del reporte:', {
+            reportId: metadata.reportId,
+            action: metadata.action,
+            reportedUser: metadata.reportedUser
+        });
     }
 
-    // Para moderación de contenido, mostrar más detalles
+    // Para moderación de contenido
     if (data.category === 'moderation') {
-      console.log('Clic en notificación de moderación:', data);
+        console.log('🛡️ Detalles de moderación:', {
+            contentType: metadata?.contentType,
+            action: metadata?.action,
+            reason: metadata?.reportReason
+        });
     }
-  }
+
+    // Para cuentas (bans, warnings, etc.)
+    if (data.category === 'account') {
+        console.log('👤 Acción en cuenta:', {
+            action: metadata?.action,
+            banType: metadata?.banType,
+            reason: data.reason
+        });
+    }
+    }
+  
+
+  clearSystemNotifications(): void {
+    if (confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')) {
+        console.log('🧹 Limpiando todas las notificaciones del sistema');
+        
+        this.systemNotifications = [];
+        localStorage.removeItem('systemNotifications');
+        
+        // Limpiar contador en socket
+        this.socketService.clearNotificationCount();
+        
+        // 🎯 ACTUALIZAR HEADER A 0
+        this.updateHeaderCounter();
+        
+        this.cdr.markForCheck();
+    }
+}
+
+private updateHeaderCounter(): void {
+    // Disparar evento personalizado para actualizar el header
+    const unreadCount = this.getUnreadSystemNotificationsCount();
+    
+    window.dispatchEvent(new CustomEvent('systemNotificationsUpdated', {
+        detail: { 
+            count: unreadCount,
+            timestamp: new Date().toISOString()
+        }
+    }));
+    
+    console.log(`📊 Header counter actualizado: ${unreadCount} notificaciones no leídas`);
+}
 
   getUnreadSystemNotificationsCount(): number {
     return this.systemNotifications.filter(n => !n.read).length;

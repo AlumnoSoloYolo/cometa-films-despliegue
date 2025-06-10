@@ -300,14 +300,18 @@
   background: var(--bg-surface-light);
 }
 
-.action-btn--danger {
-  background: var(--color-danger);
-  color: white;
-  border-color: var(--color-danger);
+.action-btn.action-btn--danger {
+  background-color: transparent;
+  border-color: var(--color-danger, #e53e3e); /* Color rojo con fallback */
+  color: var(--color-danger, #e53e3e);
+  width: 8rem;
+  /* Hacemos el padding ligeramente más pequeño que el botón por defecto */
+  padding: 0.4rem 0.9rem;
 }
 
-.action-btn--danger:hover {
-  background: #dc2626;
+.action-btn.action-btn--danger:hover {
+  background-color: var(--color-danger, #e53e3e);
+  color: var(--color-text-inverted, #fff);
 }
 
 /* === SYSTEM NOTIFICATIONS === */

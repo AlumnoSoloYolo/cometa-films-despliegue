@@ -207,6 +207,87 @@ export interface UpdateReportStatusRequest {
   notes?: string;
 }
 
+
+export interface DashboardMetrics {
+  overview: {
+    totalUsers: number;
+    activeUsers: number;
+    bannedUsers: number;
+    premiumUsers: number;
+    totalReviews: number;
+    totalComments: number;
+    totalLists: number;
+    totalReports: number;
+  };
+  period: {
+    timeRange: string;
+    newUsers: number;
+    newReviews: number;
+    newComments: number;
+    newLists: number;
+    newReports: number;
+    newBans: number;
+  };
+  today: {
+    newUsers: number;
+    newReviews: number;
+    newComments: number;
+    newLists: number;
+    newReports: number;
+    newBans: number;
+    totalLikes: number;
+  };
+  moderation: {
+    pendingReports: number;
+    averageResolutionTime: number;
+    mostCommonReportType: string;
+    efficiency: number;
+  };
+  content: {
+    totalLikes: number;
+    averageRating: number;
+    mostActiveUser: {
+      username: string;
+      activityScore: number;
+    } | null;
+  };
+  charts: {
+    userGrowth: Array<{
+      date: string;
+      count: number;
+    }>;
+    activityTrends: Array<{
+      date: string;
+      reviews: number;
+      comments: number;
+      likes: number;
+    }>;
+    topMovies: Array<{
+      movieId: string;
+      title?: string;
+      reviewCount: number;
+      averageRating: number;
+    }>;
+  };
+  generatedAt: string;
+}
+
+export interface RealtimeMetrics {
+  activeUsersNow: number;
+  pendingReports: number;
+  newReportsToday: number;
+  newUsersToday: number;
+  systemHealth: {
+    status: string;
+    recentErrors: number;
+    activeConnections: number;
+    responseTime: number;
+    uptime: number;
+  };
+  timestamp: string;
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -666,5 +747,116 @@ export class AdminService {
       'dismissed': 'status-dismissed'
     };
     return statusClasses[status] || 'status-pending';
+  }
+
+
+    /**
+   * Obtener métricas completas del dashboard
+   */
+  getDashboardMetrics(timeRange: string = 'week'): Observable<DashboardMetrics> {
+    return this.http.get<any>(`${this.apiUrl}/dashboard/metrics?timeRange=${timeRange}`)
+      .pipe(
+        map(response => {
+          if (response.success) {
+            return response.data;
+          }
+          throw new Error(response.message || 'Error obteniendo métricas');
+        }),
+        catchError(error => {
+          console.error('Error obteniendo métricas del dashboard:', error);
+          return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
+        })
+      );
+  }
+
+  /**
+   * Obtener datos específicos para gráficas
+   */
+  getChartData(type: string, timeRange: string = 'week'): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/dashboard/charts/${type}?timeRange=${timeRange}`)
+      .pipe(
+        map(response => {
+          if (response.success) {
+            return response.data;
+          }
+          throw new Error(response.message || 'Error obteniendo datos de gráfica');
+        }),
+        catchError(error => {
+          console.error('Error obteniendo datos de gráfica:', error);
+          return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
+        })
+      );
+  }
+
+  /**
+   * Obtener métricas en tiempo real
+   */
+  getRealtimeMetrics(): Observable<RealtimeMetrics> {
+    return this.http.get<any>(`${this.apiUrl}/dashboard/realtime`)
+      .pipe(
+        map(response => {
+          if (response.success) {
+            return response.realtime;
+          }
+          throw new Error(response.message || 'Error obteniendo métricas en tiempo real');
+        }),
+        catchError(error => {
+          console.error('Error obteniendo métricas en tiempo real:', error);
+          return throwError(() => new Error(error.error?.message || error.message || 'Error desconocido'));
+        })
+      );
+  }
+
+
+  // ==========================================
+  // MÉTODOS AUXILIARES
+  // ==========================================
+
+  /**
+   * Formatear números grandes (1000 -> 1K)
+   */
+  formatNumber(num: number): string {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  }
+
+  /**
+   * Formatear porcentajes
+   */
+  formatPercentage(num: number): string {
+    const sign = num > 0 ? '+' : '';
+    return `${sign}${num}%`;
+  }
+
+  /**
+   * Formatear tiempo en horas a formato legible
+   */
+  formatTime(hours: number): string {
+    if (hours < 1) {
+      return `${Math.round(hours * 60)}m`;
+    }
+    if (hours < 24) {
+      return `${Math.round(hours)}h`;
+    }
+    return `${Math.round(hours / 24)}d`;
+  }
+
+
+  /**
+   * Obtener texto display para estados de reporte
+   */
+  getStatusDisplayText(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'pending': 'Pendiente',
+      'under_review': 'En revisión',
+      'resolved': 'Resuelto',
+      'dismissed': 'Descartado'
+    };
+    return statusMap[status] || status;
   }
 }
