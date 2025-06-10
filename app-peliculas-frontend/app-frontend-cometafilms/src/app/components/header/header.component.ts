@@ -109,7 +109,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.removeCustomEventListener();
   }
 
-  // 🆕 SETUP STORAGE LISTENER PARA NOTIFICACIONES
+  //  SETUP STORAGE LISTENER PARA NOTIFICACIONES
   private setupStorageListener(): void {
     window.addEventListener('storage', (event) => {
       if (event.key === 'systemNotifications') {
@@ -166,8 +166,41 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.closeMenuIfMobile();
   }
 
-  shouldShowPremiumButton(): boolean {
-    return this.premiumStatusLoaded && !this.isPremiumUser;
+
+ // Método  para verificar si es admin o moderador
+isAdminOrModerator(): boolean {
+  const user = this.getUserFromStorage();
+  return user && (user.role === 'admin' || user.role === 'moderador');
+}
+
+// Método corregido para mostrar botón premium
+shouldShowPremiumButton(): boolean {
+  // Mostrar premium si:
+  // 1. El status premium ya se cargó
+  // 2. El usuario NO es premium
+  // 3. El usuario NO es admin ni moderador
+  const isAdmin = this.isAdminOrModerator();
+  const shouldShow = this.premiumStatusLoaded && !this.isPremiumUser && !isAdmin;
+  
+  console.log('🔍 Premium Button Logic:', {
+    premiumStatusLoaded: this.premiumStatusLoaded,
+    isPremiumUser: this.isPremiumUser,
+    isAdminOrModerator: isAdmin,
+    finalResult: shouldShow
+  });
+  
+  return shouldShow;
+}
+
+// Método para mostrar botón admin (sin cambios)
+shouldShowAdminButton(): boolean {
+  return this.isAdminOrModerator();
+}
+
+  // Navegar al panel de administración
+  goToAdminPanel(): void {
+    this.router.navigate(['/admin']);
+    this.closeMenuIfMobile();
   }
 
   shouldShowNotificationBanner(): boolean {

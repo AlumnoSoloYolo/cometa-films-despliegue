@@ -223,7 +223,7 @@
 }
 
 .search-input {
-  width: 220px;
+  width: 160px;
   padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-xl);
   background: rgba(255, 255, 255, 0.08);
   border: var(--border-width) solid rgba(0, 255, 255, 0.2);
@@ -698,10 +698,82 @@
   transform: rotate(180deg);
 }
 
-/* === RESPONSIVE === */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: linear-gradient(45deg, #2c3e50, #34495e);
+  color: var(--text-primary);
+  border: 2px solid rgba(52, 73, 94, 0.3);
+  border-radius: var(--radius-3xl);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  outline: none;
+  user-select: none;
+  white-space: nowrap;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.admin-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(52, 73, 94, 0.4);
+  border-color: rgba(52, 73, 94, 0.6);
+  background: linear-gradient(45deg, #34495e, #3c5670);
+}
+
+/* === 🔧 FIX ESPECÍFICO PARA DESBORDAMIENTO 976px-1110px === */
+@media (max-width: 1110px) and (min-width: 976px) {
+  /* Reducir espacio entre elementos */
+  .user-actions {
+    gap: var(--spacing-xs);
+  }
+  
+  .nav-container {
+    margin-left: var(--spacing-md);
+  }
+  
+  /* Hacer buscador más pequeño */
+  .search-input {
+    width: 140px
+  }
+  
+  /* Convertir botones premium/admin a solo iconos */
+  .premium-btn span,
+  .admin-btn span {
+    display: none;
+  }
+  
+  .premium-btn,
+  .admin-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+    justify-content: center;
+    min-width: 36px;
+  }
+  
+  .premium-btn i,
+  .admin-btn i {
+    margin: 0;
+    font-size: var(--font-size-base);
+  }
+  
+  /* Opcional: ocultar username también si es necesario */
+  .username {
+    display: none;
+  }
+}
+
+/* === RESPONSIVE ORIGINAL === */
 @media (max-width: 1200px) {
   .search-input {
-    width: 180px;
+    width: 140px;
   }
   
   .search-input:focus {
@@ -710,6 +782,29 @@
   
   .nav-link {
     padding: var(--spacing-sm) var(--spacing-sm);
+  }
+
+    /* Convertir botones premium/admin a solo iconos */
+  .premium-btn span,
+  .admin-btn span {
+    display: none;
+  }
+  
+  .premium-btn,
+  .admin-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+    justify-content: center;
+    min-width: 36px;
+  }
+  
+  .premium-btn i,
+  .admin-btn i {
+    margin: 0;
+    font-size: var(--font-size-base);
   }
 }
 
@@ -782,10 +877,23 @@
     font-size: var(--font-size-base);
   }
   
-  .premium-btn {
+  /* Mostrar texto completo en móvil */
+  .premium-btn,
+  .admin-btn {
     width: 100%;
+    height: auto;
     justify-content: center;
     padding: var(--spacing-md);
+    border-radius: var(--radius-3xl);
+  }
+  
+  .premium-btn span,
+  .admin-btn span {
+    display: inline;
+  }
+  
+  .username {
+    display: inline;
   }
   
   .user-dropdown {
@@ -832,6 +940,30 @@
     top: -4px;
     right: -4px;
   }
+
+    /* Convertir botones premium/admin a solo iconos */
+  .premium-btn span,
+  .admin-btn span {
+    display: none;
+  }
+  
+  .premium-btn,
+  .admin-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+    justify-content: center;
+    min-width: 36px;
+  }
+  
+  .premium-btn i,
+  .admin-btn i {
+    margin: 0;
+    font-size: var(--font-size-base);
+  }
+
 }
 
 @media (max-width: 576px) {
@@ -866,3 +998,4 @@ body:has(.cyber-form) .site-header {
 .site-header .dropdown-menu {
   z-index: 300;
 }
+

@@ -513,7 +513,7 @@
   display: inline-block;
 }
 
-.dropdown-menu {
+/* .dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
@@ -528,7 +528,7 @@
   visibility: hidden;
   transform: translateY(-10px);
   transition: var(--transition-fast);
-}
+} */
 
 .dropdown:hover .dropdown-menu,
 .dropdown.open .dropdown-menu {

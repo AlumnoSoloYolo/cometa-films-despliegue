@@ -130,6 +130,7 @@ export class AuthService {
                 username: userData.username,
                 email: userData.email,
                 avatar: userData.avatar || 'default-avatar',
+                role: userData.role,
                 // Preservar estado premium si existe en localStorage
                 ...(this.getPremiumInfoFromStorage())
             };

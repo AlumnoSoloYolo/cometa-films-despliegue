@@ -89,14 +89,25 @@
 
                 <div class="user-actions ms-4">
 
-                    @if (shouldShowPremiumButton()) {
-                    <div class="premium-promo">
-                        <a routerLink="/premium" class="premium-btn" (click)="navigateTo('/premium')">
-                            <i class="bi bi-star-fill"></i>
-                            <span>Hazte Premium</span>
-                        </a>
-                    </div>
-                    }
+                       <!-- Botón para usuarios normales (no premium, no admin/moderador) -->
+                @if (shouldShowPremiumButton()) {
+                <div class="premium-promo">
+                    <a routerLink="/premium" class="premium-btn" (click)="navigateTo('/premium')">
+                        <i class="bi bi-star-fill"></i>
+                        <span>Hazte Premium</span>
+                    </a>
+                </div>
+                }
+
+                <!-- Botón para administradores y moderadores -->
+                @if (shouldShowAdminButton()) {
+                <div class="admin-promo">
+                    <button class="admin-btn" (click)="goToAdminPanel()" type="button">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Admin Panel</span>
+                    </button>
+                </div>
+                }
 
                     <form [formGroup]="searchForm" (ngSubmit)="buscar()" class="search-form">
                         <div class="search-wrapper">

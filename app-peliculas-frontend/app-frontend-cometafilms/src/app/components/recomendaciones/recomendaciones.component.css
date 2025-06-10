@@ -3,6 +3,7 @@
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.02);
     padding: 1.5rem;
+    overflow: visible !important; /* SOLO ESTE CAMBIO */
 }
 
 .premium-section {
@@ -68,7 +69,7 @@
 
 .movie-scroll-container {
     position: relative;
-    overflow: hidden;
+    overflow: visible !important; /* SOLO ESTE CAMBIO */
     margin: 0 -1rem;
     padding: 0 1rem;
 }
@@ -79,6 +80,7 @@
     grid-auto-columns: calc(20% - 1.5rem);
     gap: 1.5rem;
     overflow-x: auto;
+    overflow-y: visible !important; /* SOLO ESTE CAMBIO */
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
     padding: 1rem 0;
@@ -93,26 +95,26 @@
 .movie-scroll-item {
     scroll-snap-align: start;
     position: relative;
-    overflow: visible;
+    overflow: visible !important; /* SOLO ESTE CAMBIO */
     height: 400px;
 }
 
+/* TOOLTIP - Posición fija respecto a los botones, no porcentajes */
 .recommendation-container {
     position: absolute;
-    top: 85%; /* Start exactly below the card */
-    left: 0;
-    right: 0;
-    transform: translateY(-100%); /* Initially move it up, hiding it */
+    bottom: 10px; /* FIJO: 60px debajo del contenedor de la tarjeta */
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px); /* Centrado horizontalmente, arriba inicialmente */
     opacity: 0;
     transition: transform 0.4s ease-out, opacity 0.4s ease-out;
-    z-index: 1000;
+    z-index: 9999 !important;
     pointer-events: none;
-    margin-top: 20px; /* Space between the card and the reason box */
     cursor: pointer;
+    width: auto;
 }
 
 .movie-scroll-item:hover .recommendation-container {
-    transform: translateY(0); /* Move it down to its natural position below the card */
+    transform: translateX(-50%) translateY(0); /* Baja a su posición final */
     opacity: 1;
     pointer-events: auto;
 }
@@ -120,30 +122,42 @@
 .recommendation-reason {
     background: rgba(107, 119, 229, 0.95);
     color: white;
-    padding: 0.5rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
+    padding: 0.4rem 1rem; /* Más padding horizontal - era 0.4rem 0.6rem */
+    border-radius: 6px;
+    font-size: 0.75rem;
     text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
     position: relative;
+    max-width: 200px; /* Más ancho - era 200px */
+    min-width: 180px; /* Ancho mínimo para que sea consistente */
+    margin: 0 auto;
+    line-height: 1.3; /* Línea más compacta para menos altura */
+    white-space: normal; /* Permitir salto de línea */
+    word-wrap: break-word; /* Romper palabras largas */
 }
 
 .recommendation-reason i {
-    margin-right: 0.5rem;
+    margin-right: 0.3rem; /* Más pequeño - era 0.5rem */
+    font-size: 0.7rem; /* Icono más pequeño */
 }
 
 .recommendation-container::before {
     content: '';
     position: absolute;
-    top: -10px; /* Position it above the reason box */
+    top: -8px; /* Flecha arriba del tooltip */
     left: 50%;
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid rgba(107, 119, 229, 0.95); /* Matches background of reason, points down */
-    z-index: 1001;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid rgba(107, 119, 229, 0.95); /* Flecha apunta hacia abajo */
+    z-index: 10000 !important;
+}
+
+/* Asegurar que las tarjetas tengan z-index alto al hacer hover */
+.movie-scroll-item:hover {
+    z-index: 1000 !important; /* SOLO ESTE CAMBIO */
 }
 
 .premium-promo {
@@ -214,7 +228,6 @@
 .spinning {
     animation: spin 1s linear infinite;
 }
-
 
 .premium-required-badge {
   background: linear-gradient(45deg, #ff00ff, #00ffff);
