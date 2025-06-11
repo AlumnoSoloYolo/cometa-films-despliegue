@@ -90,15 +90,15 @@
                 <!-- Acciones de notificaciones del sistema -->
                 @if (hasSystemNotifications()) {
                 <div class="notifications__actions">
-                    @if (getUnreadSystemNotificationsCount() > 0) {
+                    <!-- @if (getUnreadSystemNotificationsCount() > 0) {
                     <button class="action-btn action-btn--secondary" (click)="markAllSystemNotificationsAsRead()">
                         <i class="bi bi-check-all"></i>
-                        Marcar todas como leídas ({{ getUnreadSystemNotificationsCount() }})
+                        Marcar como leídas ({{ getUnreadSystemNotificationsCount() }})
                     </button>
-                    }
+                    } -->
                     <button class="action-btn action-btn--danger" (click)="clearSystemNotifications()">
                         <i class="bi bi-trash"></i>
-                        Limpiar todas
+                        Limpiar
                     </button>
                 </div>
                 }

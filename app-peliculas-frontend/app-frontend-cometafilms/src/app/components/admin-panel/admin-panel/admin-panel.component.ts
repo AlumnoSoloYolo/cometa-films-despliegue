@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription, interval, debounceTime, distinctUntilChanged } from 'rxjs';
+import { PeliculasService } from '../../../services/peliculas.service';
 
 // PrimeNG Imports
 import { CardModule } from 'primeng/card';
@@ -181,6 +182,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   // ===== PELÍCULAS POPULARES =====
   private _topMovies: any[] = [];
   private _enhancedTopMovies: any[] = [];
+  private posterLoadingStates = new Map<string, 'loading' | 'loaded' | 'error'>();
 
   // ===== CACHE DE POSTERS =====
   private moviePostersCache = new Map<string, string>();
@@ -263,7 +265,8 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private fb: FormBuilder,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private peliculaService: PeliculasService
   ) {
     this.createForms();
     this.initializeChartOptions();
@@ -493,69 +496,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Obtiene la URL del poster de una película
-   */
-getMoviePoster(movieId: string | number): string | null {
-  const id = movieId.toString();
-  console.log('🎭 Obteniendo poster para película:', id);
-  
-  // Si ya falló antes, no intentar de nuevo
-  if (this.posterErrors.has(id)) {
-    console.log('❌ Poster marcado como error:', id);
-    return null;
-  }
-  
-  // Si está en cache, devolverlo
-  if (this.moviePostersCache.has(id)) {
-    const cachedUrl = this.moviePostersCache.get(id) || null;
-    console.log('💾 Poster desde cache:', cachedUrl);
-    return cachedUrl;
-  }
-  
-  // Construir URL del poster
-  const posterUrl = this.buildPosterUrl(id);
-  
-  // Guardar en cache
-  if (posterUrl) {
-    this.moviePostersCache.set(id, posterUrl);
-    console.log('✅ Poster guardado en cache:', posterUrl);
-  } else {
-    console.warn('⚠️ No se pudo generar URL de poster para:', id);
-  }
-  
-  return posterUrl;
-}
 
-  /**
-   * Construye la URL del poster basado en el ID de la película
-   */
-  private buildPosterUrl(movieId: string): string | null {
-    if (movieId) {
-      const colors = ['4338ca', '059669', 'dc2626', 'ea580c', '7c3aed', 'db2777'];
-      const colorIndex = parseInt(movieId) % colors.length;
-      const color = colors[colorIndex];
-      
-      return `https://via.placeholder.com/300x450/${color}/ffffff?text=Movie+${movieId}`;
-    }
-    
-    return null;
-  }
-
-  /**
-   * Maneja errores al cargar posters
-   */
-  onPosterError(event: any, movieId: string | number): void {
-    const id = movieId.toString();
-    console.warn(`Error cargando poster para película ${id}`);
-    
-    this.posterErrors.add(id);
-    this.moviePostersCache.delete(id);
-    
-    if (event?.target) {
-      event.target.style.display = 'none';
-    }
-  }
 
   /**
    * Pre-carga los posters de las películas populares
@@ -572,7 +513,7 @@ getMoviePoster(movieId: string | number): string | null {
           console.log(`Poster cargado para película ${movie.movieId}`);
         };
         img.onerror = () => {
-          this.onPosterError(null, movie.movieId);
+          // this.onPosterError(null, movie.movieId);
         };
       }
     });
@@ -1398,9 +1339,21 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
   }
 
   formatPercentage(num: number): string {
-    const sign = num > 0 ? '+' : '';
-    return `${sign}${num}%`;
+  if (num === null || num === undefined || isNaN(num)) {
+    return '0%';
   }
+  
+  const sign = num > 0 ? '+' : '';
+  const rounded = Math.round(num * 100) / 100; // Máximo 2 decimales
+  
+  // Si es un número entero, no mostrar decimales
+  if (rounded % 1 === 0) {
+    return `${sign}${rounded}%`;
+  }
+  
+  // Si tiene decimales, mostrar máximo 1 decimal
+  return `${sign}${rounded.toFixed(1)}%`;
+}
 
   formatTime(hours: number): string {
     if (hours < 1) {
@@ -2414,8 +2367,145 @@ getDailyAverage(): number {
   return Math.round((reviews + comments) / days);
 }
 
-exportActivityData(): void {
-  console.log('Exportando datos de actividad...');
-  // Implementar exportación de datos de actividad
+  exportActivityData(): void {
+    console.log('Exportando datos de actividad...');
+
+    if (!this.activityTrendsChartData || !this.activityTrendsChartData.labels.length) {
+      alert('No hay datos de tendencias de actividad para exportar.');
+      return;
+    }
+
+    try {
+      // 1. Extraer datos de la gráfica
+      const labels = this.activityTrendsChartData.labels;
+      const reviewsData = this.activityTrendsChartData.datasets.find((d: any) => d.label === 'Reseñas')?.data || [];
+      const commentsData = this.activityTrendsChartData.datasets.find((d: any) => d.label === 'Comentarios')?.data || [];
+
+      // 2. Mapear los datos de la gráfica a un formato estructurado
+      const trendData = labels.map((label: any, index: any) => ({
+        periodo: label,
+        reseñas: reviewsData[index] || 0,
+        comentarios: commentsData[index] || 0,
+      }));
+
+      // 3. Añadir las métricas de resumen como una sección separada en el mismo CSV.
+      // Para hacerlo más legible, añadimos cabeceras de sección.
+      let csvContent = this.convertToCSV(trendData);
+      
+      csvContent += '\n\n'; // Espacio entre secciones
+      csvContent += 'Métricas de Resumen del Período\n'; // Título de la sección
+
+      if (this.dashboardData) {
+        const summaryData = [
+          { metrica: 'Total Reseñas en Período', valor: this.dashboardData.period.newReviews },
+          { metrica: 'Tendencia de Reseñas', valor: `${this.formatPercentage(this.getReviewTrend())} vs anterior` },
+          { metrica: 'Total Comentarios en Período', valor: this.dashboardData.period.newComments },
+          { metrica: 'Tendencia de Comentarios', valor: `${this.formatPercentage(this.getCommentTrend())} vs anterior` },
+          { metrica: 'Tasa de Engagement', valor: `${this.getEngagementRate()}%` },
+          { metrica: 'Activity Score', valor: `${this.getActivityScore()}/100` },
+          { metrica: 'Día más activo', valor: this.getMostActiveDay() },
+          { metrica: 'Promedio diario interacciones', valor: this.getDailyAverage() }
+        ];
+        csvContent += this.convertToCSV(summaryData);
+      }
+      
+      // 4. Crear y descargar el blob CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', `tendencias-actividad-${this.getCurrentDateString()}.csv`);
+      link.style.visibility = 'hidden';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('Archivo CSV de actividad descargado exitosamente');
+
+    } catch (error) {
+      console.error('Error exportando datos de actividad:', error);
+      alert('Error al exportar los datos de actividad. Intenta de nuevo.');
+    }
+  }
+
+getMoviePoster(movieId: string | number): string {
+  const id = movieId.toString();
+  
+  // Si ya está cargado, devolverlo
+  if (this.moviePostersCache.has(id)) {
+    return this.moviePostersCache.get(id)!;
+  }
+  
+  // Si está cargando o falló, devolver placeholder
+  const loadingState = this.posterLoadingStates.get(id);
+  if (loadingState === 'loading' || loadingState === 'error') {
+    return this.buildPosterUrl(id);
+  }
+  
+  // Marcar como cargando
+  this.posterLoadingStates.set(id, 'loading');
+  
+  // Cargar de forma asíncrona
+  this.peliculaService.getDetallesPelicula(id).subscribe({
+    next: (movie) => {
+      if (movie?.poster_path) {
+        const posterUrl = `https://image.tmdb.org/t/p/w300${movie.poster_path}`;
+        this.moviePostersCache.set(id, posterUrl);
+        this.posterLoadingStates.set(id, 'loaded');
+        
+        // IMPORTANTE: Forzar actualización de la vista
+        this.cdr.detectChanges();
+      } else {
+        this.handlePosterError(id);
+      }
+    },
+    error: () => {
+      this.handlePosterError(id);
+    }
+  });
+  
+  return this.buildPosterUrl(id);
+}
+
+private handlePosterError(movieId: string): void {
+  this.posterErrors.add(movieId);
+  this.posterLoadingStates.set(movieId, 'error');
+  this.moviePostersCache.set(movieId, this.buildPosterUrl(movieId));
+  this.cdr.detectChanges();
+}
+
+
+
+// 4. MÉTODO HELPER 
+private buildPosterUrl(movieId: string): string {
+  const colors = ['4338ca', '059669', 'dc2626', 'ea580c', '7c3aed', 'db2777'];
+  const colorIndex = parseInt(movieId) % colors.length;
+  const color = colors[colorIndex];
+  return `https://via.placeholder.com/300x450/${color}/ffffff?text=ID+${movieId}`;
+}
+
+// 5. MÉTODO ADICIONAL PARA DEBUGGING - VER QUÉ PELÍCULAS ESTÁN FALLANDO
+debugMoviePosters(): void {
+  console.log('🎭 Estado del cache de posters:');
+  console.log('Cache size:', this.moviePostersCache.size);
+  console.log('Errores:', Array.from(this.posterErrors));
+  console.log('Películas en topMovies:', this.topMovies.map(m => m.movieId));
+  
+  // Probar una película específica manualmente
+  if (this.topMovies.length > 0) {
+    const testId = this.topMovies[0].movieId;
+    console.log(`🔍 Probando película ${testId}...`);
+    
+    this.peliculaService.getDetallesPelicula(testId.toString()).subscribe({
+      next: (movie) => {
+        console.log(`✅ Resultado para ${testId}:`, movie);
+      },
+      error: (error) => {
+        console.error(`❌ Error para ${testId}:`, error);
+      }
+    });
+  }
 }
 }

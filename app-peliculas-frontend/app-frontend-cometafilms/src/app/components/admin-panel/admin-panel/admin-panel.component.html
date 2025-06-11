@@ -294,153 +294,153 @@
 
 
       <section class="dashboard-section">
-  <div class="section-header">
-    <div>
-      <h2 class="section-title">
-        <i class="pi pi-chart-bar"></i>
-        Tendencias de Actividad
-      </h2>
-      <p class="section-subtitle">Evolución de reseñas, comentarios y engagement por período</p>
-    </div>
-    <div class="header-controls">
-      <button class="modern-button secondary" (click)="exportActivityData()">
-        <i class="pi pi-download"></i>
-        Exportar
-      </button>
-    </div>
-  </div>
-
-  <div class="charts-grid">
-    <!-- Gráfica de Barras de Actividad -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <h3 class="chart-title">
-          <i class="pi pi-chart-bar"></i>
-          Actividad por Período
-        </h3>
-        @if (loading.charts) {
-        <div class="loading-skeleton" style="width: 80px; height: 4px;"></div>
-        }
-      </div>
-      <div class="chart-container">
-        @if (activityTrendsChartData && !loading.charts) {
-        <p-chart 
-          type="bar" 
-          [data]="activityTrendsChartData" 
-          [options]="activityTrendsChartOptions"
-          height="300px">
-        </p-chart>
-        } @else {
-        <div class="chart-placeholder">
-          <i class="pi pi-chart-bar"></i>
-          <span>Cargando tendencias de actividad...</span>
-        </div>
-        }
-      </div>
-    </div>
-
-    <!-- Métricas de Actividad -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <h3 class="chart-title">
-          <i class="pi pi-trending-up"></i>
-          Métricas de Engagement
-        </h3>
-      </div>
-      <div class="chart-container" style="padding: var(--spacing-lg);">
-        
-        <!-- Métricas en Grid -->
-        <div class="activity-metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
-          
-          <!-- Reseñas del Período -->
-          <div class="activity-metric-item">
-            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));">
-              <i class="pi pi-comment"></i>
-            </div>
-            <div class="activity-metric-data">
-              <div class="activity-metric-number">{{ formatNumber(dashboardData.period.newReviews) }}</div>
-              <div class="activity-metric-label">Reseñas del Período</div>
-              <div class="activity-metric-change" [class.positive]="getReviewTrend() > 0" [class.negative]="getReviewTrend() < 0">
-                <i class="pi" [class.pi-arrow-up]="getReviewTrend() > 0" [class.pi-arrow-down]="getReviewTrend() < 0"></i>
-                <span>{{ formatPercentage(getReviewTrend()) }} vs anterior</span>
-              </div>
-            </div>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">
+              <i class="pi pi-chart-bar"></i>
+              Tendencias de Actividad
+            </h2>
+            <p class="section-subtitle">Evolución de reseñas, comentarios y engagement por período</p>
           </div>
-
-          <!-- Comentarios del Período -->
-          <div class="activity-metric-item">
-            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-success), #059669);">
-              <i class="pi pi-comments"></i>
-            </div>
-            <div class="activity-metric-data">
-              <div class="activity-metric-number">{{ formatNumber(dashboardData.period.newComments) }}</div>
-              <div class="activity-metric-label">Comentarios del Período</div>
-              <div class="activity-metric-change" [class.positive]="getCommentTrend() > 0" [class.negative]="getCommentTrend() < 0">
-                <i class="pi" [class.pi-arrow-up]="getCommentTrend() > 0" [class.pi-arrow-down]="getCommentTrend() < 0"></i>
-                <span>{{ formatPercentage(getCommentTrend()) }} vs anterior</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Likes del Período -->
-          <div class="activity-metric-item">
-            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));">
-              <i class="pi pi-heart-fill"></i>
-            </div>
-            <div class="activity-metric-data">
-              <div class="activity-metric-number">{{ formatNumber(dashboardData.period.totalLikes || (dashboardData.today.totalLikes * getPeriodMultiplier())) }}</div>
-              <div class="activity-metric-label">Likes del Período</div>
-              <div class="activity-metric-change positive">
-                <i class="pi pi-heart"></i>
-                <span>{{ getLikesPerDay() }} promedio/día</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Engagement Rate -->
-          <div class="activity-metric-item">
-            <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-warning), #d97706);">
-              <i class="pi pi-chart-line"></i>
-            </div>
-            <div class="activity-metric-data">
-              <div class="activity-metric-number">{{ getEngagementRate() }}%</div>
-              <div class="activity-metric-label">Tasa de Engagement</div>
-              <div class="activity-metric-change" [class.positive]="getEngagementRate() > 70" [class.negative]="getEngagementRate() < 50">
-                <i class="pi pi-percentage"></i>
-                <span>{{ getEngagementRate() > 70 ? 'Excelente' : getEngagementRate() > 50 ? 'Bueno' : 'Mejorable' }}</span>
-              </div>
-            </div>
+          <div class="header-controls">
+            <button class="modern-button secondary" (click)="exportActivityData()">
+              <i class="pi pi-download"></i>
+              Exportar
+            </button>
           </div>
         </div>
 
-        <!-- Resumen de Actividad -->
-        <div class="activity-summary" style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-lg); border: var(--border-width) solid var(--border-color);">
-          <div class="activity-summary-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
-            <h4 style="margin: 0; color: var(--text-primary); font-size: var(--font-size-base); font-weight: var(--font-weight-semibold);">
-              <i class="pi pi-chart-line" style="color: var(--color-primary); margin-right: var(--spacing-sm);"></i>
-              Resumen de Actividad
-            </h4>
-            <div class="activity-score-badge" style="background: var(--gradient-accent); color: white; padding: var(--spacing-xs) var(--spacing-md); border-radius: var(--radius-3xl); font-weight: var(--font-weight-bold); font-size: var(--font-size-sm);">
-              Score: {{ getActivityScore() }}/100
+        <div class="charts-grid">
+          <!-- Gráfica de Barras de Actividad -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="pi pi-chart-bar"></i>
+                Actividad por Período
+              </h3>
+              @if (loading.charts) {
+              <div class="loading-skeleton" style="width: 80px; height: 4px;"></div>
+              }
+            </div>
+            <div class="chart-container">
+              @if (activityTrendsChartData && !loading.charts) {
+              <p-chart 
+                type="bar" 
+                [data]="activityTrendsChartData" 
+                [options]="activityTrendsChartOptions"
+                height="300px">
+              </p-chart>
+              } @else {
+              <div class="chart-placeholder">
+                <i class="pi pi-chart-bar"></i>
+                <span>Cargando tendencias de actividad...</span>
+              </div>
+              }
             </div>
           </div>
-          
-          <div class="activity-insights" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
-            <div>
-              <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xs);">Día más activo:</div>
-              <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ getMostActiveDay() }}</div>
+
+          <!-- Métricas de Actividad -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="pi pi-trending-up"></i>
+                Métricas de Engagement
+              </h3>
             </div>
-            <div>
-              <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xs);">Promedio diario:</div>
-              <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ getDailyAverage() }} interacciones</div>
+            <div class="chart-container" style="padding: var(--spacing-lg);">
+              
+              <!-- Métricas en Grid -->
+              <div class="activity-metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
+                
+                <!-- Reseñas del Período -->
+                <div class="activity-metric-item">
+                  <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));">
+                    <i class="pi pi-comment"></i>
+                  </div>
+                  <div class="activity-metric-data">
+                    <div class="activity-metric-number">{{ formatNumber(dashboardData.period.newReviews) }}</div>
+                    <div class="activity-metric-label">Reseñas del Período</div>
+                    <div class="activity-metric-change" [class.positive]="getReviewTrend() > 0" [class.negative]="getReviewTrend() < 0">
+                      <i class="pi" [class.pi-arrow-up]="getReviewTrend() > 0" [class.pi-arrow-down]="getReviewTrend() < 0"></i>
+                      <span>{{ formatPercentage(getReviewTrend()) }} vs anterior</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Comentarios del Período -->
+                <div class="activity-metric-item">
+                  <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-success), #059669);">
+                    <i class="pi pi-comments"></i>
+                  </div>
+                  <div class="activity-metric-data">
+                    <div class="activity-metric-number">{{ formatNumber(dashboardData.period.newComments) }}</div>
+                    <div class="activity-metric-label">Comentarios del Período</div>
+                    <div class="activity-metric-change" [class.positive]="getCommentTrend() > 0" [class.negative]="getCommentTrend() < 0">
+                      <i class="pi" [class.pi-arrow-up]="getCommentTrend() > 0" [class.pi-arrow-down]="getCommentTrend() < 0"></i>
+                      <span>{{ formatPercentage(getCommentTrend()) }} vs anterior</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Likes del Período -->
+                <div class="activity-metric-item">
+                  <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));">
+                    <i class="pi pi-heart-fill"></i>
+                  </div>
+                  <div class="activity-metric-data">
+                    <div class="activity-metric-number">{{ formatNumber(dashboardData.period.totalLikes || (dashboardData.today.totalLikes * getPeriodMultiplier())) }}</div>
+                    <div class="activity-metric-label">Likes del Período</div>
+                    <div class="activity-metric-change positive">
+                      <i class="pi pi-heart"></i>
+                      <span>{{ getLikesPerDay() }} promedio/día</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Engagement Rate -->
+                <div class="activity-metric-item">
+                  <div class="activity-metric-icon" style="background: linear-gradient(135deg, var(--color-warning), #d97706);">
+                    <i class="pi pi-chart-line"></i>
+                  </div>
+                  <div class="activity-metric-data">
+                    <div class="activity-metric-number">{{ getEngagementRate() }}%</div>
+                    <div class="activity-metric-label">Tasa de Engagement</div>
+                    <div class="activity-metric-change" [class.positive]="getEngagementRate() > 70" [class.negative]="getEngagementRate() < 50">
+                      <i class="pi pi-percentage"></i>
+                      <span>{{ getEngagementRate() > 70 ? 'Excelente' : getEngagementRate() > 50 ? 'Bueno' : 'Mejorable' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Resumen de Actividad -->
+              <div class="activity-summary" style="background: var(--bg-surface); padding: var(--spacing-lg); border-radius: var(--radius-lg); border: var(--border-width) solid var(--border-color);">
+                <div class="activity-summary-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                  <h4 style="margin: 0; color: var(--text-primary); font-size: var(--font-size-base); font-weight: var(--font-weight-semibold);">
+                    <i class="pi pi-chart-line" style="color: var(--color-primary); margin-right: var(--spacing-sm);"></i>
+                    Resumen de Actividad
+                  </h4>
+                  <div class="activity-score-badge" style="background: var(--gradient-accent); color: white; padding: var(--spacing-xs) var(--spacing-md); border-radius: var(--radius-3xl); font-weight: var(--font-weight-bold); font-size: var(--font-size-sm);">
+                    Score: {{ getActivityScore() }}/100
+                  </div>
+                </div>
+                
+                <div class="activity-insights" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+                  <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xs);">Día más activo:</div>
+                    <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ getMostActiveDay() }}</div>
+                  </div>
+                  <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xs);">Promedio diario:</div>
+                    <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ getDailyAverage() }} interacciones</div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
-
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
       <!-- SECCIÓN 3: CONTENIDO POPULAR -->
       @if (topMovies.length > 0) {
@@ -472,15 +472,12 @@
               <div class="movie-rank">#{{ $index + 1 }}</div>
               
               <div class="movie-poster">
-                @if (getMoviePoster(movie.movieId)) {
+            
                 <img 
                   [src]="getMoviePoster(movie.movieId)" 
                   [alt]="movie.title || 'Película ' + movie.movieId"
                   style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--border-radius);"
-                  (error)="onPosterError($event, movie.movieId)">
-                } @else {
-                <i class="pi pi-image"></i>
-                }
+                 >
               </div>
               
               <h4 class="movie-title">
@@ -496,12 +493,12 @@
                   <span>Reseñas</span>
                   <span class="movie-stat-value">{{ formatNumber(movie.reviewCount) }}</span>
                 </div>
-                @if (movie.totalLikes) {
+                <!-- @if (movie.totalLikes) {
                 <div class="movie-stat">
                   <span>Likes</span>
                   <span class="movie-stat-value">{{ formatNumber(movie.totalLikes) }}</span>
                 </div>
-                }
+                } -->
                 @if (movie.trendingScore) {
                 <div class="movie-stat">
                   <span>Tendencia</span>
@@ -2107,7 +2104,7 @@
           Cancelar
         </button>
         <button type="submit" class="action-btn btn-danger">
-          Eliminar Definitivamente
+          Eliminar
         </button>
       </div>
     </form>
