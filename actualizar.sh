@@ -24,6 +24,12 @@ fi
 echo "⏹️  Parando servicios..."
 docker-compose down
 
+# Limpiar contenedores y recursos no utilizados
+echo "🧹 Limpiando contenedores antiguos..."
+docker system prune -f
+echo "🗑️  Eliminando imágenes no utilizadas..."
+docker image prune -f
+
 # Reconstruir y levantar
 echo "🔨 Reconstruyendo servicios..."
 docker-compose build --no-cache

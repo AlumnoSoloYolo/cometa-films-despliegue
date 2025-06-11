@@ -170,11 +170,11 @@ export class ActivityFeedComponent implements OnInit, OnDestroy {
       case 'liked_review':
         return activity.movie.posterPath ?
           `https://image.tmdb.org/t/p/w200${activity.movie.posterPath}` :
-          '/assets/images/placeholder-poster.png';
+          '/assets/images/logo.png';
 
       case 'liked_list':
       case 'created_public_list':
-        return activity.movieList.coverImage || '/assets/images/placeholder-list.png';
+        return activity.movieList.coverImage || '/assets/images/logo.png';
 
       default:
         return '/assets/images/placeholder.png';

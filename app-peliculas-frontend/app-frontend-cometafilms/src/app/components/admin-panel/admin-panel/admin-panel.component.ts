@@ -1265,7 +1265,7 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
     return this.dashboardData.moderation.efficiency;
   }
 
-  private getPeriodDays(): number {
+   getPeriodDays(): number {
     switch (this.selectedTimeRange) {
       case 'today': return 1;
       case 'week': return 7;
