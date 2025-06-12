@@ -357,17 +357,26 @@ export class PeliculaDetallesComponent implements OnInit {
   }
 
   eliminarReview(): void {
+    
+    if (!this.reviewUsuarioActual || !this.reviewUsuarioActual._id) {
+      console.error('Error: No se encontró el ID de la reseña para eliminar.');
+      return;
+    } 
+    const idDeLaResena = this.reviewUsuarioActual._id;
     if (confirm('¿Estás seguro de que quieres eliminar tu review?')) {
-      this.userMovieService.deleteReview(this.pelicula.id).subscribe({
+      
+  
+      this.userMovieService.deleteReview(idDeLaResena).subscribe({
         next: () => {
-          this.reviewUsuarioActual = null;
-          this.cargarReviews(this.pelicula.id);
+          console.log('Reseña eliminada con éxito desde el frontend.');
+          this.reviewUsuarioActual = null; 
+          // Vuelve a cargar las demás reseñas para que la UI se actualice.
+          this.cargarReviews(this.pelicula.id); 
         },
         error: (error) => console.error('Error al eliminar review:', error)
       });
     }
   }
-
   setRating(rating: number): void {
     this.reviewForm.patchValue({ rating });
   }

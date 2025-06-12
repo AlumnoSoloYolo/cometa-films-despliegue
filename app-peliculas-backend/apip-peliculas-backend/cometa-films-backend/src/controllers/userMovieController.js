@@ -521,11 +521,11 @@ exports.updateReview = async (req, res) => {
 
 exports.deleteReview = async (req, res) => {
     try {
-        const { movieId } = req.params;
+        const { reviewId } = req.params;
         const userId = req.user.id;
 
         // Buscar la reseña
-        const review = await Review.findOne({ userId, movieId });
+        const review = await Review.findById(reviewId);
 
         if (!review) {
             return res.status(404).json({ message: 'Reseña no encontrada' });

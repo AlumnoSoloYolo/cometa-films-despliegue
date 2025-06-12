@@ -466,17 +466,24 @@ export class ReseniaDetallesComponent implements OnInit {
     });
   }
 
-  // Método para eliminar la reseña
   eliminarReview(): void {
-    if (!this.review || !confirm('¿Estás seguro de que quieres eliminar esta reseña?')) return;
+   
+    if (!this.review || !this.review._id) {
+      console.error("No se puede eliminar porque no se encontró la reseña o su ID.");
+      return;
+    }
 
-    this.userMovieService.deleteReview(this.review.movieId).subscribe({
-      next: () => {
-        // Redirigir a la página de la película
-        this.router.navigate(['/pelicula', this.review.movieId]);
-      },
-      error: (error) => console.error('Error al eliminar reseña:', error)
-    });
+    if (confirm('¿Estás seguro de que quieres eliminar esta reseña?')) {
+   
+      this.userMovieService.deleteReview(this.review._id).subscribe({
+        next: () => {
+          console.log('Reseña eliminada con éxito.');
+    
+          this.router.navigate(['/pelicula', this.review.movieId]);
+        },
+        error: (error) => console.error('Error al eliminar reseña:', error)
+      });
+    }
   }
 
 

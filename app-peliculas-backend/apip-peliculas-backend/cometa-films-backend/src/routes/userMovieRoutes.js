@@ -82,10 +82,9 @@ router.put('/reviews/:movieId',
 );
 
 // Eliminar reseña: usa middleware especial que verifica propiedad O permisos de moderación
-router.delete('/reviews/:movieId', 
+router.delete('/reviews/:reviewId', 
     canDeleteReview, 
-    deleteReview
-);
+    deleteReview);
 
 router.get('/movies/:movieId/reviews', getMovieReviews); // Lectura libre
 

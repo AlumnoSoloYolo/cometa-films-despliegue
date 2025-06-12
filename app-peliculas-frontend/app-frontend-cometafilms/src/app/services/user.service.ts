@@ -186,9 +186,9 @@ export class UserMovieService {
   }
 
 
-  deleteReview(movieId: string): Observable<void> {
+  deleteReview(reviewId: string): Observable<void> {
     return this.http.delete<void>(
-      `${this.apiUrl}/user-movies/reviews/${movieId}`,
+      `${this.apiUrl}/user-movies/reviews/${reviewId}`,
       this.getHeaders()
     );
   }
