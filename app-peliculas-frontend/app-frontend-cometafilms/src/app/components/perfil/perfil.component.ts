@@ -427,7 +427,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   // Cargar datos sociales por separado para evitar conflictos
   private loadSocialDataSeparately(userId: string) {
-    if (this.socialDataLoaded || this.seguidoresCount > 0 || this.seguidosCount > 0) return;
+    if (this.socialDataLoaded) return;
 
     this.loadingStates.social = true;
     this.socialDataLoaded = true;
@@ -438,15 +438,18 @@ export class PerfilComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (social) => {
         this.ngZone.run(() => {
-          if (this.seguidoresCount === 0 && this.seguidosCount === 0) {
-            this.seguidores = [...(social.followers?.followers || [])];
-            this.seguidos = [...(social.following?.following || [])];
-            this.seguidoresCount = this.seguidores.length;
-            this.seguidosCount = this.seguidos.length;
-          }
+          setTimeout(() => {
+            // Solo actualiza si los contadores no se han establecido ya
+            if (this.seguidoresCount === 0 && this.seguidosCount === 0) {
+              this.seguidores = [...(social.followers?.followers || [])];
+              this.seguidos = [...(social.following?.following || [])];
+              this.seguidoresCount = this.seguidores.length;
+              this.seguidosCount = this.seguidos.length;
+            }
 
-          this.loadingStates.social = false;
-          this.cdr.detectChanges();
+            this.loadingStates.social = false;
+            this.cdr.detectChanges(); // ¡FORZAR ACTUALIZACIÓN!
+          }, 0);
         });
       },
       error: (error) => {

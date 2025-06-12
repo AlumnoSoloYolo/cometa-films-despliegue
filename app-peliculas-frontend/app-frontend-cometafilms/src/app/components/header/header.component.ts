@@ -1,6 +1,6 @@
 // header.component.ts - VERSIÓN CORREGIDA
 
-import { Component, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -11,6 +11,7 @@ import { UserSocialService } from '../../services/social.service';
 import { SocketService } from '../../services/socket.service';
 import { ChatService } from '../../services/chat.service';
 import { PremiumService } from '../../services/premium.service';
+import { TruncatePipe } from '../../shared/pipes/truncate.pipe';
 
 interface NotificationCounts {
   pendingRequests: number;
@@ -28,7 +29,7 @@ interface BannerState {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterModule, ReactiveFormsModule, CommonModule],
+  imports: [RouterModule, ReactiveFormsModule, CommonModule, TruncatePipe],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -82,7 +83,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private readonly socketService: SocketService,
     private readonly premiumService: PremiumService,
     private readonly chatService: ChatService,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly ngZone: NgZone
   ) {
     this.searchForm = this.createSearchForm();
     this.checkScreenSize();
@@ -99,7 +101,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.setupRouterSubscription();
     this.setupCustomEventListener();
     
-    // 🔧 Escuchar cambios en localStorage para notificaciones
+    // Escuchar cambios en localStorage para notificaciones
     this.setupStorageListener();
   }
 
@@ -146,7 +148,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   getUserAvatarPath(): string {
     const user = this.getUserFromStorage();
-    const avatar = user?.avatar || 'avatar1';
+    const avatar = user?.avatar;
+    console.log(avatar)
     return `/avatares/${avatar}.gif`;
   }
 
@@ -182,12 +185,12 @@ shouldShowPremiumButton(): boolean {
   const isAdmin = this.isAdminOrModerator();
   const shouldShow = this.premiumStatusLoaded && !this.isPremiumUser && !isAdmin;
   
-  console.log('🔍 Premium Button Logic:', {
-    premiumStatusLoaded: this.premiumStatusLoaded,
-    isPremiumUser: this.isPremiumUser,
-    isAdminOrModerator: isAdmin,
-    finalResult: shouldShow
-  });
+  // console.log('🔍 Premium Button Logic:', {
+  //   premiumStatusLoaded: this.premiumStatusLoaded,
+  //   isPremiumUser: this.isPremiumUser,
+  //   isAdminOrModerator: isAdmin,
+  //   finalResult: shouldShow
+  // });
   
   return shouldShow;
 }
@@ -355,12 +358,17 @@ shouldShowAdminButton(): boolean {
         })
       )
       .subscribe(() => {
-        this.setupPremiumCheck();
-        this.cargarSolicitudesPendientes();
-        this.setupSocketListeners();
-        this.loadUnreadMessagesCount();
-        this.loadSystemNotificationsCount();
-        this.setupPeriodicNotificationCheck();
+          this.ngZone.run(() => {
+                    this.setupPremiumCheck();
+                    this.cargarSolicitudesPendientes();
+                    this.setupSocketListeners();
+                    this.loadUnreadMessagesCount();
+                    this.loadSystemNotificationsCount();
+                    this.setupPeriodicNotificationCheck();
+                    
+                    // Forzamos la actualización de la vista
+                    this.cdr.markForCheck();
+                  });
       });
 
     this.subscriptions.add(authSub);

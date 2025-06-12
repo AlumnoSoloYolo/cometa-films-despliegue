@@ -111,7 +111,6 @@ interface ErrorState {
     MessageModule,
     DialogModule,
     InputTextModule,
-    InputTextarea,
     DropdownModule,
     CheckboxModule
   ],

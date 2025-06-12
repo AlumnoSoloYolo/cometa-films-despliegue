@@ -304,9 +304,8 @@
   background-color: transparent;
   border-color: var(--color-danger, #e53e3e); /* Color rojo con fallback */
   color: var(--color-danger, #e53e3e);
-  width: 8rem;
-  /* Hacemos el padding ligeramente más pequeño que el botón por defecto */
-  padding: 0.4rem 0.9rem;
+  display: flex;
+  justify-content: center;
 }
 
 .action-btn.action-btn--danger:hover {

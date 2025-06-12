@@ -110,11 +110,12 @@
 
                 <!-- Acciones de seguimiento - Versión mejorada para Chrome -->
                 <div class="follow-actions">
-                    <button class="follow-btn" [ngClass]="{
-                                    'follow': !followStatus[usuario._id] || followStatus[usuario._id] === 'none',
-                                    'following': followStatus[usuario._id] === 'following',
-                                    'requested': followStatus[usuario._id] === 'requested'
-                                }" [disabled]="processingFollow[usuario._id]" (click)="toggleFollow(usuario, $event)"
+                    <button class="follow-btn"  [ngClass]="{
+                                        'follow': followStatus[usuario._id] === 'none',
+                                        'following': followStatus[usuario._id] === 'following',
+                                        'requested': followStatus[usuario._id] === 'requested',
+                                        'is-loading': followStatus[usuario._id] === undefined || processingFollow[usuario._id]
+                                    }" [disabled]="processingFollow[usuario._id]" (click)="toggleFollow(usuario, $event)"
                         (mouseenter)="setHovering(usuario._id, true)" (mouseleave)="setHovering(usuario._id, false)"
                         type="button" [attr.data-user-id]="usuario._id" [attr.data-status]="followStatus[usuario._id]">
                         <!-- Versión simplificada que evita acumulación de texto -->
