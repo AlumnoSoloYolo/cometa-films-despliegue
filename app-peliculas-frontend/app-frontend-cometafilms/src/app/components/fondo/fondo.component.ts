@@ -45,8 +45,8 @@ export class FondoComponent implements OnInit, OnDestroy {
     opacityRange: { min: 0.25, max: 0.65 }, // Permitir que la opacidad suba un poco más
     scaleRange: { min: 0.3, max: 1.1 },   // Rango de pulso amplio
 
-    minPhaseSpeed: 0.007,
-    maxPhaseSpeed: 0.055,
+    minPhaseSpeed: 0.00007,
+    maxPhaseSpeed: 0.0055,
 
     maxInitialDelaySeconds: 12,
   };
