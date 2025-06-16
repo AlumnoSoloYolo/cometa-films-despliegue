@@ -1579,6 +1579,61 @@ ${movie.trendingScore ? `Tendencia: +${movie.trendingScore}%` : ''}
     this.cdr.markForCheck();
   }
 
+
+  /**
+ * Ordena las fechas de menor a mayor y formatea para la gráfica
+ */
+private fixActivityChartDates(data: any[]): void {
+  // 1. Ordenar por fecha
+  const sortedData = data.sort((a, b) => {
+    const dateA = new Date(a.date || a._id || a.day);
+    const dateB = new Date(b.date || b._id || b.day);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  // 2. Crear labels con fechas ordenadas
+  const labels = sortedData.map(item => {
+    const date = new Date(item.date || item._id || item.day);
+    
+    // Formatear según el período seleccionado
+    if (this.selectedTimeRange === 'month') {
+      return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    } else if (this.selectedTimeRange === 'week') {
+      return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
+    } else {
+      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+  });
+  
+  // 3. Crear los datasets con datos ordenados
+  this.activityTrendsChartData = {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Reseñas',
+        data: sortedData.map(item => item.reviews || item.newReviews || 0),
+        backgroundColor: 'rgba(107, 119, 229, 0.8)',
+        borderColor: 'rgba(107, 119, 229, 1)',
+        borderWidth: 2
+      },
+      {
+        label: 'Comentarios',
+        data: sortedData.map(item => item.comments || item.newComments || 0),
+        backgroundColor: 'rgba(0, 255, 176, 0.8)',
+        borderColor: 'rgba(0, 255, 176, 1)',
+        borderWidth: 2
+      },
+      {
+        label: 'Likes',
+        data: sortedData.map(item => item.likes || item.totalLikes || 0),
+        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+        borderColor: 'rgba(255, 193, 7, 1)',
+        borderWidth: 2
+      }
+    ]
+  };
+}
+
   private matchesGlobalFilter(user: any, searchTerm: string, roleFilter: string, statusFilter: string, type: string): boolean {
     if (searchTerm) {
       const matchesSearch =
@@ -2506,5 +2561,32 @@ debugMoviePosters(): void {
       }
     });
   }
+}
+
+
+getResponsiveChartOptions(chartType: 'line' | 'bar' | 'doughnut'): any {
+  const isMobile = window.innerWidth <= 768;
+  
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: !isMobile || chartType === 'doughnut',
+        position: isMobile ? 'bottom' : 'top',
+        labels: {
+          font: { size: isMobile ? 10 : 12 }
+        }
+      }
+    },
+    scales: chartType !== 'doughnut' ? {
+      x: {
+        ticks: { font: { size: isMobile ? 9 : 11 } }
+      },
+      y: {
+        ticks: { font: { size: isMobile ? 9 : 11 } }
+      }
+    } : undefined
+  };
 }
 }

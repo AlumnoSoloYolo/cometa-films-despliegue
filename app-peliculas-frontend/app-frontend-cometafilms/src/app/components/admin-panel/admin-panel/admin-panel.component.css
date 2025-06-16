@@ -2736,3 +2736,544 @@
 .w-full { width: 100%; }
 .justify-content-center { justify-content: center; }
 .block { display: block; }
+
+
+/* ======================================================================== */
+/* === FIXES RESPONSIVE PARA GRÁFICAS - AGREGAR AL FINAL === */
+/* ======================================================================== */
+
+/* WRAPPERS PARA GRÁFICAS RESPONSIVAS */
+.chart-responsive-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.chart-responsive-wrapper canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* FIXES ESPECÍFICOS PARA P-CHART */
+:host ::ng-deep .p-chart {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+:host ::ng-deep .p-chart canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* MEJORAS RESPONSIVE PARA DASHBOARD */
+.dashboard-wrapper {
+  overflow-x: hidden;
+  padding: 0 var(--spacing-sm);
+}
+
+.charts-grid {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.chart-card {
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chart-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* RESPONSIVE BREAKPOINTS MEJORADOS */
+@media (max-width: 1400px) {
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-lg);
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    padding: 0 var(--spacing-xs);
+  }
+  
+  .header-content {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--spacing-lg);
+  }
+  
+  .header-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+  
+  .time-selector {
+    flex-direction: column !important;
+    width: 100%;
+    gap: var(--spacing-xs);
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .activity-metrics-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-md);
+  }
+  
+  .movies-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  }
+  
+  .quick-actions-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  .chart-container {
+    min-height: 180px !important;
+    padding: var(--spacing-sm);
+  }
+  
+  /* Específico para móviles */
+  :host ::ng-deep .p-chart canvas {
+    max-width: calc(100vw - 40px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-wrapper {
+    padding: 0 var(--spacing-xs);
+  }
+  
+  .quick-actions-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .movies-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .chart-container {
+    min-height: 150px !important;
+    padding: var(--spacing-xs);
+  }
+  
+  /* Específico para móviles muy pequeños */
+  :host ::ng-deep .p-chart canvas {
+    max-width: calc(100vw - 20px) !important;
+  }
+}
+
+/* PREVENIR OVERFLOW HORIZONTAL EN TODO EL DASHBOARD */
+.dashboard-section,
+.dashboard-wrapper > * {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ACTIVITY METRICS RESPONSIVE */
+.activity-metric-item {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .activity-metric-item {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-sm);
+  }
+}
+
+/* ===== MÉTRICAS DE ENGAGEMENT - DISEÑO MEJORADO ===== */
+
+.engagement-metrics-section {
+  margin-bottom: 2rem;
+}
+
+.engagement-metrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.engagement-metrics-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.engagement-metrics-title i {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+}
+
+.engagement-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.engagement-metric-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.engagement-metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+}
+
+.engagement-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-primary);
+}
+
+.engagement-metric-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.engagement-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.engagement-metric-icon.reviews {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.engagement-metric-icon.comments {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.engagement-metric-icon.engagement {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.engagement-metric-icon.activity {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.engagement-metric-trend {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.engagement-metric-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+}
+
+.engagement-metric-change.positive {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.engagement-metric-change.negative {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.engagement-metric-change.neutral {
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+
+.engagement-metric-period {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.engagement-metric-content {
+  flex: 1;
+}
+
+.engagement-metric-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+}
+
+.engagement-metric-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.engagement-metric-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.engagement-metric-detail {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.engagement-metric-detail i {
+  font-size: 0.75rem;
+}
+
+.engagement-overview-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.engagement-insights {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.engagement-insights-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.engagement-insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.engagement-insights-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.engagement-insights-item:last-child {
+  border-bottom: none;
+}
+
+.engagement-insights-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.engagement-insights-icon.high {
+  background: #10b981;
+}
+
+.engagement-insights-icon.medium {
+  background: #f59e0b;
+}
+
+.engagement-insights-icon.low {
+  background: #ef4444;
+}
+
+.engagement-insights-text {
+  flex: 1;
+}
+
+.engagement-insights-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.125rem;
+}
+
+.engagement-insights-value {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.engagement-summary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-radius: 12px;
+  padding: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.engagement-summary-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+.engagement-summary-score {
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.engagement-summary-label {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  margin-bottom: 1rem;
+}
+
+.engagement-summary-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 1200px) {
+  .engagement-metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+  
+  .engagement-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .engagement-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .engagement-metric-card {
+    padding: 1.25rem;
+    min-height: 120px;
+  }
+  
+  .engagement-metric-value {
+    font-size: 1.75rem;
+  }
+  
+  .engagement-metric-header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .engagement-metric-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+  
+  .engagement-summary-score {
+    font-size: 2.5rem;
+  }
+  
+  .engagement-insights {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .engagement-metrics-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .engagement-metric-card {
+    padding: 1rem;
+  }
+  
+  .engagement-metric-value {
+    font-size: 1.5rem;
+  }
+}
