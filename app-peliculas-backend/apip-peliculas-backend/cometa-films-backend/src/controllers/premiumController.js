@@ -56,7 +56,7 @@ exports.createSubscription = async (req, res) => {
         console.log('- PAYPAL_CLIENT_SECRET:', process.env.PAYPAL_CLIENT_SECRET ? 'Configurado' : 'No configurado');
         console.log('- FRONTEND_URL:', process.env.FRONTEND_URL || 'No configurado');
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://cometacine.es';
 
         try {
             // Obtener el cliente PayPal (que incluye el token)
@@ -98,6 +98,7 @@ exports.createSubscription = async (req, res) => {
 
             const approveUrl = approveLink.href;
             console.log('URL de aprobación:', approveUrl);
+
 
             // Respuesta exitosa
             console.log('------ FIN createSubscription (Éxito) ------');
@@ -150,6 +151,7 @@ exports.capturePayment = async (req, res) => {
             // Actualizar usuario como premium
             await User.findByIdAndUpdate(userId, {
                 isPremium: true,
+                role: "premium",
                 premiumExpiry: expiryDate,
                 paypalSubscriptionId: orderId, // Guardar el ID de la orden como referencia
                 $push: {

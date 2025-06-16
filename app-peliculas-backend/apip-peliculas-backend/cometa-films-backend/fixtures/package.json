@@ -1,0 +1,13 @@
+{
+  "name": "cometacine-fixtures",
+  "version": "1.0.0",
+  "main": "generate-fixtures.js",
+  "scripts": {
+    "fixtures:dev": "BASE_URL=http://localhost:3000 node generate-fixtures.js"
+  },
+  "dependencies": {
+    "newman": "^6.1.2",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1"
+  }
+}

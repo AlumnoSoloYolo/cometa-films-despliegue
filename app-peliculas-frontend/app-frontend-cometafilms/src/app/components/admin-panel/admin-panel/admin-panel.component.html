@@ -250,12 +250,14 @@
             </div>
             <div class="chart-container">
               @if (userGrowthChartData && !loading.charts) {
-              <p-chart 
-                type="line" 
-                [data]="userGrowthChartData" 
-                [options]="userGrowthChartOptions"
-                height="300px">
-              </p-chart>
+              <div class="chart-responsive-wrapper" style="width: 100%; height: 300px;">
+                  <p-chart 
+                    type="line" 
+                    [data]="userGrowthChartData" 
+                    [options]="getResponsiveChartOptions('line')"
+                    height="300px">
+                  </p-chart>
+                </div>
               } @else {
               <div class="chart-placeholder">
                 <i class="pi pi-chart-line"></i>
@@ -1634,13 +1636,12 @@
 
 
 
-
 <!-- Modal para resolver reporte -->
 @if (showResolveReportModal) {
 <div class="modal-overlay" (click)="closeReportModals()">
   <div class="modal-content modal-large" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Resolver Reporte</h3>
+      <h3>Resolver</h3>
       <button class="close-btn" (click)="closeReportModals()">
         ×
       </button>
