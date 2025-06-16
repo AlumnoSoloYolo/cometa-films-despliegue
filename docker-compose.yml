@@ -1,57 +1,25 @@
-version: '3.8'
+version: '3'
 services:
   backend:
-    build: ./app-peliculas-backend/apip-peliculas-backend
-    # No es necesario exponer el puerto 3000 al exterior, 
-    # Nginx se comunica con él internamente.
-    # ports:
-    #  - "3000:3000" 
+    build:  ./app-peliculas-backend/apip-peliculas-backend
+    ports:
+      - "3000:3000"
     environment:
       - PORT=${PORT}
       - JWT_SECRET=${JWT_SECRET}
       - MONGODB_URI=${MONGODB_URI}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL} # Asegúrate que aquí sea https://cometacine.es
+      - FRONTEND_URL=${FRONTEND_URL}
       - TMDB_API_KEY=${TMDB_API_KEY}
     restart: always
     container_name: cometa-backend
-
   frontend:
-    build: 
-      context: ./app-peliculas-frontend/app-frontend-cometafilms
-    # Ya no exponemos el puerto 80 directamente. Nginx lo gestionará.
-    # ports:
-    #  - "80:80"
+    build: ./app-peliculas-frontend/app-frontend-cometafilms
+    ports:
+      - "80:80"
     depends_on:
       - backend
     restart: always
     container_name: cometa-frontend
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      # Montamos el build del frontend para que Nginx lo sirva
-      - ./app-peliculas-frontend/app-frontend-cometafilms/dist/peliculas-api/browser:/usr/share/nginx/html
-      # Montamos nuestra configuración de Nginx
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      # Montamos los volúmenes para Certbot
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    depends_on:
-      - frontend
-      - backend
-    restart: always
-    container_name: cometa-nginx
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    # El comando se ejecutará manualmente por ahora
-    entrypoint: "/bin/sh -c 'trap exit 0 TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
