@@ -21,30 +21,26 @@ const reportRoutes = require('./routes/reportRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// CORS ROBUSTO - MANEJAR OPTIONS MANUALMENTE
+// CORS
 app.use((req, res, next) => {
-    // Siempre añadir headers CORS
-    res.header('Access-Control-Allow-Origin', 'https://cometacine.es');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    // Manejar preflight OPTIONS
-    if (req.method === 'OPTIONS') {
-        console.log('✅ OPTIONS request manejado para:', req.path);
-        return res.status(200).end();
-    }
-    
-    console.log(`🔍 ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-    next();
+   res.header('Access-Control-Allow-Origin', '*');
+   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+   res.header('Access-Control-Allow-Credentials', 'true');
+   
+   if (req.method === 'OPTIONS') {
+       return res.status(200).end();
+   }
+   
+   next();
 });
 
 app.use(express.json({ limit: '10mb' }));
 
 // Conexión a MongoDB
 mongoose.connect(config.mongodb.uri)
-    .then(() => console.log('Conectado a MongoDB'))
-    .catch(err => console.error('Error conectando a MongoDB:', err));
+   .then(() => console.log('Conectado a MongoDB'))
+   .catch(err => console.error('Error conectando a MongoDB:', err));
 
 // Inicializar Socket.IO
 const io = initializeSocketServer(server);
@@ -64,19 +60,19 @@ app.use('/reports', reportRoutes);
 
 // Ruta para prueba de salud del API
 app.get('/', (req, res) => {
-    res.json({ message: 'API funcionando correctamente' });
+   res.json({ message: 'API funcionando correctamente' });
 });
 
 // Manejador de errores global
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        message: 'Algo salió mal!',
-        error: process.env.NODE_ENV === 'development' ? err.message : 'Error del servidor'
-    });
+   console.error(err.stack);
+   res.status(500).json({
+       message: 'Algo salió mal!',
+       error: process.env.NODE_ENV === 'development' ? err.message : 'Error del servidor'
+   });
 });
 
 // Iniciamos el servidor
 server.listen(config.port, () => {
-    console.log(`Servidor corriendo en el puerto ${config.port}`);
+   console.log(`Servidor corriendo en el puerto ${config.port}`);
 });
