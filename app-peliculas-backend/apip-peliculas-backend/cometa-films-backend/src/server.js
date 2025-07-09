@@ -36,11 +36,25 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
+
+app.use((req, res, next) => {
+    if (req.method === 'POST' && req.path.includes('/auth/')) {
+        console.log('🔍 POST DEBUG:', {
+            method: req.method,
+            path: req.path,
+            userAgent: req.headers['user-agent']?.substring(0, 50),
+            contentType: req.headers['content-type'],
+            origin: req.headers.origin,
+            bodyExists: !!req.body,
+            bodyType: typeof req.body,
+            bodyContent: req.body
+        });
+    }
+    next();
+});
+
 // Conexión a MongoDB
-mongoose.connect(config.mongodb.uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+mongoose.connect(config.mongodb.uri)
     .then(() => console.log('Conectado a MongoDB'))
     .catch(err => console.error('Error conectando a MongoDB:', err));
 
