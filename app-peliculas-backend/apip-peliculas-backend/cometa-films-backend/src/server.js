@@ -27,10 +27,10 @@ app.use((req, res, next) => {
     // Headers específicos para Chrome móvil y Vercel
     const origin = req.headers.origin;
     const allowedOrigins = [
-        'https://cometacine.es',                  
-        'https://cometa-films-despliegue-git-main-lotos-projects-808b38b8.vercel.app', 
-        'https://cometa-films-despliegue-ps7w62cet-lotos-projects-808b38b8.vercel.app', 
-        'http://localhost:4200'                    
+        'https://cometacine.es',                    // ✅ Tu dominio principal
+        'https://cometa-films-despliegue-git-main-lotos-projects-808b38b8.vercel.app',  // ✅ URL Git
+        'https://cometa-films-despliegue-ps7w62cet-lotos-projects-808b38b8.vercel.app', // ✅ URL Preview
+        'http://localhost:4200'                     // ✅ Desarrollo
     ];
     
     // Permitir origin específico o null para requests sin origin
