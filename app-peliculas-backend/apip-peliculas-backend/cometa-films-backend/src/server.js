@@ -5,6 +5,7 @@ const http = require('http');
 const initializeSocketServer = require('./socket');
 const config = require('./config/config');
 require('./cron/subscription-checker');
+
 // Importamos las rutas
 const authRoutes = require('./routes/auth.routes');
 const userMovieRoutes = require('./routes/userMovieRoutes');
@@ -17,21 +18,27 @@ const premiumRoutes = require('./routes/premiumRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const adminRoutes = require('./routes/admin.routes');
 const reportRoutes = require('./routes/reportRoutes');
+
 const app = express();
 const server = http.createServer(app);
-// Cors - Middleware
+
+// CORS - Configuración básica que funciona
 const corsOptions = {
     origin: [
         process.env.FRONTEND_URL,
         'http://localhost:4200',
+        'https://cometacine.es',
         '*' // Temporalmente permitir todo
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
+
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
+
+// Debug middleware
 app.use((req, res, next) => {
     if (req.method === 'POST' && req.path.includes('/auth/')) {
         console.log('🔍 POST DEBUG:', {
@@ -47,12 +54,15 @@ app.use((req, res, next) => {
     }
     next();
 });
+
 // Conexión a MongoDB
 mongoose.connect(config.mongodb.uri)
     .then(() => console.log('Conectado a MongoDB'))
     .catch(err => console.error('Error conectando a MongoDB:', err));
+
 // Inicializar Socket.IO
 const io = initializeSocketServer(server);
+
 // Rutas 
 app.use('/auth', authRoutes);
 app.use('/user-movies', userMovieRoutes);
@@ -65,10 +75,12 @@ app.use('/api/premium', premiumRoutes);
 app.use('/chat', chatRoutes);
 app.use('/admin', adminRoutes);
 app.use('/reports', reportRoutes);
+
 // Ruta para prueba de salud del API
 app.get('/', (req, res) => {
     res.send('API funcionando correctamente');
 });
+
 // Manejador de errores global
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -77,7 +89,8 @@ app.use((err, req, res, next) => {
         error: process.env.NODE_ENV === 'development' ? err.message : 'Error del servidor'
     });
 });
-// Iniciamos el servidor con HTTP en lugar de Express directamente
+
+// Iniciamos el servidor
 server.listen(config.port, () => {
-    console.log(Servidor corriendo en el puerto ${config.port});
+    console.log(`Servidor corriendo en el puerto ${config.port}`);
 });
