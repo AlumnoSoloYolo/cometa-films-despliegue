@@ -63,10 +63,9 @@ export class SocketService {
       return;
     }
 
-    // 🔧 CORREGIDO: URL dinámica para producción y desarrollo
     const socketUrl = environment.production
-      ? environment.apiUrl  // Usar la URL del environment (tu backend de Vercel)
-      : 'http://localhost:3000'; // Para desarrollo local
+      ? `http://${window.location.hostname}:3000`
+      : 'http://localhost:3000';
 
     console.log('🔌 Socket.IO: Intentando conectar a:', socketUrl);
 
@@ -80,11 +79,7 @@ export class SocketService {
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       upgrade: true,
-      rememberUpgrade: true,
-      // 🔧 NUEVO: Configuraciones específicas para HTTPS/Vercel
-      secure: environment.production, // true en producción para HTTPS
-      rejectUnauthorized: false, // Para certificados de Vercel
-      withCredentials: true
+      rememberUpgrade: true
     });
 
     this.socket.on('connect', () => {
@@ -101,15 +96,6 @@ export class SocketService {
     this.socket.on('connect_error', (error) => {
       console.error('❌ Socket.IO: Error de conexión', error);
       this.connected = false;
-      
-      // 🔧 NUEVO: Log detallado del error para debugging
-      if (environment.production) {
-        console.error('🔍 URL de conexión:', socketUrl);
-        console.error('🔍 Configuración:', {
-          secure: environment.production,
-          transports: ['websocket', 'polling']
-        });
-      }
     });
 
     // Listeners básicos
@@ -200,7 +186,7 @@ export class SocketService {
     this.connected = false;
   }
 
-  // 🔥 NUEVO: Procesar notificaciones del sistema
+  //  Procesar notificaciones del sistema
   private processSystemNotification(notification: any): void {
     try {
       const systemNotification: SystemNotification = {
@@ -222,7 +208,7 @@ export class SocketService {
     }
   }
 
-  // 🔥 NUEVO: Añadir notificación a localStorage
+  //  Añadir notificación a localStorage
   private addNotificationToStorage(notification: any): void {
     try {
       // Intentar usar el servicio de notificaciones si está disponible
@@ -268,7 +254,7 @@ export class SocketService {
     }
   }
 
-  // 🔥 NUEVO: Verificar si es una notificación de reporte
+  //  Verificar si es una notificación de reporte
   private isReportNotification(notification: any): boolean {
     const reportTypes = [
       'report_status_update',
@@ -314,7 +300,7 @@ export class SocketService {
     }
   }
 
-  // 🔥 MEJORADO: Marcar notificación del sistema como leída
+  //  Marcar notificación del sistema como leída
   markSystemNotificationAsRead(notificationId: string): void {
     if (this.socket && this.connected) {
       this.socket.emit('mark_notification_read', {
@@ -332,7 +318,7 @@ export class SocketService {
     }
   }
 
-  // 🔥 NUEVO: Marcar múltiples notificaciones como leídas
+  //  Marcar múltiples notificaciones como leídas
   markMultipleNotificationsAsRead(notificationIds: string[]): void {
     if (this.socket && this.connected) {
       notificationIds.forEach(id => {
@@ -351,13 +337,13 @@ export class SocketService {
     }
   }
 
-  // 🔥 NUEVO: Limpiar contador de notificaciones
+  //  Limpiar contador de notificaciones
   clearNotificationCount(): void {
     this.unreadSystemNotificationsSubject.next(0);
     console.log('🧹 Contador de notificaciones limpiado');
   }
 
-  // 🧪 NUEVO: Test de notificación del sistema
+  //  Test de notificación del sistema
   testSystemNotification(): void {
     if (this.socket && this.connected) {
       console.log('🧪 Socket.IO: Solicitando notificación de prueba del sistema...');
@@ -391,7 +377,7 @@ export class SocketService {
     }
   }
 
-  // 🔔 NUEVO: Mostrar notificación del sistema
+  // 🔔  Mostrar notificación del sistema
   private showSystemNotification(notification: any): void {
     const data = notification.data;
     if (!data) return;
@@ -478,8 +464,7 @@ export class SocketService {
       return {
         connected: this.connected,
         id: this.socket.id,
-        hasSocket: !!this.socket,
-        url: environment.production ? environment.apiUrl : 'http://localhost:3000'
+        hasSocket: !!this.socket
       };
     }
     return { connected: false };
@@ -506,7 +491,7 @@ export class SocketService {
     return this.userTypingSubject.asObservable();
   }
 
-  // 🔗 NUEVOS: Getters para notificaciones de reportes
+  // 🔗  Getters para notificaciones de reportes
   get reportNotification$(): Observable<SystemNotification | null> {
     return this.reportNotificationSubject.asObservable();
   }
