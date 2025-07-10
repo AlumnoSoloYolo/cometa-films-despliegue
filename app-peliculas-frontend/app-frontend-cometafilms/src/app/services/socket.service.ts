@@ -38,7 +38,7 @@ export class SocketService {
   private newMessageSubject = new BehaviorSubject<any>(null);
   private userTypingSubject = new BehaviorSubject<any>(null);
 
-  // 🆕 NUEVOS Subjects específicos para reportes y notificaciones
+  //  Subjects específicos para reportes y notificaciones
   private reportNotificationSubject = new BehaviorSubject<SystemNotification | null>(null);
   private unreadSystemNotificationsSubject = new BehaviorSubject<number>(0);
 
@@ -63,15 +63,16 @@ export class SocketService {
       return;
     }
 
+    // 🔧  Usar siempre HTTPS en producción
     const socketUrl = environment.production
-      ? `http://${window.location.hostname}:3000`
-      : 'http://localhost:3000';
+      ? 'https://cometa-films-despliegue-xpvj.vercel.app' // ✅ HTTPS sin puerto
+      : 'http://localhost:3000'; // Solo HTTP en desarrollo
 
     console.log('🔌 Socket.IO: Intentando conectar a:', socketUrl);
 
     this.socket = io(socketUrl, {
       auth: { token: token },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // 🔧 Polling primero para Vercel
       timeout: 30000,
       forceNew: true,
       autoConnect: true,
@@ -79,7 +80,11 @@ export class SocketService {
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       upgrade: true,
-      rememberUpgrade: true
+      rememberUpgrade: true,
+      // 🔧 IMPORTANTE: Configuraciones para HTTPS
+      secure: environment.production, // true en producción
+      rejectUnauthorized: false, // Para certificados de Vercel
+      withCredentials: true // Para CORS
     });
 
     this.socket.on('connect', () => {
@@ -186,7 +191,7 @@ export class SocketService {
     this.connected = false;
   }
 
-  //  Procesar notificaciones del sistema
+  // 🔥 Procesar notificaciones del sistema
   private processSystemNotification(notification: any): void {
     try {
       const systemNotification: SystemNotification = {
@@ -208,7 +213,7 @@ export class SocketService {
     }
   }
 
-  //  Añadir notificación a localStorage
+  // 🔥 Añadir notificación a localStorage
   private addNotificationToStorage(notification: any): void {
     try {
       // Intentar usar el servicio de notificaciones si está disponible
@@ -254,7 +259,7 @@ export class SocketService {
     }
   }
 
-  //  Verificar si es una notificación de reporte
+  // 🔥 Verificar si es una notificación de reporte
   private isReportNotification(notification: any): boolean {
     const reportTypes = [
       'report_status_update',
@@ -300,7 +305,7 @@ export class SocketService {
     }
   }
 
-  //  Marcar notificación del sistema como leída
+  // 🔥 Marcar notificación del sistema como leída
   markSystemNotificationAsRead(notificationId: string): void {
     if (this.socket && this.connected) {
       this.socket.emit('mark_notification_read', {
@@ -318,7 +323,7 @@ export class SocketService {
     }
   }
 
-  //  Marcar múltiples notificaciones como leídas
+  // 🔥 Marcar múltiples notificaciones como leídas
   markMultipleNotificationsAsRead(notificationIds: string[]): void {
     if (this.socket && this.connected) {
       notificationIds.forEach(id => {
@@ -337,13 +342,13 @@ export class SocketService {
     }
   }
 
-  //  Limpiar contador de notificaciones
+  // 🔥 Limpiar contador de notificaciones
   clearNotificationCount(): void {
     this.unreadSystemNotificationsSubject.next(0);
     console.log('🧹 Contador de notificaciones limpiado');
   }
 
-  //  Test de notificación del sistema
+  // 🧪 Test de notificación del sistema
   testSystemNotification(): void {
     if (this.socket && this.connected) {
       console.log('🧪 Socket.IO: Solicitando notificación de prueba del sistema...');
@@ -377,7 +382,7 @@ export class SocketService {
     }
   }
 
-  // 🔔  Mostrar notificación del sistema
+  // 🔔 Mostrar notificación del sistema
   private showSystemNotification(notification: any): void {
     const data = notification.data;
     if (!data) return;
@@ -464,7 +469,8 @@ export class SocketService {
       return {
         connected: this.connected,
         id: this.socket.id,
-        hasSocket: !!this.socket
+        hasSocket: !!this.socket,
+        url: environment.production ? 'https://cometa-films-despliegue-xpvj.vercel.app' : 'http://localhost:3000'
       };
     }
     return { connected: false };
@@ -491,7 +497,7 @@ export class SocketService {
     return this.userTypingSubject.asObservable();
   }
 
-  // 🔗  Getters para notificaciones de reportes
+  // 🔗 Getters para notificaciones de reportes
   get reportNotification$(): Observable<SystemNotification | null> {
     return this.reportNotificationSubject.asObservable();
   }
