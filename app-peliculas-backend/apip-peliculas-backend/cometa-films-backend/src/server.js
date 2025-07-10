@@ -22,21 +22,71 @@ const reportRoutes = require('./routes/reportRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// Cors - Middleware
+// 🔧 CORS específico para Vercel - ANTES que cualquier otra cosa
+app.use((req, res, next) => {
+    // Headers específicos para Chrome móvil y Vercel
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'https://cometacine.es',                  
+        'https://cometa-films-despliegue-git-main-lotos-projects-808b38b8.vercel.app', 
+        'https://cometa-films-despliegue-ps7w62cet-lotos-projects-808b38b8.vercel.app', 
+        'http://localhost:4200'                    
+    ];
+    
+    // Permitir origin específico o null para requests sin origin
+    if (allowedOrigins.includes(origin) || !origin) {
+        res.header('Access-Control-Allow-Origin', origin || 'https://cometacine.es');
+    }
+    
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    
+    // Log para debugging móvil
+    if (req.headers['user-agent']?.includes('Mobile')) {
+        console.log('📱 Request móvil:', {
+            origin: req.headers.origin,
+            userAgent: req.headers['user-agent']?.substring(0, 50),
+            method: req.method,
+            path: req.path
+        });
+    }
+    
+    // Manejar OPTIONS requests específicamente
+    if (req.method === 'OPTIONS') {
+        console.log('🔧 OPTIONS request:', req.path);
+        return res.status(200).end();
+    }
+    
+    next();
+});
+
+// CORS tradicional como respaldo
 const corsOptions = {
-    origin: [
-        process.env.FRONTEND_URL,
-        'http://localhost:4200',
-        '*' // Temporalmente permitir todo
-    ],
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            'https://cometacine.es',
+            'https://tu-frontend.vercel.app', // Cambia por tu URL real
+            'http://localhost:4200'
+        ];
+        
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log('🚫 CORS bloqueado para:', origin);
+            callback(null, false);
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 };
+
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
-
+// Debug middleware para auth
 app.use((req, res, next) => {
     if (req.method === 'POST' && req.path.includes('/auth/')) {
         console.log('🔍 POST DEBUG:', {
