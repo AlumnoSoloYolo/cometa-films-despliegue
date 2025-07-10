@@ -92,5 +92,5 @@ app.use((err, req, res, next) => {
 
 // Iniciamos el servidor
 server.listen(config.port, () => {
-    console.log(`Servidor corriendo en el puerto ${config.port}`);
+    console.log('Servidor corriendo en el puerto ' + config.port);
 });
