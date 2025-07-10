@@ -1,5 +1,3 @@
-// socket.service.ts - VERSIÓN MEJORADA
-
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environments';
 import { AuthService } from './auth.service';
@@ -65,9 +63,10 @@ export class SocketService {
       return;
     }
 
+    // 🔧 CORREGIDO: URL dinámica para producción y desarrollo
     const socketUrl = environment.production
-      ? `http://${window.location.hostname}:3000`
-      : 'http://localhost:3000';
+      ? environment.apiUrl  // Usar la URL del environment (tu backend de Vercel)
+      : 'http://localhost:3000'; // Para desarrollo local
 
     console.log('🔌 Socket.IO: Intentando conectar a:', socketUrl);
 
@@ -81,7 +80,11 @@ export class SocketService {
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       upgrade: true,
-      rememberUpgrade: true
+      rememberUpgrade: true,
+      // 🔧 NUEVO: Configuraciones específicas para HTTPS/Vercel
+      secure: environment.production, // true en producción para HTTPS
+      rejectUnauthorized: false, // Para certificados de Vercel
+      withCredentials: true
     });
 
     this.socket.on('connect', () => {
@@ -98,6 +101,15 @@ export class SocketService {
     this.socket.on('connect_error', (error) => {
       console.error('❌ Socket.IO: Error de conexión', error);
       this.connected = false;
+      
+      // 🔧 NUEVO: Log detallado del error para debugging
+      if (environment.production) {
+        console.error('🔍 URL de conexión:', socketUrl);
+        console.error('🔍 Configuración:', {
+          secure: environment.production,
+          transports: ['websocket', 'polling']
+        });
+      }
     });
 
     // Listeners básicos
@@ -466,7 +478,8 @@ export class SocketService {
       return {
         connected: this.connected,
         id: this.socket.id,
-        hasSocket: !!this.socket
+        hasSocket: !!this.socket,
+        url: environment.production ? environment.apiUrl : 'http://localhost:3000'
       };
     }
     return { connected: false };
